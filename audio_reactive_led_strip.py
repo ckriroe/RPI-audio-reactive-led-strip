@@ -11,6 +11,7 @@ from inotify_simple import INotify, flags
 from pathlib import Path
 import colorsys
 from dataclasses import dataclass
+from rpi_ws281x import PixelStrip, Color
 import random
 
 class LimitedBuffer:
@@ -43,6 +44,9 @@ DISPLAY_MODE = 0
 LED_COUNT = 300
 FPS = 60
 MAX_SPEED = 600
+LED_SPI_BUS = 0
+LED_SPI_DEVICE = 0
+LED_BRIGHTNESS = 255
 
 # Test display settings
 SCREEN_WIDTH = 1200
@@ -63,6 +67,14 @@ MAX_FREQ_AMPLITUDE_PROLONGER_THRESHOLD_PERCENT = 0.03
 MAX_FREQ_AMPLITUDE_DECAY_RATE = 0.003
 PERCENT_DIFF_FROM_MAX_TO_BE_EXTRAORDINARY = 0.30
 MIN_SANITIZED_VALUE = 0.01
+
+led_strip = PixelStrip(
+    LED_COUNT,
+    LED_SPI_BUS,
+    LED_SPI_DEVICE,
+    brightness=LED_BRIGHTNESS,
+    strip_type=None  # WS2812
+)
 
 # --------------------------- GLOBAL STATE --------------------------
 
@@ -535,19 +547,25 @@ def get_led_state(prev_strip: list[LedPixel], new_value: float):
     else:
         return prev_strip
 
-def render_led_state_pygame(new_strip, scree_to_draw):
-    scree_to_draw.fill((1, 1, 1))
+def render_led_state_pygame(new_strip, screen_to_draw):
+    screen_to_draw.fill((1, 1, 1))
     for i, led in enumerate(new_strip):
         x = i * LED_SPACING + LED_SPACING / 2
         y = SCREEN_HEIGHT // 2
         pygame.draw.circle(
-            scree_to_draw,
+            screen_to_draw,
             led.color,
             (int(x), int(y)),
             LED_RADIUS
         )
         
     pygame.display.flip()
+
+def write_pixels(strip_to_display: list[LedPixel]):
+    for i, px in enumerate(strip_to_display):
+        r, g, b = px.color
+        led_strip.setPixelColor(i, Color(r, g, b))
+    led_strip.show()
 
 led_noise = [0.0] * LED_COUNT
 def apply_smooth_noise(
@@ -810,6 +828,7 @@ while running:
     color_strip(strip)
 
     render_led_state_pygame(strip, screen)
+    write_pixels(strip)
     clock.tick(FPS)
 
 if DISPLAY_MODE == 0:
@@ -818,3 +837,4 @@ if DISPLAY_MODE == 0:
 running = False
 audio_thread.join()
 config_thread.join()
+
