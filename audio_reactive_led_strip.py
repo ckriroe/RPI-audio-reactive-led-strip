@@ -13,6 +13,7 @@ import colorsys
 from dataclasses import dataclass
 from rpi_ws281x import PixelStrip, Color
 import random
+import RPi.GPIO as GPIO
 
 class LimitedBuffer:
     def __init__(self, max_size):
@@ -47,6 +48,7 @@ MAX_SPEED = 600
 LED_SPI_BUS = 0
 LED_SPI_DEVICE = 0
 LED_BRIGHTNESS = 255
+EXTERNAL_MODE_RELAY_GPIO = 5
 
 # Test display settings
 SCREEN_WIDTH = 1200
@@ -590,10 +592,14 @@ def sanitize_values(strip: list[LedPixel]):
         if led.value < MIN_SANITIZED_VALUE:
             led.value = 0
 
+def clear_strip(strip_to_color: list[LedPixel]):
+    for i, led in enumerate(strip_to_color):
+        led.color = (0, 0, 0)
+
 def color_strip_by_value(strip_to_color: list[LedPixel]):
     for i, led in enumerate(strip_to_color):
         led.color = value_to_color(apply_smooth_noise(led.value, i))
-        
+
 def color_strip_by_index(strip_to_color: list[LedPixel]):
     n = len(strip_to_color)
 
@@ -788,6 +794,12 @@ def config_thread():
             if flags.MODIFY in flags.from_mask(ev.mask):
                 load_params()             
 
+def render_led_strip(strip, screen):
+    if DISPLAY_MODE == 0:
+        render_led_state_pygame(strip, screen)
+    else:
+        write_pixels(strip)
+
 # --------------------------- Main sector --------------------------
 
 clock = pygame.time.Clock()
@@ -809,6 +821,10 @@ config_thread.start()
 
 strip = [LedPixel(0.0, (0, 0, 0)) for _ in range(LED_COUNT)]
 current_led_value = 0.0
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(EXTERNAL_MODE_RELAY_GPIO, GPIO.OUT)
+is_in_external_mode = False
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -824,11 +840,24 @@ while running:
         current_led_value * value_increase_factor
     )
     
+    if effect_mode == 6 and is_in_external_mode == False:
+        is_in_external_mode = True
+        clear_strip(strip)
+        render_led_strip(strip, screen)
+        time.sleep(1)
+        GPIO.output(EXTERNAL_MODE_RELAY_GPIO, GPIO.HIGH)
+    elif effect_mode != 6 and is_in_external_mode == True:
+        is_in_external_mode = False
+        GPIO.output(EXTERNAL_MODE_RELAY_GPIO, GPIO.LOW)
+        
+    if is_in_external_mode == True:
+        time.sleep(1)
+        continue
+    
     sanitize_values(strip)
     color_strip(strip)
-
-    render_led_state_pygame(strip, screen)
-    write_pixels(strip)
+    
+    render_led_strip(strip, screen)
     clock.tick(FPS)
 
 if DISPLAY_MODE == 0:
@@ -837,4 +866,5 @@ if DISPLAY_MODE == 0:
 running = False
 audio_thread.join()
 config_thread.join()
+GPIO.cleanup()
 

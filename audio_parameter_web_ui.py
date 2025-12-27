@@ -12,7 +12,8 @@ EFFECT_MODES = {
     2: "Wave",
     3: "Spectrum",
     4: "Particel",
-    5: "Static"
+    5: "Static",
+    6: "External"
 }
 
 COLOR_MODES = {
@@ -366,3 +367,4 @@ for i, c in enumerate(st.session_state.colors):
             label_visibility="visible",
             on_change=save_params
         )
+
