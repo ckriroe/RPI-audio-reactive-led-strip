@@ -11,9 +11,10 @@ from inotify_simple import INotify, flags
 from pathlib import Path
 import colorsys
 from dataclasses import dataclass
-from rpi_ws281x import PixelStrip, Color
 import random
 import RPi.GPIO as GPIO
+import board
+import neopixel
 
 class LimitedBuffer:
     def __init__(self, max_size):
@@ -42,18 +43,17 @@ class LedPixel:
 DISPLAY_MODE = 0
 
 # Led constants
-LED_COUNT = 300
+LED_COUNT = 278
 FPS = 60
 MAX_SPEED = 600
-LED_SPI_BUS = 0
-LED_SPI_DEVICE = 0
-LED_BRIGHTNESS = 255
+BRIGHTNESS = 1.0 # 0.0 – 1.0
 EXTERNAL_MODE_RELAY_GPIO = 5
+DATA_PIN = board.D12
 
 # Test display settings
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 200
-LED_SPACING = SCREEN_WIDTH / LED_COUNT
+LED_SPACING = int(SCREEN_WIDTH / LED_COUNT)
 LED_RADIUS = 2
 
 # Audio processing constants
@@ -70,12 +70,12 @@ MAX_FREQ_AMPLITUDE_DECAY_RATE = 0.003
 PERCENT_DIFF_FROM_MAX_TO_BE_EXTRAORDINARY = 0.30
 MIN_SANITIZED_VALUE = 0.01
 
-led_strip = PixelStrip(
+led_strip = neopixel.NeoPixel(
+    DATA_PIN,
     LED_COUNT,
-    LED_SPI_BUS,
-    LED_SPI_DEVICE,
-    brightness=LED_BRIGHTNESS,
-    strip_type=None  # WS2812
+    brightness=BRIGHTNESS,
+    auto_write=False,
+    pixel_order=neopixel.GRB
 )
 
 # --------------------------- GLOBAL STATE --------------------------
@@ -96,7 +96,7 @@ secondary_color = (0, 0, 255)
 terriary_color = (0, 255, 0)
 background_color = (0, 0, 0)
 use_rainbow = False
-effect_origin = 150
+effect_origin = 139
 speed = 300
 min_used_freq = 0
 max_used_freq = 180
@@ -108,7 +108,7 @@ color_increase_factor = 1.0
 value_increase_factor = 1.0
 value_color_bias = 0.0
 get_alpha_from_value = False
-color_wave_origin = 150
+color_wave_origin = 139
 color_wave_speed = 50
 color_wave_size = 100
 color_wave_inwards = False
@@ -116,6 +116,8 @@ color_overflow = False
 noise_amount = 0.00
 noise_smoothing = 1.00
 color_transition = 0.25
+brightness = 1.0
+gamma = 1.0
 color_palette: list[ColorThreshold] = []
 
 # --------------------------- FUNCTIONS -----------------------------
@@ -140,8 +142,8 @@ def load_params():
     global effect_origin, speed, min_used_freq, max_used_freq, noise_amount
     global fade, effect_mode, min_freq_amplitude, noise_smoothing, get_alpha_from_value
     global color_increase_factor, background_color, use_rainbow, color_overflow
-    global value_increase_factor, color_mode, value_color_bias
-    global color_palette, color_transition, last_config_loaded
+    global value_increase_factor, color_mode, value_color_bias, brightness
+    global color_palette, color_transition, last_config_loaded, gamma
     global color_wave_origin, color_wave_speed, color_wave_size, color_wave_inwards
 
     try:
@@ -183,6 +185,8 @@ def load_params():
         color_wave_inwards = data.get("colorWaveInwards", color_wave_inwards)
         noise_amount = data.get("noiseAmount", noise_amount)
         noise_smoothing = data.get("noiseSmoothing", noise_smoothing)
+        brightness = data.get("brightness", brightness)
+        gamma = data.get("gamma", gamma)
 
         color_palette = []
 
@@ -565,8 +569,8 @@ def render_led_state_pygame(new_strip, screen_to_draw):
 
 def write_pixels(strip_to_display: list[LedPixel]):
     for i, px in enumerate(strip_to_display):
-        r, g, b = px.color
-        led_strip.setPixelColor(i, Color(r, g, b))
+        if (i < len(led_strip)):
+            led_strip[i] = px.color
     led_strip.show()
 
 led_noise = [0.0] * LED_COUNT
@@ -795,10 +799,17 @@ def config_thread():
                 load_params()             
 
 def render_led_strip(strip, screen):
-    if DISPLAY_MODE == 0:
-        render_led_state_pygame(strip, screen)
-    else:
-        write_pixels(strip)
+    #if DISPLAY_MODE == 0:
+    render_led_state_pygame(strip, screen)
+    #else:
+    write_pixels(strip)
+
+def color_correct_strip(strip_to_correct: list[LedPixel]):
+    for i, led in enumerate(strip_to_correct):
+        led.color = (gamma_correct(led.color[0] * brightness), gamma_correct(led.color[1] * brightness), gamma_correct(led.color[2] * brightness))
+        
+def gamma_correct(value):
+    return int((value / 255.0) ** gamma * 255.0 + 0.5)
 
 # --------------------------- Main sector --------------------------
 
@@ -845,10 +856,10 @@ while running:
         clear_strip(strip)
         render_led_strip(strip, screen)
         time.sleep(1)
-        GPIO.output(EXTERNAL_MODE_RELAY_GPIO, GPIO.HIGH)
+        GPIO.output(EXTERNAL_MODE_RELAY_GPIO, GPIO.LOW)
     elif effect_mode != 6 and is_in_external_mode == True:
         is_in_external_mode = False
-        GPIO.output(EXTERNAL_MODE_RELAY_GPIO, GPIO.LOW)
+        GPIO.output(EXTERNAL_MODE_RELAY_GPIO, GPIO.HIGH)
         
     if is_in_external_mode == True:
         time.sleep(1)
@@ -856,6 +867,7 @@ while running:
     
     sanitize_values(strip)
     color_strip(strip)
+    color_correct_strip(strip)
     
     render_led_strip(strip, screen)
     clock.tick(FPS)
