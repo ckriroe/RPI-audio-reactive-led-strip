@@ -31,7 +31,7 @@ DEFAULTS = {
         { "color": "#FFFFFF", "threshold": 1.0 }
     ],
     "useRainbow": False,
-    "effectOrigin": 150,
+    "effectOrigin": 139,
     "speed": 300,
     "minFreq": 0,
     "maxFreq": 180,
@@ -45,12 +45,14 @@ DEFAULTS = {
     "valueColorBias": 0.0,
     "getAlphaFromValue": False,
     "colorOverflow": False,
-    "colorWaveOrigin": 150,
+    "colorWaveOrigin": 139,
     "colorWaveSpeed": 50,
     "colorWaveSize": 100,
     "colorWaveInwards": False,
     "noiseAmount": 0.00,
-    "noiseSmoothing": 1.00
+    "noiseSmoothing": 1.00,
+    "brightness": 1.00,
+    "gamma": 1.00
 }
 
 def load_presets():
@@ -132,7 +134,9 @@ def get_current_values_from_state():
         "noiseAmount": st.session_state.noiseAmount,
         "noiseSmoothing": st.session_state.noiseSmoothing,
         "getAlphaFromValue": st.session_state.getAlphaFromValue,
-        "colorOverflow": st.session_state.colorOverflow
+        "colorOverflow": st.session_state.colorOverflow,
+        "brightness": st.session_state.brightness,
+        "gamma": st.session_state.gamma
     }
 
 def update_session_state_from_preset(preset_data):
@@ -161,6 +165,8 @@ def update_session_state_from_preset(preset_data):
     st.session_state.colorWaveInwards = vals.get("colorWaveInwards", DEFAULTS["colorWaveInwards"])
     st.session_state.noiseAmount = vals.get("noiseAmount", DEFAULTS["noiseAmount"])
     st.session_state.noiseSmoothing = vals.get("noiseSmoothing", DEFAULTS["noiseSmoothing"])
+    st.session_state.brightness = vals.get("brightness", DEFAULTS["brightness"])
+    st.session_state.gamma = vals.get("gamma", DEFAULTS["gamma"])
 
     e_mode = vals.get("effectMode", DEFAULTS["effectMode"])
     c_mode = vals.get("colorMode", DEFAULTS["colorMode"])
@@ -294,7 +300,7 @@ st.selectbox("Color mode", list(COLOR_MODES.values()), key="colorMode", on_chang
 
 st.session_state.effectOrigin = curr_preset.get("effectOrigin")
 if get_effect_mode_id() in (1, 2, 3) or get_color_mode_id() == 2:
-    st.slider("Center", 0, 299, key="effectOrigin", on_change=save_params)    
+    st.slider("Center", 0, 277, key="effectOrigin", on_change=save_params)    
 
 st.session_state.speed = curr_preset.get("speed")
 if get_effect_mode_id() in (2, 4):
@@ -309,6 +315,8 @@ st.slider("Intensity increase", 0.1, 10.0, key="valueIncreaseFactor", on_change=
 st.divider()
 st.subheader("Colors")
 
+st.slider("Brightness", 0.0, 1.0, step=0.01, key="brightness", on_change=save_params)
+st.slider("Gamma", 0.0, 5.0, step=0.01, key="gamma", on_change=save_params)
 st.slider("Color increase", 0.1, 20.0, key="colorIncreaseFactor", on_change=save_params)
 st.slider("Color transition", 0.00, 0.50, key="colorTransition", on_change=save_params)
 
@@ -323,7 +331,7 @@ st.session_state.colorWaveSpeed = curr_preset.get("colorWaveSpeed")
 st.session_state.colorWaveSize = curr_preset.get("colorWaveSize")
 st.session_state.colorWaveInwards = curr_preset.get("colorWaveInwards")
 if get_color_mode_id() == 4:
-    st.slider("Color wave center", 0, 299, key="colorWaveOrigin", on_change=save_params)
+    st.slider("Color wave center", 0, 277, key="colorWaveOrigin", on_change=save_params)
     st.slider("Color wave speed", 1, 600, key="colorWaveSpeed", on_change=save_params)
     st.slider("Color wave size", 1, 1000, step=1, key="colorWaveSize", on_change=save_params)
     st.toggle("Color wave direction (outwards / inwards)", key="colorWaveInwards", on_change=save_params)
