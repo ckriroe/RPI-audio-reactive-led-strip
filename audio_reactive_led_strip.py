@@ -834,7 +834,7 @@ strip = [LedPixel(0.0, (0, 0, 0)) for _ in range(LED_COUNT)]
 current_led_value = 0.0
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(EXTERNAL_MODE_RELAY_GPIO, GPIO.OUT)
-is_in_external_mode = False
+is_in_external_mode = None
 
 while running:
     for event in pygame.event.get():
@@ -857,7 +857,7 @@ while running:
         render_led_strip(strip, screen)
         time.sleep(1)
         GPIO.output(EXTERNAL_MODE_RELAY_GPIO, GPIO.LOW)
-    elif effect_mode != 6 and is_in_external_mode == True:
+    elif effect_mode != 6 and is_in_external_mode != False:
         is_in_external_mode = False
         GPIO.output(EXTERNAL_MODE_RELAY_GPIO, GPIO.HIGH)
         
