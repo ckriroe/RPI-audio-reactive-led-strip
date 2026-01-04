@@ -36,6 +36,10 @@ DEFAULTS = {
     "minFreq": 0,
     "maxFreq": 180,
     "fade": 0.6,
+    "saturate": 0.6,
+    "saturateThreshold": 0.3,
+    "meanValueBufferSize": 20,
+    "meanValueThreshold": 0.3,
     "effectMode": 0,
     "colorMode": 0,
     "minFreqAmplitude": 0.1,
@@ -120,6 +124,10 @@ def get_current_values_from_state():
         "minFreq": st.session_state.minFreq,
         "maxFreq": st.session_state.maxFreq,
         "fade": st.session_state.fade,
+        "saturate": st.session_state.saturate,
+        "saturateThreshold": st.session_state.saturateThreshold,
+        "meanValueBufferSize": st.session_state.meanValueBufferSize,
+        "meanValueThreshold": st.session_state.meanValueThreshold,
         "effectMode": eff_mode_id,
         "colorMode": col_mode_id,
         "minFreqAmplitude": st.session_state.minFreqAmplitude,
@@ -152,6 +160,10 @@ def update_session_state_from_preset(preset_data):
     st.session_state.minFreq = vals.get("minFreq", DEFAULTS["minFreq"])
     st.session_state.maxFreq = vals.get("maxFreq", DEFAULTS["maxFreq"])
     st.session_state.fade = vals.get("fade", DEFAULTS["fade"])
+    st.session_state.saturate = vals.get("saturate", DEFAULTS["saturate"])
+    st.session_state.saturateThreshold = vals.get("saturateThreshold", DEFAULTS["saturateThreshold"])
+    st.session_state.meanValueBufferSize = vals.get("meanValueBufferSize", DEFAULTS["meanValueBufferSize"])
+    st.session_state.meanValueThreshold = vals.get("meanValueThreshold", DEFAULTS["meanValueThreshold"])
     st.session_state.minFreqAmplitude = vals.get("minFreqAmplitude", DEFAULTS["minFreqAmplitude"])
     st.session_state.colorIncreaseFactor = vals.get("colorIncreaseFactor", DEFAULTS["colorIncreaseFactor"])
     st.session_state.valueIncreaseFactor = vals.get("valueIncreaseFactor", DEFAULTS["valueIncreaseFactor"])
@@ -309,6 +321,10 @@ if get_effect_mode_id() in (2, 4):
 st.slider("Min. frequency", 0, 12000, key="minFreq", on_change=save_params)
 st.slider("Max. frequency", 0, 12000, key="maxFreq", on_change=save_params)
 st.slider("Color fade", 0.001, 0.999, step=0.001, key="fade", on_change=save_params)
+st.slider("Color saturate", 0.01, 1.0, step=0.01, key="saturate", on_change=save_params)
+st.slider("Saturate threshold", 0.0, 1.0, step=0.01, key="saturateThreshold", on_change=save_params)
+st.slider("Mean value buffer size", 1, 100, step=1, key="meanValueBufferSize", on_change=save_params)
+st.slider("Mean value threshold", 0.01, 1.0, step=0.01, key="meanValueThreshold", on_change=save_params)
 st.slider("Min. volume", 0.0, 50.0, key="minFreqAmplitude", on_change=save_params)
 st.slider("Intensity increase", 0.1, 10.0, key="valueIncreaseFactor", on_change=save_params)
 
@@ -375,4 +391,3 @@ for i, c in enumerate(st.session_state.colors):
             label_visibility="visible",
             on_change=save_params
         )
-

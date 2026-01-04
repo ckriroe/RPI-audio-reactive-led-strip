@@ -26,6 +26,10 @@ class LimitedBuffer:
     @property
     def items(self):
         return list(self.buf)
+    
+    @property
+    def maxlen(self):
+        return self.buf.maxlen
 
 @dataclass
 class ColorThreshold:
@@ -60,7 +64,6 @@ LED_RADIUS = 2
 CONFIG_FILE = "audio_params.json"
 FFT_SIZE = 512
 SAMPLE_RATE = 44100
-LAST_EXTRA_ORDINARY_SAMPLE_BUFFER_SIZE = 50
 BELOW_MIN_FREQ_AMPLITUDE_FUNCTION_FACTOR = -0.03
 MAX_FREQ_AMPLITUDE_INCREASE_RATIO = 3
 MAX_FREQ_AMPLITUDE_DECREASE_RATIO = 5
@@ -81,7 +84,6 @@ led_strip = neopixel.NeoPixel(
 # --------------------------- GLOBAL STATE --------------------------
 
 # Audio state
-last_extra_ordinary_sample_buffer = LimitedBuffer(LAST_EXTRA_ORDINARY_SAMPLE_BUFFER_SIZE)
 last_written_uniform_value = -1.0
 last_aprox_max_freq = -1.0
 last_aprox_max_freq_eval = -1
@@ -101,6 +103,11 @@ speed = 300
 min_used_freq = 0
 max_used_freq = 180
 fade = 0.6
+saturate = 0.6
+saturate_threshold = 0.3
+mean_value_buffer_size = 20
+mean_value_threshold = 0.3
+last_extra_ordinary_sample_buffer = LimitedBuffer(mean_value_buffer_size)
 effect_mode = 0
 color_mode = 0
 min_freq_amplitude = 0.1
@@ -142,10 +149,11 @@ def load_params():
     global effect_origin, speed, min_used_freq, max_used_freq, noise_amount
     global fade, effect_mode, min_freq_amplitude, noise_smoothing, get_alpha_from_value
     global color_increase_factor, background_color, use_rainbow, color_overflow
-    global value_increase_factor, color_mode, value_color_bias, brightness
-    global color_palette, color_transition, last_config_loaded, gamma
+    global value_increase_factor, color_mode, value_color_bias, brightness, saturate
+    global color_palette, color_transition, last_config_loaded, gamma, saturate_threshold
     global color_wave_origin, color_wave_speed, color_wave_size, color_wave_inwards
-
+    global mean_value_buffer_size, mean_value_threshold
+    
     try:
         if not Path(CONFIG_FILE).exists():
             return
@@ -169,6 +177,10 @@ def load_params():
             max_used_freq = min_used_freq
 
         fade = data.get("fade", fade)
+        saturate = data.get("saturate", saturate)
+        saturate_threshold = data.get("saturateThreshold", saturate_threshold)
+        mean_value_buffer_size = data.get("meanValueBufferSize", mean_value_buffer_size)
+        mean_value_threshold = data.get("meanValueThreshold", mean_value_threshold)        
         effect_mode = data.get("effectMode", effect_mode)
         color_mode = data.get("colorMode", color_mode)
         min_freq_amplitude = data.get("minFreqAmplitude", min_freq_amplitude)
@@ -743,6 +755,7 @@ def process_audio_data(indata):
     global last_aprox_max_freq_eval
     global is_initial_frame
     global freq_buffer
+    global last_extra_ordinary_sample_buffer
 
     audio = indata[:, 0].astype(np.float32)
     fft = np.fft.rfft(audio, n=FFT_SIZE)
@@ -769,7 +782,10 @@ def process_audio_data(indata):
     elif current_time_ms - last_aprox_max_freq_eval > MAX_FREQ_AMPLITUDE_TTL_MS:
         last_aprox_max_freq *= (1.0 - MAX_FREQ_AMPLITUDE_DECAY_RATE)
 
-    if max_freq < last_aprox_max_freq - last_aprox_max_freq * PERCENT_DIFF_FROM_MAX_TO_BE_EXTRAORDINARY or not last_extra_ordinary_sample_buffer.items:
+    if last_extra_ordinary_sample_buffer.maxlen != mean_value_buffer_size:
+        last_extra_ordinary_sample_buffer = LimitedBuffer(mean_value_buffer_size)
+
+    if max_freq < last_aprox_max_freq - last_aprox_max_freq * mean_value_threshold or not last_extra_ordinary_sample_buffer.items:
         last_extra_ordinary_sample_buffer.add(max_freq)
 
     avg = np.mean(last_extra_ordinary_sample_buffer.items) if last_extra_ordinary_sample_buffer.items else 0
@@ -841,8 +857,8 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    if latest_bass_value > current_led_value and latest_bass_value > 0.3:
-        current_led_value = (current_led_value * 2 + latest_bass_value * 3) / 5
+    if latest_bass_value > current_led_value and latest_bass_value > saturate_threshold:
+        current_led_value = lerp(current_led_value, latest_bass_value, saturate)
     else:
         current_led_value *= fade
     
@@ -850,7 +866,7 @@ while running:
         strip,
         current_led_value * value_increase_factor
     )
-    
+
     if effect_mode == 6 and is_in_external_mode == False:
         is_in_external_mode = True
         clear_strip(strip)
@@ -879,4 +895,3 @@ running = False
 audio_thread.join()
 config_thread.join()
 GPIO.cleanup()
-
