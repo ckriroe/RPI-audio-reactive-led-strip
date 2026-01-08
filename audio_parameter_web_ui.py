@@ -43,6 +43,7 @@ DEFAULTS = {
     "effectMode": 0,
     "colorMode": 0,
     "minFreqAmplitude": 0.1,
+    "maxFreqAmplitude": 10.0,
     "colorIncreaseFactor": 1.0,
     "valueIncreaseFactor": 1.0,
     "colorTransition": 0.25,
@@ -131,6 +132,7 @@ def get_current_values_from_state():
         "effectMode": eff_mode_id,
         "colorMode": col_mode_id,
         "minFreqAmplitude": st.session_state.minFreqAmplitude,
+        "maxFreqAmplitude": st.session_state.maxFreqAmplitude,
         "colorIncreaseFactor": st.session_state.colorIncreaseFactor,
         "valueIncreaseFactor": st.session_state.valueIncreaseFactor,
         "colorTransition": st.session_state.colorTransition,
@@ -165,6 +167,7 @@ def update_session_state_from_preset(preset_data):
     st.session_state.meanValueBufferSize = vals.get("meanValueBufferSize", DEFAULTS["meanValueBufferSize"])
     st.session_state.meanValueThreshold = vals.get("meanValueThreshold", DEFAULTS["meanValueThreshold"])
     st.session_state.minFreqAmplitude = vals.get("minFreqAmplitude", DEFAULTS["minFreqAmplitude"])
+    st.session_state.maxFreqAmplitude = vals.get("maxFreqAmplitude", DEFAULTS["maxFreqAmplitude"])
     st.session_state.colorIncreaseFactor = vals.get("colorIncreaseFactor", DEFAULTS["colorIncreaseFactor"])
     st.session_state.valueIncreaseFactor = vals.get("valueIncreaseFactor", DEFAULTS["valueIncreaseFactor"])
     st.session_state.colorTransition = vals.get("colorTransition", DEFAULTS["colorTransition"])
@@ -325,7 +328,8 @@ st.slider("Color saturate", 0.01, 1.0, step=0.01, key="saturate", on_change=save
 st.slider("Saturate threshold", 0.0, 1.0, step=0.01, key="saturateThreshold", on_change=save_params)
 st.slider("Mean value buffer size", 1, 100, step=1, key="meanValueBufferSize", on_change=save_params)
 st.slider("Mean value threshold", 0.01, 1.0, step=0.01, key="meanValueThreshold", on_change=save_params)
-st.slider("Min. volume", 0.0, 50.0, key="minFreqAmplitude", on_change=save_params)
+st.slider("Min. volume", 0.0, 50.0, step=0.01, key="minFreqAmplitude", on_change=save_params)
+st.slider("Max. volume", 0.0, 50.0, step=0.01, key="maxFreqAmplitude", on_change=save_params)
 st.slider("Intensity increase", 0.1, 10.0, key="valueIncreaseFactor", on_change=save_params)
 
 st.divider()

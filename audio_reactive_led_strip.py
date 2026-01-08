@@ -111,6 +111,7 @@ last_extra_ordinary_sample_buffer = LimitedBuffer(mean_value_buffer_size)
 effect_mode = 0
 color_mode = 0
 min_freq_amplitude = 0.1
+max_freq_amplitude = 10.0
 color_increase_factor = 1.0
 value_increase_factor = 1.0
 value_color_bias = 0.0
@@ -152,7 +153,7 @@ def load_params():
     global value_increase_factor, color_mode, value_color_bias, brightness, saturate
     global color_palette, color_transition, last_config_loaded, gamma, saturate_threshold
     global color_wave_origin, color_wave_speed, color_wave_size, color_wave_inwards
-    global mean_value_buffer_size, mean_value_threshold
+    global mean_value_buffer_size, mean_value_threshold, max_freq_amplitude
     
     try:
         if not Path(CONFIG_FILE).exists():
@@ -184,6 +185,7 @@ def load_params():
         effect_mode = data.get("effectMode", effect_mode)
         color_mode = data.get("colorMode", color_mode)
         min_freq_amplitude = data.get("minFreqAmplitude", min_freq_amplitude)
+        max_freq_amplitude = data.get("maxFreqAmplitude", max_freq_amplitude)
         color_increase_factor = data.get("colorIncreaseFactor", color_increase_factor)
         value_increase_factor = data.get("valueIncreaseFactor", value_increase_factor)
         value_color_bias = data.get("valueColorBias", value_color_bias)
@@ -486,11 +488,7 @@ def get_spectrum_led_state(prev_strip: list[LedPixel]):
 
     if bin_count == 0:
         return [LedPixel(0.0, background_color) for _ in range(n)]
-
-    max_amp = float(bins.max()) if hasattr(bins, "max") else max(bins)
-    if max_amp == 0:
-        max_amp = 1.0
-
+    
     max_dist = max(center, (n - 1) - center)
 
     new_strip = []
@@ -507,11 +505,27 @@ def get_spectrum_led_state(prev_strip: list[LedPixel]):
             t = bin_pos - b0
             amp = (1 - t) * float(bins[b0]) + t * float(bins[b1])
 
+        if amp > max_freq_amplitude:
+            amp = max_freq_amplitude
+            
+        if amp < min_freq_amplitude:
+            amp = 0.0
+            
         amp *= value_increase_factor
-        value = amp / max_amp
-        value = max(0.0, min(1.0, value))
+        
+        if max_freq_amplitude == 0.0:
+            value = 0.0
+        else:
+            value = amp / max_freq_amplitude
 
-        new_strip.append(LedPixel(lerp(prev_strip[i].value, value, 1.0 - fade), (0, 0, 0)))
+        value = max(0.0, min(1.0, value))
+        
+        if value > prev_strip[i].value and value > saturate_threshold:
+            value = lerp(prev_strip[i].value, value, saturate)
+        else:
+            value = prev_strip[i].value * fade
+
+        new_strip.append(LedPixel(value, (0, 0, 0)))
 
     return new_strip
 
@@ -789,6 +803,9 @@ def process_audio_data(indata):
         last_extra_ordinary_sample_buffer.add(max_freq)
 
     avg = np.mean(last_extra_ordinary_sample_buffer.items) if last_extra_ordinary_sample_buffer.items else 0
+
+    if max_freq > max_freq_amplitude:
+        max_freq = max_freq_amplitude
 
     if max_freq > min_freq_amplitude:
         adjusted_freq_value = max_freq
