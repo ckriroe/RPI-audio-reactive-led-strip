@@ -337,7 +337,7 @@ if get_effect_mode_id() in (2, 4):
     st.slider("Effekt Geschwindigkeit", 1, 600, key="speed", on_change=save_params)
 
 st.slider("Min. Lautstärke", 0.0, 50.0, step=0.01, key="minFreqAmplitude", on_change=save_params)
-st.slider("Max. volume", 0.0, 50.0, step=0.01, key="maxFreqAmplitude", on_change=save_params)
+st.slider("Max. Lautstärke", 0.0, 50.0, step=0.01, key="maxFreqAmplitude", on_change=save_params)
 st.slider("Effekt Verstärkung", 0.1, 10.0, key="valueIncreaseFactor", on_change=save_params)
 st.slider("Verblassung", 0.001, 0.999, step=0.001, key="fade", on_change=save_params)
 st.slider("Sättigung", 0.01, 1.0, step=0.01, key="saturate", on_change=save_params)
