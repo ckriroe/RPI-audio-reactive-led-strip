@@ -57,7 +57,6 @@ DATA_PIN = board.D12
 # Test display settings
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 200
-LED_SPACING = int(SCREEN_WIDTH / LED_COUNT)
 LED_RADIUS = 2
 
 # Audio processing constants
@@ -72,14 +71,6 @@ MAX_FREQ_AMPLITUDE_PROLONGER_THRESHOLD_PERCENT = 0.03
 MAX_FREQ_AMPLITUDE_DECAY_RATE = 0.003
 PERCENT_DIFF_FROM_MAX_TO_BE_EXTRAORDINARY = 0.30
 MIN_SANITIZED_VALUE = 0.01
-
-led_strip = neopixel.NeoPixel(
-    DATA_PIN,
-    LED_COUNT,
-    brightness=BRIGHTNESS,
-    auto_write=False,
-    pixel_order=neopixel.GRB
-)
 
 # --------------------------- GLOBAL STATE --------------------------
 
@@ -125,8 +116,13 @@ noise_amount = 0.00
 noise_smoothing = 1.00
 color_transition = 0.25
 brightness = 1.0
+led_count = 10
 gamma = 1.0
 color_palette: list[ColorThreshold] = []
+
+strip = [LedPixel(0.0, (0, 0, 0)) for _ in range(led_count)]
+led_noise = [0.0] * led_count
+led_strip = None
 
 # --------------------------- FUNCTIONS -----------------------------
 
@@ -150,10 +146,10 @@ def load_params():
     global effect_origin, speed, min_used_freq, max_used_freq, noise_amount
     global fade, effect_mode, min_freq_amplitude, noise_smoothing, get_alpha_from_value
     global color_increase_factor, background_color, use_rainbow, color_overflow
-    global value_increase_factor, color_mode, value_color_bias, brightness, saturate
+    global value_increase_factor, color_mode, value_color_bias, brightness, saturate, led_strip
     global color_palette, color_transition, last_config_loaded, gamma, saturate_threshold
-    global color_wave_origin, color_wave_speed, color_wave_size, color_wave_inwards
-    global mean_value_buffer_size, mean_value_threshold, max_freq_amplitude
+    global color_wave_origin, color_wave_speed, color_wave_size, color_wave_inwards, strip
+    global mean_value_buffer_size, mean_value_threshold, max_freq_amplitude, led_count, led_noise
     
     try:
         if not Path(CONFIG_FILE).exists():
@@ -168,8 +164,27 @@ def load_params():
         with open(CONFIG_FILE) as f:
             data = json.load(f)
 
+        new_led_count = data.get("ledCount", led_count)
+        if led_count != new_led_count:
+            led_count = new_led_count
+            led_noise = [0.0] * led_count
+            strip = [LedPixel(0.0, (0, 0, 0)) for _ in range(led_count)]
+            
+            if led_strip is not None:
+                led_strip.fill((0, 0, 0))
+                led_strip.show()
+                led_strip.deinit()
+
+            led_strip = neopixel.NeoPixel(
+                DATA_PIN,
+                led_count,
+                brightness=BRIGHTNESS,
+                auto_write=False,
+                pixel_order=neopixel.GRB
+            )
+        
         use_rainbow = data.get("useRainbow", use_rainbow)
-        effect_origin = data.get("effectOrigin", effect_origin)
+        effect_origin = min(led_count - 1, data.get("effectOrigin", effect_origin))
         speed = data.get("speed", speed)
         min_used_freq = data.get("minFreq", min_used_freq)
         max_used_freq = data.get("maxFreq", max_used_freq)
@@ -193,7 +208,7 @@ def load_params():
         color_overflow = data.get("colorOverflow", color_overflow)
         color_transition = data.get("colorTransition", color_transition)
         
-        color_wave_origin = data.get("colorWaveOrigin", color_wave_origin)
+        color_wave_origin = min(led_count - 1, data.get("colorWaveOrigin", color_wave_origin))
         color_wave_speed = data.get("colorWaveSpeed", color_wave_speed)
         color_wave_size = data.get("colorWaveSize", color_wave_size)
         color_wave_inwards = data.get("colorWaveInwards", color_wave_inwards)
@@ -201,7 +216,7 @@ def load_params():
         noise_smoothing = data.get("noiseSmoothing", noise_smoothing)
         brightness = data.get("brightness", brightness)
         gamma = data.get("gamma", gamma)
-
+        
         color_palette = []
 
         raw_colors = data.get("colors", [])
@@ -403,7 +418,7 @@ def get_wave_mode_led_state(prev_strip: list[LedPixel], new_value: float):
     steps = int(wave_distance_accumulator)
     wave_distance_accumulator -= steps
 
-    if steps == 0:
+    if steps == 0 or center >= len(new_strip):
         return new_strip
     
     for i in range(0, center + 1):
@@ -581,8 +596,9 @@ def get_led_state(prev_strip: list[LedPixel], new_value: float):
 
 def render_led_state_pygame(new_strip, screen_to_draw):
     screen_to_draw.fill((1, 1, 1))
+    spacing = int(SCREEN_WIDTH / led_count)
     for i, led in enumerate(new_strip):
-        x = i * LED_SPACING + LED_SPACING / 2
+        x = i * spacing + spacing / 2
         y = SCREEN_HEIGHT // 2
         pygame.draw.circle(
             screen_to_draw,
@@ -594,12 +610,15 @@ def render_led_state_pygame(new_strip, screen_to_draw):
     pygame.display.flip()
 
 def write_pixels(strip_to_display: list[LedPixel]):
+    if led_strip is None:
+        return
+    
     for i, px in enumerate(strip_to_display):
         if (i < len(led_strip)):
             led_strip[i] = px.color
+            
     led_strip.show()
 
-led_noise = [0.0] * LED_COUNT
 def apply_smooth_noise(
     value: float,
     idx: int
@@ -609,6 +628,9 @@ def apply_smooth_noise(
         return value
 
     target = random.uniform(-noise_amount, noise_amount)
+    if idx >= len(led_noise):
+        return value
+    
     led_noise[idx] = (
         led_noise[idx] * noise_smoothing +
         target * (1.0 - noise_smoothing)
@@ -863,7 +885,6 @@ audio_thread.start()
 config_thread = threading.Thread(target=config_thread, daemon=True)
 config_thread.start()
 
-strip = [LedPixel(0.0, (0, 0, 0)) for _ in range(LED_COUNT)]
 current_led_value = 0.0
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(EXTERNAL_MODE_RELAY_GPIO, GPIO.OUT)
