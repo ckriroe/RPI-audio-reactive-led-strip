@@ -48,7 +48,7 @@ DISPLAY_MODE = 0
 
 # Led constants
 LED_COUNT = 278
-FPS = 60
+FPS = 55
 MAX_SPEED = 600
 BRIGHTNESS = 1.0 # 0.0 – 1.0
 EXTERNAL_MODE_RELAY_GPIO = 5
@@ -923,8 +923,8 @@ while running:
     color_strip(strip)
     color_correct_strip(strip)
     
-    render_led_strip(strip, screen)
     clock.tick(FPS)
+    render_led_strip(strip, screen)
 
 if DISPLAY_MODE == 0:
     pygame.quit()
