@@ -37,6 +37,10 @@ DEFAULTS = {
     "minFreq": 0,
     "maxFreq": 180,
     "fade": 0.6,
+    "fadeOverTime": 0.0,
+    "bouncyWave": False,
+    "staticSpectrum": False,
+    "spectrumSections": 10,
     "saturate": 0.6,
     "saturateThreshold": 0.3,
     "meanValueBufferSize": 20,
@@ -127,6 +131,10 @@ def get_current_values_from_state():
         "minFreq": st.session_state.minFreq,
         "maxFreq": st.session_state.maxFreq,
         "fade": st.session_state.fade,
+        "fadeOverTime": st.session_state.fadeOverTime,
+        "staticSpectrum": st.session_state.staticSpectrum,
+        "spectrumSections": st.session_state.spectrumSections,
+        "bouncyWave": st.session_state.bouncyWave,
         "saturate": st.session_state.saturate,
         "saturateThreshold": st.session_state.saturateThreshold,
         "meanValueBufferSize": st.session_state.meanValueBufferSize,
@@ -165,6 +173,10 @@ def update_session_state_from_preset(preset_data):
     st.session_state.minFreq = vals.get("minFreq", DEFAULTS["minFreq"])
     st.session_state.maxFreq = vals.get("maxFreq", DEFAULTS["maxFreq"])
     st.session_state.fade = vals.get("fade", DEFAULTS["fade"])
+    st.session_state.fadeOverTime = vals.get("fadeOverTime", DEFAULTS["fadeOverTime"])
+    st.session_state.bouncyWave = vals.get("bouncyWave", DEFAULTS["bouncyWave"])
+    st.session_state.staticSpectrum = vals.get("staticSpectrum", DEFAULTS["staticSpectrum"])
+    st.session_state.spectrumSections = vals.get("spectrumSections", DEFAULTS["spectrumSections"])
     st.session_state.saturate = vals.get("saturate", DEFAULTS["saturate"])
     st.session_state.saturateThreshold = vals.get("saturateThreshold", DEFAULTS["saturateThreshold"])
     st.session_state.meanValueBufferSize = vals.get("meanValueBufferSize", DEFAULTS["meanValueBufferSize"])
@@ -340,6 +352,19 @@ st.slider("Min. Lautstärke", 0.0, 50.0, step=0.01, key="minFreqAmplitude", on_c
 st.slider("Max. Lautstärke", 0.0, 50.0, step=0.01, key="maxFreqAmplitude", on_change=save_params)
 st.slider("Effekt Verstärkung", 0.1, 10.0, key="valueIncreaseFactor", on_change=save_params)
 st.slider("Verblassung", 0.001, 0.999, step=0.001, key="fade", on_change=save_params)
+
+st.session_state.fadeOverTime = curr_preset.get("fadeOverTime")
+st.session_state.bouncyWave = curr_preset.get("bouncyWave")
+if get_effect_mode_id() == 2:
+    st.slider("Verblassung nach Zeit", -0.999, 0.999, step=0.001, key="fadeOverTime", on_change=save_params)
+    st.toggle("Abprallen", key="bouncyWave", on_change=save_params)
+
+st.session_state.staticSpectrum = curr_preset.get("staticSpectrum")
+st.session_state.spectrumSections = curr_preset.get("spectrumSections")
+if get_effect_mode_id() == 3:
+    st.toggle("Statisches Spektrum", key="staticSpectrum", on_change=save_params)
+    st.slider("Spektrum Sektionen", 1, 50, step=1, key="spectrumSections", on_change=save_params)
+
 st.slider("Sättigung", 0.01, 1.0, step=0.01, key="saturate", on_change=save_params)
 st.slider("Sättigungs Grenzwert", 0.0, 1.0, step=0.01, key="saturateThreshold", on_change=save_params)
 st.slider("Vergleichswert Puffergröße", 1, 100, step=1, key="meanValueBufferSize", on_change=save_params)
