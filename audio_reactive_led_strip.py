@@ -48,7 +48,7 @@ DISPLAY_MODE = 0
 
 # Led constants
 LED_COUNT = 278
-FPS = 40
+FPS = 55
 MAX_SPEED = 600
 BRIGHTNESS = 1.0 # 0.0 – 1.0
 EXTERNAL_MODE_RELAY_GPIO = 5
@@ -71,6 +71,7 @@ MAX_FREQ_AMPLITUDE_PROLONGER_THRESHOLD_PERCENT = 0.03
 MAX_FREQ_AMPLITUDE_DECAY_RATE = 0.003
 PERCENT_DIFF_FROM_MAX_TO_BE_EXTRAORDINARY = 0.30
 MIN_SANITIZED_VALUE = 0.01
+MAX_BOUNCE_LAYERS = 1
 
 # --------------------------- GLOBAL STATE --------------------------
 
@@ -95,6 +96,9 @@ min_used_freq = 0
 max_used_freq = 180
 fade = 0.6
 fade_over_time = 0.0
+bouncy_wave = False
+static_spectrum = True
+spectrum_sections = 10
 saturate = 0.6
 saturate_threshold = 0.3
 mean_value_buffer_size = 20
@@ -145,12 +149,13 @@ def clamp(v, lo=0.0, hi=1.0):
 last_config_loaded = 0.0
 def load_params():
     global effect_origin, speed, min_used_freq, max_used_freq, noise_amount, fade_over_time
-    global fade, effect_mode, min_freq_amplitude, noise_smoothing, get_alpha_from_value
+    global fade, effect_mode, min_freq_amplitude, noise_smoothing, get_alpha_from_value, bouncy_wave
     global color_increase_factor, background_color, use_rainbow, color_overflow, output_freq_data
     global value_increase_factor, color_mode, value_color_bias, brightness, saturate, led_strip
     global color_palette, color_transition, last_config_loaded, gamma, saturate_threshold
     global color_wave_origin, color_wave_speed, color_wave_size, color_wave_inwards, strip
     global mean_value_buffer_size, mean_value_threshold, max_freq_amplitude, led_count, led_noise
+    global static_spectrum, spectrum_sections
     
     try:
         if not Path(CONFIG_FILE).exists():
@@ -203,6 +208,9 @@ def load_params():
 
         fade = data.get("fade", fade)
         fade_over_time = data.get("fadeOverTime", fade_over_time) / 1000.0
+        bouncy_wave = data.get("bouncyWave", bouncy_wave)
+        static_spectrum = data.get("staticSpectrum", static_spectrum)
+        spectrum_sections = data.get("spectrumSections", spectrum_sections)
         saturate = data.get("saturate", saturate)
         saturate_threshold = data.get("saturateThreshold", saturate_threshold)
         mean_value_buffer_size = data.get("meanValueBufferSize", mean_value_buffer_size)
@@ -418,13 +426,16 @@ def non_audio_value_to_color(value: float, audio_value: float) -> tuple[int, int
         return lerp_color(lerp_color(background_entry.color, color, 0.5), color, t)
 
 wave_distance_accumulator = 0.0
-BOUNCE_LAYERS = 1
 prev_wave_strip = []
 def get_wave_mode_led_state(prev_strip: list[LedPixel], new_value: float):
     global wave_distance_accumulator, prev_wave_strip
 
-    n = len(prev_strip) * (1 + BOUNCE_LAYERS * 2)
-    center = effect_origin + len(prev_strip) * BOUNCE_LAYERS
+    bounce_layers = MAX_BOUNCE_LAYERS
+    if bouncy_wave == False:
+        bounce_layers = 0
+
+    n = len(prev_strip) * (1 + bounce_layers * 2)
+    center = effect_origin + len(prev_strip) * bounce_layers
     wave_distance_accumulator += speed / FPS
     steps = int(wave_distance_accumulator)
     wave_distance_accumulator -= steps
@@ -432,8 +443,8 @@ def get_wave_mode_led_state(prev_strip: list[LedPixel], new_value: float):
     if steps == 0 or center >= n:
         return prev_strip
    
-   if len(prev_wave_strip) != n:
-        prev_wave_strip = [LedPixel(p.value, (0, 0, 0))] * n
+    if len(prev_wave_strip) != n:
+        prev_wave_strip = [LedPixel(0.0, (0, 0, 0)) for _ in range(n)]
         
     new_strip = [LedPixel(p.value, (0, 0, 0)) for p in prev_wave_strip]
     for i in range(0, center + 1):
@@ -483,8 +494,42 @@ def get_wave_mode_led_state(prev_strip: list[LedPixel], new_value: float):
             new_strip[pos] = LedPixel(v, (0, 0, 0))
 
     new_strip[center] = LedPixel(new_value, (0, 0, 0))
+    new_strip = fade_center_based_strip(new_strip, center)
     prev_wave_strip = new_strip
-    return new_strip
+    if bounce_layers == 0:
+        return new_strip
+    
+    bll = len(prev_strip)
+    bounced_new_strip = [LedPixel(0.0, (0, 0, 0)) for _ in range(bll)]
+    
+    for i in range(len(bounced_new_strip)):
+        base_val = new_strip[i + bounce_layers * bll].value
+        for bl in range(bounce_layers):
+            is_bl_reverse = bl % 2 == 0
+            
+            left_bl_val_index = ((bounce_layers - 1) - bl) * bll
+            if is_bl_reverse:
+                left_bl_val_index = (left_bl_val_index + (bll - 1)) - i
+            else:
+                left_bl_val_index += i
+            
+            right_bl_val_index = (bounce_layers + bl + 1) * bll
+            if is_bl_reverse:
+                right_bl_val_index = (right_bl_val_index + (bll - 1)) - i
+            else:
+                right_bl_val_index += i
+               
+            left_bl_val = new_strip[left_bl_val_index].value
+            right_bl_val = new_strip[right_bl_val_index].value
+            if left_bl_val > base_val:
+                base_val = left_bl_val
+                
+            if right_bl_val > base_val:
+                base_val = right_bl_val                
+        
+        bounced_new_strip[i].value = base_val
+    
+    return bounced_new_strip
 
 def get_pulsate_led_state(prev_strip: list[LedPixel], new_value: float):
     return [LedPixel(new_value, (0, 0, 0)) for p in prev_strip]
@@ -521,7 +566,7 @@ def get_spectrum_led_state(prev_strip: list[LedPixel]):
         return [LedPixel(0.0, background_color) for _ in range(n)]
     
     max_dist = max(center, (n - 1) - center)
-
+    section_length = len(bins) / spectrum_sections
     new_strip = []
 
     for i in range(n):
@@ -529,6 +574,15 @@ def get_spectrum_led_state(prev_strip: list[LedPixel]):
 
         if bin_count == 1:
             amp = float(bins[0])
+        elif static_spectrum:
+            bin_pos = (dist / max_dist) * (bin_count - 1)
+            section = int(bin_pos / section_length)
+            start_bin = max(0, int(section * len(bins) // spectrum_sections))
+            end_bin = min(len(bins) - 1, int((section + 1) * len(bins) // spectrum_sections))
+            if start_bin == end_bin:
+                amp = bins[start_bin]
+            else:
+                amp = max(bins[start_bin:end_bin])
         else:
             bin_pos = (dist / max_dist) * (bin_count - 1)
             b0 = int(bin_pos)
@@ -594,9 +648,9 @@ def get_static_burst_led_state(prev_strip: list[LedPixel]):
         
     return new_strip
     
-def fade_center_based_strip(strip_to_fade: list[LedPixel]):
+def fade_center_based_strip(strip_to_fade: list[LedPixel], center = effect_origin):
     for i in range(len(strip_to_fade)):
-        dist_to_center = abs(effect_origin - i)
+        dist_to_center = abs(center - i)
         strip_to_fade[i].value *= min(10.0, max(0.0, (1.0 - (dist_to_center * fade_over_time))))
     return strip_to_fade
 
@@ -604,11 +658,11 @@ def get_led_state(prev_strip: list[LedPixel], new_value: float):
     if effect_mode == 0:
         return get_pulsate_led_state(prev_strip, new_value)
     elif effect_mode == 1:
-        return fade_center_based_strip(get_line_led_state(prev_strip, new_value))
-    elif effect_mode == 2:    
-        return fade_center_based_strip(get_wave_mode_led_state(prev_strip, new_value))
+        return get_line_led_state(prev_strip, new_value)
+    elif effect_mode == 2:
+        return get_wave_mode_led_state(prev_strip, new_value)
     elif effect_mode == 3:
-        return fade_center_based_strip(get_spectrum_led_state(prev_strip))
+        return get_spectrum_led_state(prev_strip)
     elif effect_mode == 4:
         return get_random_burst_led_state(prev_strip, new_value)
     elif effect_mode == 5:
@@ -944,11 +998,8 @@ while running:
     sanitize_values(strip)
     color_strip(strip)
     color_correct_strip(strip)
-    
-    now = time.perf_counter()
-    clock.tick(FPS)
-    elapsed_ms = (time.perf_counter()-now) * 1000
 
+    clock.tick(FPS)
     render_led_strip(strip, screen)
 
 if DISPLAY_MODE == 0:
