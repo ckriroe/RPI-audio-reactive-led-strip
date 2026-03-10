@@ -33,7 +33,7 @@ DEFAULTS = {
     "ledCount": 300,
     "useRainbow": False,
     "effectOrigin": 150,
-    "speed": 300,
+    "speed": 100,
     "minFreq": 0,
     "maxFreq": 180,
     "fade": 0.6,
@@ -344,20 +344,14 @@ st.session_state.effectOrigin = curr_preset.get("effectOrigin")
 if get_effect_mode_id() in (1, 2, 3) or get_color_mode_id() == 2:
     st.number_input("Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="effectOrigin", on_change=save_params)
 
+st.slider("Min. Lautstärke", 0.0, 50.0, step=0.01, key="minFreqAmplitude", on_change=save_params)
+st.slider("Max. Lautstärke", 0.0, 50.0, step=0.01, key="maxFreqAmplitude", on_change=save_params)
+
 st.session_state.speed = curr_preset.get("speed")
 if get_effect_mode_id() in (2, 4):
     st.slider("Effekt Geschwindigkeit", 1, 600, key="speed", on_change=save_params)
 
-st.slider("Min. Lautstärke", 0.0, 50.0, step=0.01, key="minFreqAmplitude", on_change=save_params)
-st.slider("Max. Lautstärke", 0.0, 50.0, step=0.01, key="maxFreqAmplitude", on_change=save_params)
 st.slider("Effekt Verstärkung", 0.1, 10.0, key="valueIncreaseFactor", on_change=save_params)
-st.slider("Verblassung", 0.001, 0.999, step=0.001, key="fade", on_change=save_params)
-
-st.session_state.fadeOverTime = curr_preset.get("fadeOverTime")
-st.session_state.bouncyWave = curr_preset.get("bouncyWave")
-if get_effect_mode_id() == 2:
-    st.slider("Verblassung nach Zeit", -0.999, 0.999, step=0.001, key="fadeOverTime", on_change=save_params)
-    st.toggle("Abprallen", key="bouncyWave", on_change=save_params)
 
 st.session_state.staticSpectrum = curr_preset.get("staticSpectrum")
 st.session_state.spectrumSections = curr_preset.get("spectrumSections")
@@ -365,6 +359,13 @@ if get_effect_mode_id() == 3:
     st.toggle("Statisches Spektrum", key="staticSpectrum", on_change=save_params)
     st.slider("Spektrum Sektionen", 1, 50, step=1, key="spectrumSections", on_change=save_params)
 
+st.session_state.bouncyWave = curr_preset.get("bouncyWave")
+st.session_state.fadeOverTime = curr_preset.get("fadeOverTime")
+if get_effect_mode_id() == 2:
+    st.toggle("Abprallen", key="bouncyWave", on_change=save_params)
+    st.slider("Verblassung nach Zeit", -0.999, 0.999, step=0.001, key="fadeOverTime", on_change=save_params)
+
+st.slider("Verblassung", 0.001, 0.999, step=0.001, key="fade", on_change=save_params)
 st.slider("Sättigung", 0.01, 1.0, step=0.01, key="saturate", on_change=save_params)
 st.slider("Sättigungs Grenzwert", 0.0, 1.0, step=0.01, key="saturateThreshold", on_change=save_params)
 st.slider("Vergleichswert Puffergröße", 1, 100, step=1, key="meanValueBufferSize", on_change=save_params)
@@ -378,7 +379,7 @@ st.subheader("Farben")
 
 st.slider("Helligkeit", 0.0, 1.0, step=0.01, key="brightness", on_change=save_params)
 st.slider("Gamma", 0.0, 5.0, step=0.01, key="gamma", on_change=save_params)
-st.slider("Farb Verstärkung", 0.1, 20.0, key="colorIncreaseFactor", on_change=save_params)
+st.slider("Farbverstärkung", 0.1, 20.0, key="colorIncreaseFactor", on_change=save_params)
 st.slider("Farbverlauf", 0.00, 0.50, key="colorTransition", on_change=save_params)
 
 st.session_state.valueColorBias = curr_preset.get("valueColorBias")
