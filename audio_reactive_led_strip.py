@@ -85,10 +85,6 @@ latest_bass_value = 0
 running = True
 
 # Loaded settings
-primary_color = (255, 0, 0)
-secondary_color = (0, 0, 255)
-terriary_color = (0, 255, 0)
-background_color = (0, 0, 0)
 use_rainbow = False
 effect_origin = 139
 speed = 300
@@ -104,6 +100,7 @@ saturate_threshold = 0.3
 mean_value_buffer_size = 20
 mean_value_threshold = 0.3
 last_extra_ordinary_sample_buffer = LimitedBuffer(mean_value_buffer_size)
+audio_mode = 0
 effect_mode = 0
 color_mode = 0
 min_freq_amplitude = 0.1
@@ -155,7 +152,7 @@ def load_params():
     global color_palette, color_transition, last_config_loaded, gamma, saturate_threshold
     global color_wave_origin, color_wave_speed, color_wave_size, color_wave_inwards, strip
     global mean_value_buffer_size, mean_value_threshold, max_freq_amplitude, led_count, led_noise
-    global static_spectrum, spectrum_sections
+    global static_spectrum, spectrum_sections, audio_mode
     
     try:
         if not Path(CONFIG_FILE).exists():
@@ -214,7 +211,8 @@ def load_params():
         saturate = data.get("saturate", saturate)
         saturate_threshold = data.get("saturateThreshold", saturate_threshold)
         mean_value_buffer_size = data.get("meanValueBufferSize", mean_value_buffer_size)
-        mean_value_threshold = data.get("meanValueThreshold", mean_value_threshold)        
+        mean_value_threshold = data.get("meanValueThreshold", mean_value_threshold)
+        audio_mode = data.get("audioMode", audio_mode)
         effect_mode = data.get("effectMode", effect_mode)
         color_mode = data.get("colorMode", color_mode)
         min_freq_amplitude = data.get("minFreqAmplitude", min_freq_amplitude)
@@ -882,6 +880,14 @@ def process_audio_data(indata):
         output_freq_data = False
     
     max_freq = np.max(freq_buffer)
+    
+    if audio_mode == 1:
+        diff = max_freq_amplitude - min_freq_amplitude
+        if diff <= 0.0:
+            return 0.0
+                
+        return max(0.0, min(1.0, (max_freq - min_freq_amplitude) / diff))
+    
     current_time_ms = int(time.time() * 1000)
 
     if max_freq > last_aprox_max_freq:
@@ -937,7 +943,7 @@ def render_led_strip(strip, screen):
 
 def color_correct_strip(strip_to_correct: list[LedPixel]):
     for i, led in enumerate(strip_to_correct):
-        led.color = (gamma_correct(led.color[0] * brightness), gamma_correct(led.color[1] * brightness), gamma_correct(led.color[2] * brightness))
+        led.color = (min(255.0, gamma_correct(led.color[0] * brightness)), min(255.0, gamma_correct(led.color[1] * brightness)), min(255.0, gamma_correct(led.color[2] * brightness)))
         
 def gamma_correct(value):
     return int((value / 255.0) ** gamma * 255.0 + 0.5)

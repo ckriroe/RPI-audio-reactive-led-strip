@@ -6,6 +6,11 @@ import copy
 CONFIG_FILE = "audio_params.json"
 PRESETS_FILE = "presets.json"
 
+AUDIO_MODES = {
+    0: "Dynamisch",
+    1: "Simple"
+}
+
 EFFECT_MODES = {
     0: "Pulsieren",
     1: "Linie",
@@ -45,6 +50,7 @@ DEFAULTS = {
     "saturateThreshold": 0.3,
     "meanValueBufferSize": 20,
     "meanValueThreshold": 0.3,
+    "audioMode": 0,
     "effectMode": 0,
     "colorMode": 0,
     "minFreqAmplitude": 0.1,
@@ -118,7 +124,8 @@ def sync_widgets_to_colors_list():
 
 def get_current_values_from_state():
     sync_widgets_to_colors_list()
-    
+   
+    aud_mode_id = next(k for k, v in AUDIO_MODES.items() if v == st.session_state.audioMode) 
     eff_mode_id = next(k for k, v in EFFECT_MODES.items() if v == st.session_state.effectMode)
     col_mode_id = next(k for k, v in COLOR_MODES.items() if v == st.session_state.colorMode)
 
@@ -139,6 +146,7 @@ def get_current_values_from_state():
         "saturateThreshold": st.session_state.saturateThreshold,
         "meanValueBufferSize": st.session_state.meanValueBufferSize,
         "meanValueThreshold": st.session_state.meanValueThreshold,
+        "audioMode": aud_mode_id,
         "effectMode": eff_mode_id,
         "colorMode": col_mode_id,
         "minFreqAmplitude": st.session_state.minFreqAmplitude,
@@ -198,8 +206,10 @@ def update_session_state_from_preset(preset_data):
     st.session_state.brightness = vals.get("brightness", DEFAULTS["brightness"])
     st.session_state.gamma = vals.get("gamma", DEFAULTS["gamma"])
 
+    a_mode = vals.get("audioMode", DEFAULTS["audioMode"])
     e_mode = vals.get("effectMode", DEFAULTS["effectMode"])
     c_mode = vals.get("colorMode", DEFAULTS["colorMode"])
+    st.session_state.audioMode = AUDIO_MODES.get(a_mode, AUDIO_MODES[0])
     st.session_state.effectMode = EFFECT_MODES.get(e_mode, EFFECT_MODES[0])
     st.session_state.colorMode = COLOR_MODES.get(c_mode, COLOR_MODES[0])
     st.session_state.rename_input = preset_data["name"]
@@ -317,11 +327,10 @@ with st.expander("📂 Voreinstellungs Verwaltung", expanded=True):
         st.button("➕ Neu (Kopieren)", on_click=cb_create_preset)
         st.button("🗑️ Löschen", disabled=(st.session_state.preset_index == 0), on_click=cb_delete_preset)
 
-st.divider()
-st.subheader("Effekt")
-
 curr_preset = st.session_state.presets[st.session_state.preset_index]["values"]
 
+def get_audio_mode_id():
+    return next(k for k, v in AUDIO_MODES.items() if v == st.session_state.audioMode)
 def get_effect_mode_id():
     return next(k for k, v in EFFECT_MODES.items() if v == st.session_state.effectMode)
 def get_color_mode_id():
@@ -337,15 +346,32 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+st.divider()
+st.subheader("Audio")
+
+st.selectbox("Audiomodus", list(AUDIO_MODES.values()), key="audioMode", on_change=save_params)
+st.slider("Min. Lautstärke", 0.0, 50.0, step=0.01, key="minFreqAmplitude", on_change=save_params)
+st.slider("Max. Lautstärke", 0.0, 50.0, step=0.01, key="maxFreqAmplitude", on_change=save_params)
+
+st.session_state.meanValueBufferSize = curr_preset.get("meanValueBufferSize")
+st.session_state.meanValueThreshold = curr_preset.get("meanValueThreshold")
+
+if get_audio_mode_id() == 0:
+    st.slider("Vergleichswert Puffergröße", 1, 100, step=1, key="meanValueBufferSize", on_change=save_params)
+    st.slider("Vergleichswert Grenzwert", 0.01, 1.0, step=0.01, key="meanValueThreshold", on_change=save_params)
+
+st.number_input("Min. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="minFreq", on_change=save_params)
+st.number_input("Max. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="maxFreq", on_change=save_params)
+
+st.divider()
+st.subheader("Effekt")
+
 st.selectbox("Effektmodus", list(EFFECT_MODES.values()), key="effectMode", on_change=save_params)
-st.selectbox("Farbmodus", list(COLOR_MODES.values()), key="colorMode", on_change=save_params)
 
 st.session_state.effectOrigin = curr_preset.get("effectOrigin")
 if get_effect_mode_id() in (1, 2, 3) or get_color_mode_id() == 2:
     st.number_input("Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="effectOrigin", on_change=save_params)
 
-st.slider("Min. Lautstärke", 0.0, 50.0, step=0.01, key="minFreqAmplitude", on_change=save_params)
-st.slider("Max. Lautstärke", 0.0, 50.0, step=0.01, key="maxFreqAmplitude", on_change=save_params)
 
 st.session_state.speed = curr_preset.get("speed")
 if get_effect_mode_id() in (2, 4):
@@ -368,16 +394,12 @@ if get_effect_mode_id() == 2:
 st.slider("Verblassung", 0.001, 0.999, step=0.001, key="fade", on_change=save_params)
 st.slider("Sättigung", 0.01, 1.0, step=0.01, key="saturate", on_change=save_params)
 st.slider("Sättigungs Grenzwert", 0.0, 1.0, step=0.01, key="saturateThreshold", on_change=save_params)
-st.slider("Vergleichswert Puffergröße", 1, 100, step=1, key="meanValueBufferSize", on_change=save_params)
-st.slider("Vergleichswert Grenzwert", 0.01, 1.0, step=0.01, key="meanValueThreshold", on_change=save_params)
-st.number_input("Min. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="minFreq", on_change=save_params)
-st.number_input("Max. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="maxFreq", on_change=save_params)
 st.number_input("LED Anzahl", min_value=2, max_value=99999, step=1, format="%d", key="ledCount", on_change=save_params)
 
 st.divider()
 st.subheader("Farben")
-
-st.slider("Helligkeit", 0.0, 1.0, step=0.01, key="brightness", on_change=save_params)
+st.selectbox("Farbmodus", list(COLOR_MODES.values()), key="colorMode", on_change=save_params)
+st.slider("Helligkeit", 0.0, 5.0, step=0.01, key="brightness", on_change=save_params)
 st.slider("Gamma", 0.0, 5.0, step=0.01, key="gamma", on_change=save_params)
 st.slider("Farbverstärkung", 0.1, 20.0, key="colorIncreaseFactor", on_change=save_params)
 st.slider("Farbverlauf", 0.00, 0.50, key="colorTransition", on_change=save_params)
@@ -392,6 +414,7 @@ st.session_state.colorWaveOrigin = curr_preset.get("colorWaveOrigin")
 st.session_state.colorWaveSpeed = curr_preset.get("colorWaveSpeed")
 st.session_state.colorWaveSize = curr_preset.get("colorWaveSize")
 st.session_state.colorWaveInwards = curr_preset.get("colorWaveInwards")
+
 if get_color_mode_id() == 4:
     st.number_input("Farbwellen Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="colorWaveOrigin", on_change=save_params)
     st.slider("Farbwellen Geschwindigkeit", 1, 600, key="colorWaveSpeed", on_change=save_params)
