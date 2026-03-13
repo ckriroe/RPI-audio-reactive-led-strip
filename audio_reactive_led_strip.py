@@ -643,12 +643,20 @@ def get_random_burst_led_state(prev_strip: list[LedPixel], value: float):
 
     return new_strip
 
-def get_static_burst_led_state(prev_strip: list[LedPixel]):
+def get_static_asc_led_state(prev_strip: list[LedPixel]):
     new_strip = []
     
     for i, led in enumerate(prev_strip):
         percentage = i / (len(prev_strip) - 1)
         new_strip.append(LedPixel(percentage, (0, 0, 0)))
+        
+    return new_strip
+    
+def get_static_led_state(prev_strip: list[LedPixel]):
+    new_strip = []
+    
+    for i, led in enumerate(prev_strip):
+        new_strip.append(LedPixel(max(0.0, min(1.0, 1.0 * value_increase_factor)), (0, 0, 0)))
         
     return new_strip
     
@@ -670,7 +678,9 @@ def get_led_state(prev_strip: list[LedPixel], new_value: float):
     elif effect_mode == 4:
         return get_random_burst_led_state(prev_strip, new_value)
     elif effect_mode == 5:
-        return get_static_burst_led_state(prev_strip)
+        return get_static_asc_led_state(prev_strip)
+    elif effect_mode == 6:
+        return get_static_led_state(prev_strip)
     else:
         return prev_strip
 
@@ -1008,13 +1018,13 @@ while running:
     else:
         current_led_value *= fade
    
-    if effect_mode == 6 and is_in_external_mode == False:
+    if effect_mode == 7 and is_in_external_mode == False:
         is_in_external_mode = True
         clear_strip(strip)
         render_led_strip(strip, screen)
         time.sleep(1)
         GPIO.output(EXTERNAL_MODE_RELAY_GPIO, GPIO.LOW)
-    elif effect_mode != 6 and is_in_external_mode != False:
+    elif effect_mode != 7 and is_in_external_mode != False:
         is_in_external_mode = False
         GPIO.output(EXTERNAL_MODE_RELAY_GPIO, GPIO.HIGH)
         
