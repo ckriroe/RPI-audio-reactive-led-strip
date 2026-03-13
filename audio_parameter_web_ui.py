@@ -17,8 +17,9 @@ EFFECT_MODES = {
     2: "Welle",
     3: "Spektrum",
     4: "Partikel",
-    5: "Statisch",
-    6: "Extern"
+    5: "Statisch (Aufsteigend)",
+    6: "Statisch (Wert von 1.0)",
+    7: "Extern"
 }
 
 COLOR_MODES = {
