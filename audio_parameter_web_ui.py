@@ -68,7 +68,8 @@ DEFAULTS = {
     "noiseAmount": 0.00,
     "noiseSmoothing": 1.00,
     "brightness": 1.00,
-    "gamma": 1.00
+    "gamma": 1.00,
+    "effectRepeats": 1
 }
 
 def load_presets():
@@ -164,7 +165,8 @@ def get_current_values_from_state():
         "getAlphaFromValue": st.session_state.getAlphaFromValue,
         "colorOverflow": st.session_state.colorOverflow,
         "brightness": st.session_state.brightness,
-        "gamma": st.session_state.gamma
+        "gamma": st.session_state.gamma,
+        "effectRepeats": st.session_state.effectRepeats
     }
 
 def update_session_state_from_preset(preset_data):
@@ -205,6 +207,7 @@ def update_session_state_from_preset(preset_data):
     st.session_state.noiseSmoothing = vals.get("noiseSmoothing", DEFAULTS["noiseSmoothing"])
     st.session_state.brightness = vals.get("brightness", DEFAULTS["brightness"])
     st.session_state.gamma = vals.get("gamma", DEFAULTS["gamma"])
+    st.session_state.effectRepeats = vals.get("effectRepeats", DEFAULTS["effectRepeats"])
 
     a_mode = vals.get("audioMode", DEFAULTS["audioMode"])
     e_mode = vals.get("effectMode", DEFAULTS["effectMode"])
@@ -394,6 +397,7 @@ if get_effect_mode_id() == 2:
 st.slider("Verblassung", 0.001, 0.999, step=0.001, key="fade", on_change=save_params)
 st.slider("Sättigung", 0.01, 1.0, step=0.01, key="saturate", on_change=save_params)
 st.slider("Sättigungs Grenzwert", 0.0, 1.0, step=0.01, key="saturateThreshold", on_change=save_params)
+st.slider("Effekt Wiederholungen", 1, 50, step=1, key="effectRepeats", on_change=save_params)
 st.number_input("LED Anzahl", min_value=2, max_value=99999, step=1, format="%d", key="ledCount", on_change=save_params)
 
 st.divider()
