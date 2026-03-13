@@ -85,6 +85,7 @@ latest_bass_value = 0
 running = True
 
 # Loaded settings
+background_color = (0, 0, 0)
 use_rainbow = False
 effect_origin = 139
 speed = 300
