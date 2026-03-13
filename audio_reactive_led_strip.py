@@ -903,7 +903,7 @@ def process_audio_data(indata):
     global freq_buffer
     global last_extra_ordinary_sample_buffer
 
-    audio = indata[:, 0].astype(np.float32)
+    audio = indata.max(axis=1).astype(np.float32)
     fft = np.fft.rfft(audio, n=FFT_SIZE)
     mags = np.abs(fft)
     freq_per_bin = SAMPLE_RATE / FFT_SIZE
