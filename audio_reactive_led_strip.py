@@ -120,8 +120,10 @@ noise_smoothing = 1.00
 color_transition = 0.25
 brightness = 1.0
 led_count = 10
+physical_led_count = 10
 gamma = 1.0
 color_palette: list[ColorThreshold] = []
+effect_repeats = 1
 
 strip = [LedPixel(0.0, (0, 0, 0)) for _ in range(led_count)]
 led_noise = [0.0] * led_count
@@ -153,7 +155,7 @@ def load_params():
     global color_palette, color_transition, last_config_loaded, gamma, saturate_threshold
     global color_wave_origin, color_wave_speed, color_wave_size, color_wave_inwards, strip
     global mean_value_buffer_size, mean_value_threshold, max_freq_amplitude, led_count, led_noise
-    global static_spectrum, spectrum_sections, audio_mode
+    global static_spectrum, spectrum_sections, audio_mode, effect_repeats, physical_led_count
     
     try:
         if not Path(CONFIG_FILE).exists():
@@ -168,9 +170,12 @@ def load_params():
         with open(CONFIG_FILE) as f:
             data = json.load(f)
 
-        new_led_count = data.get("ledCount", led_count)
-        if led_count != new_led_count:
-            led_count = new_led_count
+        new_effect_repeats = data.get("effectRepeats", effect_repeats)
+        new_physical_led_count = data.get("ledCount", led_count)
+        if physical_led_count != new_physical_led_count or new_effect_repeats != effect_repeats:
+            effect_repeats = new_effect_repeats
+            physical_led_count = new_physical_led_count
+            led_count = max(2, int(new_physical_led_count / effect_repeats))
             led_noise = [0.0] * led_count
             strip = [LedPixel(0.0, (0, 0, 0)) for _ in range(led_count)]
             
@@ -181,14 +186,14 @@ def load_params():
 
             led_strip = neopixel.NeoPixel(
                 DATA_PIN,
-                led_count,
+                new_physical_led_count,
                 brightness=BRIGHTNESS,
                 auto_write=False,
                 pixel_order=neopixel.GRB
             )
         
         use_rainbow = data.get("useRainbow", use_rainbow)
-        effect_origin = min(led_count - 1, data.get("effectOrigin", effect_origin))
+        effect_origin = min(led_count - 1, int(data.get("effectOrigin", effect_origin) / effect_repeats))
         speed = data.get("speed", speed)
         new_min_used_freq = data.get("minFreq", min_used_freq)
         new_max_used_freq = data.get("maxFreq", max_used_freq)
@@ -225,7 +230,7 @@ def load_params():
         color_overflow = data.get("colorOverflow", color_overflow)
         color_transition = data.get("colorTransition", color_transition)
         
-        color_wave_origin = min(led_count - 1, data.get("colorWaveOrigin", color_wave_origin))
+        color_wave_origin = min(led_count - 1, int(data.get("colorWaveOrigin", color_wave_origin) / effect_repeats))
         color_wave_speed = data.get("colorWaveSpeed", color_wave_speed)
         color_wave_size = data.get("colorWaveSize", color_wave_size)
         color_wave_inwards = data.get("colorWaveInwards", color_wave_inwards)
@@ -671,16 +676,28 @@ def get_led_state(prev_strip: list[LedPixel], new_value: float):
 
 def render_led_state_pygame(new_strip, screen_to_draw):
     screen_to_draw.fill((1, 1, 1))
-    spacing = int(SCREEN_WIDTH / led_count)
-    for i, led in enumerate(new_strip):
-        x = i * spacing + spacing / 2
-        y = SCREEN_HEIGHT // 2
-        pygame.draw.circle(
-            screen_to_draw,
-            led.color,
-            (int(x), int(y)),
-            LED_RADIUS
-        )
+    spacing = int(SCREEN_WIDTH / physical_led_count)
+    
+    cntr = 0
+    for r in range(effect_repeats):       
+        for i in range(len(new_strip)):
+            if cntr >= physical_led_count:
+                break;
+            
+            led = new_strip[i]
+            
+            x = cntr * spacing + spacing / 2
+            y = SCREEN_HEIGHT // 2
+            pygame.draw.circle(
+                screen_to_draw,
+                led.color,
+                (int(x), int(y)),
+                LED_RADIUS
+            )
+            cntr += 1
+        
+        if cntr >= physical_led_count:
+            break
         
     pygame.display.flip()
 
@@ -688,10 +705,18 @@ def write_pixels(strip_to_display: list[LedPixel]):
     if led_strip is None:
         return
     
-    for i, px in enumerate(strip_to_display):
-        if (i < len(led_strip)):
-            led_strip[i] = px.color
+    cntr = 0
+    for r in range(effect_repeats):
+        for i in range(len(strip_to_display)):
+            if cntr >= physical_led_count or cntr >= len(led_strip):
+                break
+                
+            led_strip[cntr] = strip_to_display[i].color
+            cntr += 1
             
+        if cntr >= physical_led_count:
+            break
+
     led_strip.show()
 
 def apply_smooth_noise(
@@ -996,7 +1021,7 @@ while running:
     if is_in_external_mode == True:
         time.sleep(1)
         continue
-        
+    
     strip = get_led_state(
         strip,
         current_led_value * value_increase_factor
