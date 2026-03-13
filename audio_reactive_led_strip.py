@@ -963,7 +963,7 @@ def config_thread():
 
 def render_led_strip(strip, screen):
     #if DISPLAY_MODE == 0:
-    render_led_state_pygame(strip, screen)
+    # render_led_state_pygame(strip, screen)
     #else:
     write_pixels(strip)
 
