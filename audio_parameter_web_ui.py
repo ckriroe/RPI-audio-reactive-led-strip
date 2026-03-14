@@ -422,8 +422,8 @@ st.session_state.colorWaveInwards = curr_preset.get("colorWaveInwards")
 
 if get_color_mode_id() == 4:
     st.number_input("Farbwellen Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="colorWaveOrigin", on_change=save_params)
+    st.number_input("Farbwellen Größe", min_value=1, max_value=999999, step=1, format="%d", key="colorWaveSize", on_change=save_params)
     st.slider("Farbwellen Geschwindigkeit", 1, 600, key="colorWaveSpeed", on_change=save_params)
-    st.slider("Farbwellen Größe", 1, 1000, step=1, key="colorWaveSize", on_change=save_params)
     st.toggle("Farbwellen Richtung (nach Außen / Innen)", key="colorWaveInwards", on_change=save_params)
     
 st.slider("Zufallsfarben Faktor", 0.00, 1.00, step=0.01, key="noiseAmount", on_change=save_params)
