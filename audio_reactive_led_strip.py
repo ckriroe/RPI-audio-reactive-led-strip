@@ -573,6 +573,8 @@ def get_spectrum_led_state(prev_strip: list[LedPixel]):
     section_length = len(bins) / spectrum_sections
     new_strip = []
 
+    bin_max = min(max(bins), max_freq_amplitude)
+
     for i in range(n):
         dist = abs(i - center)
 
@@ -605,7 +607,10 @@ def get_spectrum_led_state(prev_strip: list[LedPixel]):
         if max_freq_amplitude == 0.0:
             value = 0.0
         else:
-            value = amp / max_freq_amplitude
+            if audio_mode == 0:
+                value = amp / bin_max
+            else:
+                value = amp / max_freq_amplitude
 
         value = max(0.0, min(1.0, value))
         
