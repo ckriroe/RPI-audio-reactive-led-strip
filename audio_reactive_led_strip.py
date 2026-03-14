@@ -838,7 +838,7 @@ def color_strip_wave(strip_to_color: list[LedPixel]):
     half_wave = color_wave_size / 2.0
 
     for i, led in enumerate(strip_to_color):
-        if led.value <= 0.01:
+        if led.value <= MIN_SANITIZED_VALUE:
             led.color = color_palette[0].color
             continue
 
