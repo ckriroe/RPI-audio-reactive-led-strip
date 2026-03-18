@@ -4,7 +4,7 @@ using PortAudioSharp;
 
 namespace AudioProcessing.AudioProcessor
 {
-    public class PortAudioProcessor : IAudioReceiver
+    public class PortAudioReceiver : IAudioReceiver
     {
         private Action<float[]>? audioCallback = null;
 
@@ -18,7 +18,7 @@ namespace AudioProcessing.AudioProcessor
         private Thread? audioWorker = null;
         private PortAudioBlockingAudioStream? currentAudioStream = null;
 
-        public void Initialize(int audioDeviceId, int channelCount, int bufferSize, int sampleRate)
+        public void Initialize(int audioDeviceId, int channelCount, int bufferSize, int sampleRate, Action? initCallback = null)
         {
             bool wasRunning = this.isRunnging;
             Action<float[]>? prevAudioCallback = this.audioCallback;
@@ -31,14 +31,15 @@ namespace AudioProcessing.AudioProcessor
             this.bufferSize = bufferSize;
             this.sampleRate = sampleRate;
 
+            initCallback?.Invoke();
             if (wasRunning && prevAudioCallback != null)
-                this.StartAudioStream(prevAudioCallback);
+                this.StartAudioStream(prevAudioCallback);            
         }
 
         public void StartAudioStream(Action<float[]> audioCallback)
         {
             if (this.audioDeviceId == null || this.channelCount == null || this.bufferSize == null || this.sampleRate == null)
-                throw new InvalidOperationException($"{nameof(PortAudioProcessor)} was not initialized before it was started");
+                throw new InvalidOperationException($"{nameof(PortAudioReceiver)} was not initialized before it was started");
 
             if (this.isRunnging)
                 this.StopAudioStream();
