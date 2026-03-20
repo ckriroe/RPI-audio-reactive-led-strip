@@ -57,7 +57,7 @@ namespace Application.Effect
             MoveRightSide(n, center, steps, newStrip);
             FillInterpolatedCenter(newValue, n, center, steps, newStrip);
 
-            newStrip[center] = new LedPixel(newValue);
+            newStrip[center].Value = newValue;
             FadeWaveStrip(newStrip, center, dynamicSettings);
 
             this.prevWaveStrip = newStrip;
@@ -150,7 +150,7 @@ namespace Application.Effect
                     int pos = center + direction * i;
                     float t = (float)i / (gap + 1);
                     float v = MathHelper.Lerp(newValue, targetValue, t);
-                    newStrip[pos] = new LedPixel(v);
+                    newStrip[pos].Value = v;
                 }
             }
         }

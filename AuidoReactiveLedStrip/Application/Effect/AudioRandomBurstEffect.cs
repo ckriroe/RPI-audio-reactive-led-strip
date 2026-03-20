@@ -41,7 +41,7 @@ namespace Application.Effect
             {
                 if (Random.Shared.NextDouble() < effectiveProb)
                 {
-                    prevPixels[i] = new LedPixel(value);
+                    prevPixels[i].Value = value;
 
                     for (int offset = 1; offset <= intensityRadius; offset++)
                     {
@@ -52,7 +52,7 @@ namespace Application.Effect
                                 float t = (float)offset / (intensityRadius + 1);
                                 float interpVal = value * (1f - t);
 
-                                prevPixels[neighbor] = new LedPixel(interpVal);
+                                prevPixels[neighbor].Value = interpVal;
                             }
                         }
                     }
