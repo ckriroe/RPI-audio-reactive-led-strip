@@ -1,4 +1,4 @@
-﻿using Application.Audio.AudioService;
+﻿using Application.Audio.Service;
 using Application.Domain;
 using Application.Settings;
 using Microsoft.Extensions.Options;

@@ -1,7 +1,7 @@
 ﻿using Application;
-using Application.Audio.AudioReceiver;
-using Application.Audio.AudioService;
-using Application.Audio.AudioValueProvider;
+using Application.Audio.Receiver;
+using Application.Audio.Service;
+using Application.Audio.ValueProvider;
 using Application.Audio.FftTransformer;
 using Application.Effect;
 using Application.Effect.Service;

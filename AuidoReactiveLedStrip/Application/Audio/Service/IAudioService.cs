@@ -1,6 +1,6 @@
 ﻿using Application.Domain;
 
-namespace Application.Audio.AudioService
+namespace Application.Audio.Service
 {
     public interface IAudioService
     {

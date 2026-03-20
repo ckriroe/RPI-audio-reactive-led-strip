@@ -1,4 +1,4 @@
-﻿namespace Application.Audio.AudioReceiver
+﻿namespace Application.Audio.Receiver
 {
     public interface IAudioReceiver
     {

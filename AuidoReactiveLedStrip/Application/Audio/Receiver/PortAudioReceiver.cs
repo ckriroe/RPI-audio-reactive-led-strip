@@ -1,5 +1,5 @@
-﻿using Application.Audio.AudioReceiver;
-using AudioProcessing.AudioStream;
+﻿using Application.Audio.Receiver;
+using AudioProcessing.Stream;
 using PortAudioSharp;
 
 namespace AudioProcessing.AudioProcessor
