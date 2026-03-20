@@ -26,7 +26,6 @@
 
             float maxFrequency = base.filteredFftData.Max();
             this.CalculateAudioValue(maxFrequency);
-            Console.WriteLine("Current Value: " + this.currentValue);
         }
 
         protected abstract void CalculateAudioValue(float maxFrequency);

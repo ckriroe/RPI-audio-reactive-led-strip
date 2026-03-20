@@ -1,6 +1,12 @@
 ﻿using Application;
 using Application.Audio.AudioReceiver;
+using Application.Audio.AudioService;
+using Application.Audio.AudioValueProvider;
 using Application.Audio.FftTransformer;
+using Application.Effect;
+using Application.Effect.Service;
+using Application.Gpio;
+using Application.Looper;
 using Application.Settings;
 using AudioProcessing.AudioProcessor;
 using Microsoft.Extensions.Configuration;
@@ -11,17 +17,45 @@ var builder = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((hostingContext, config) =>
     {
         config.AddJsonFile(
-            "appsettings.json",
+            "static_settings.json",
+            optional: false,
+            reloadOnChange: true
+        );
+
+        config.AddJsonFile(
+            "dynamic_settings.json",
             optional: false,
             reloadOnChange: true
         );
     })
     .ConfigureServices((context, services) =>
     {
-        services.Configure<AudioSettings>(context.Configuration.GetSection("AudioSettings"));
+        services.Configure<StaticSettings>(context.Configuration);
+        services.Configure<DynamicSettings>(context.Configuration);
 
+        if (OperatingSystem.IsWindows())
+            services.AddTransient<ILooper, WindowsOverheadLooper>();
+        else
+            services.AddTransient<ILooper, LinuxLooper>();
+
+        services.AddSingleton<IGpioControllerFactory, GpioControllerFactory>();
+        services.AddSingleton<AudioLineEffekt>();
+        services.AddSingleton<AudioPulseEffekt>();
+        services.AddSingleton<AudioRandomBurstEffect>();
+        services.AddSingleton<AudioSepctrumEffect>();
+        services.AddSingleton<AudioWaveEffect>();
+        services.AddSingleton<GpioExternalEffect>();
+        services.AddSingleton<StaticAscendingValueEffect>();
+        services.AddSingleton<StaticValueOneEffect>();
+        services.AddSingleton<IEffectService, EffectService>();
+
+        services.AddSingleton<AudioFftDataProvider>();
+        services.AddSingleton<SimpleAudioValueProvider>();
+        services.AddSingleton<MovingMaxAudioValueProvider>();
+        
         services.AddSingleton<IAudioReceiver, PortAudioReceiver>();
         services.AddSingleton<IAudioFftTransformer, AudioFftTransformer>();
+        services.AddSingleton<IAudioService, AudioService>();
         services.AddSingleton<Orchestrator>();
     })
     .Build();

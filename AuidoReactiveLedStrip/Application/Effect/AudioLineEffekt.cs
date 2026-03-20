@@ -1,0 +1,48 @@
+﻿using Application.Audio.AudioService;
+using Application.Domain;
+using Application.Settings;
+using Application.Util;
+using Microsoft.Extensions.Options;
+
+namespace Application.Effect
+{
+    public class AudioLineEffekt : AudioValueBasedEffect
+    {
+        public AudioLineEffekt(IAudioService audioService, IOptionsMonitor<DynamicSettings> dynamicSettings)
+            : base(audioService, dynamicSettings) {}
+
+        public override LedStrip? RenderEffekt(LedStrip? prevStrip, int length)
+        {
+            DynamicSettings dynamicSettings = base.dynamicSettings.CurrentValue;
+            float value = base.GetCurrentAudioValue();
+
+            int n = length;
+            prevStrip ??= LedHelper.CreateEmptyStrip(length);
+            var ledPixels = prevStrip.LedPixels;
+
+            int center = dynamicSettings.EffectOrigin;
+            int leftDist = center;
+            int rightDist = (n - 1) - center;
+
+            int leftExtent = (int)(leftDist * value);
+            int rightExtent = (int)(rightDist * value);
+
+            int start = center - leftExtent;
+            int end = center + rightExtent;
+
+            for (int i = 0; i < n; i++)
+            {
+                if (i >= start && i <= end)
+                {
+                    ledPixels[i].Value = value;
+                } 
+                else
+                {
+                    ledPixels[i].Value *= dynamicSettings.Fade;
+                }
+            }
+
+            return prevStrip;
+        }
+    }
+}

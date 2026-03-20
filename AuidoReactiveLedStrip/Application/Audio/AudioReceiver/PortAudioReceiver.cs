@@ -20,6 +20,17 @@ namespace AudioProcessing.AudioProcessor
 
         public void Initialize(int audioDeviceId, int channelCount, int bufferSize, int sampleRate, Action? initCallback = null)
         {
+            if (this.audioDeviceId == audioDeviceId &&
+                this.channelCount == channelCount &&
+                this.bufferSize == bufferSize &&
+                this.sampleRate == sampleRate)
+            {
+                initCallback?.Invoke();
+                return;
+            }
+
+
+
             bool wasRunning = this.isRunnging;
             Action<float[]>? prevAudioCallback = this.audioCallback;
 
@@ -82,6 +93,7 @@ namespace AudioProcessing.AudioProcessor
             this.audioWorker = null;
             this.audioCallback = null;
             this.currentAudioStream?.Stop();
+            this.currentAudioStream?.Dispose();
             this.currentAudioStream = null;
 
             PortAudio.Terminate();

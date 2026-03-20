@@ -1,0 +1,51 @@
+{
+  "Colors": [
+    {
+      "Color": "#3b3b3b",
+      "Threshold": 0.32
+    },
+    {
+      "Color": "#f90000",
+      "Threshold": 0.63
+    },
+    {
+      "Color": "#ff6363",
+      "Threshold": 1.0
+    }
+  ],
+  "LedCount": 278,
+  "UseRainbow": false,
+  "EffectOrigin": 139,
+  "Speed": 85,
+  "MinFreq": 50,
+  "MaxFreq": 280,
+  "Fade": 0.385,
+  "FadeOverTime": 0.0,
+  "StaticSpectrum": false,
+  "SpectrumSections": 10,
+  "BouncyWave": true,
+  "Saturate": 0.09,
+  "SaturateThreshold": 0.37,
+  "MeanValueBufferSize": 35,
+  "MeanValueThreshold": 0.7,
+  "AudioMode": 0,
+  "EffectMode": 2,
+  "ColorMode": 0,
+  "MinFreqAmplitude": 32.73,
+  "MaxFreqAmplitude": 50.0,
+  "ColorIncreaseFactor": 1.85,
+  "ValueIncreaseFactor": 1.48,
+  "ColorTransition": 0.5,
+  "ValueColorBias": 0.0,
+  "ColorWaveOrigin": 139,
+  "ColorWaveSpeed": 50,
+  "ColorWaveSize": 100,
+  "ColorWaveInwards": false,
+  "NoiseAmount": 0.0,
+  "NoiseSmoothing": 1.0,
+  "GetAlphaFromValue": false,
+  "ColorOverflow": false,
+  "Brightness": 1.0,
+  "Gamma": 3.75,
+  "EffectRepeats": 12
+}

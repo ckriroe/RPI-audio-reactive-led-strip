@@ -1,97 +1,85 @@
-﻿using Application.Audio.AudioReceiver;
-using Application.Audio.AudioValueProvider;
-using Application.Audio.FftTransformer;
+﻿using Application.Audio.AudioService;
+using Application.Domain;
+using Application.Effect.Service;
+using Application.Looper;
 using Application.Settings;
 using Microsoft.Extensions.Options;
 using System.Diagnostics;
 
 namespace Application
 {
-    public class Orchestrator
+    public class Orchestrator : ILooperConsumer
     {
-        private readonly IOptionsMonitor<AudioSettings> audioOptionsMonitor;
-        private readonly IAudioReceiver audioReceiver;
-        private readonly IAudioFftTransformer audioFftTransformer;
-        private readonly IAudioDataProvider audioValueProvider;
-        private bool isStarted = false;
+        private readonly IOptionsMonitor<StaticSettings> staticSettings;
+        private readonly IOptionsMonitor<DynamicSettings> dynamicSettings;
+        private readonly IAudioService audioService;
+        private readonly IEffectService effectService;
+        private readonly ILooper looper;
+
+        private int invalidFrameSleepTime = 100;
+        private bool isRunning = false;        
+        private Thread? worker = null;
 
         public Orchestrator(
-            IOptionsMonitor<AudioSettings> audioOptionsMonitor,
-            IAudioReceiver audioReceiver,
-            IAudioFftTransformer audioFftTransformer
+            IOptionsMonitor<StaticSettings> staticSettings,
+            IOptionsMonitor<DynamicSettings> dynamicSettings,
+            IAudioService audioService,
+            IEffectService effectService,
+            ILooper looper
         ) {
-            this.audioOptionsMonitor = audioOptionsMonitor;
-            this.audioOptionsMonitor.OnChange(this.SetAudioSettingsChanged);
-            this.audioReceiver = audioReceiver;
-            this.audioFftTransformer = audioFftTransformer;
-            this.SetAudioSettingsChanged(audioOptionsMonitor.CurrentValue);
+            this.staticSettings = staticSettings;
+            this.dynamicSettings = dynamicSettings;
+            this.audioService = audioService;
+            this.effectService = effectService;
+            this.looper = looper;
+            this.looper.SetConsumer(this);
+        }
 
-            this.audioValueProvider = new MovingMaxAudioValueProvider();
-            this.audioValueProvider.Initialize(new MovingMaxAudioValueProviderSettings()
+        public void OnSettingsChanged(StaticSettings staticSettings, DynamicSettings dynamicSettings)
+        {
+            invalidFrameSleepTime = staticSettings.InvalidFrameSleepTime;
+            this.effectService.SetEffectMode(dynamicSettings.EffectMode);
+            this.audioService.SetAudioMode(this.effectService.GetRequiredAudioMode());
+        }
+
+        public void OnTick()
+        {
+            LedStrip? ledStrip = this.effectService.GetRenderedLedStrip();
+
+            if (ledStrip != null)
             {
-                FftSize = audioOptionsMonitor.CurrentValue.FftSize,
-                LastExtraOrdanarySampleBufferSize = 30,
-                MinFrequency = 0,
-                MaxFrequency = 180,
-                MinFrequencyAmplitude = 10,
-                MaxFrequencyAmplitude = 99999,
-                BelowMinFreqAmplitudeFunctionFactor = -0.03f,
-                MaxFreqAmplitudeIncreaseRatio = 3,
-                MaxFreqAmplitudeDecreaseRatio = 5,
-                MaxFreqAmplitudeTTL = 2000,
-                MaxFreqAmplitudeProlongerThreshholdPercent = 0.03f,
-                MaxFreqAmplitudeDecayRate = 0.003f,
-                PercentDiffFromMaxToBeExtraOrdanary = 0.45f,
-                SampleRate = audioOptionsMonitor.CurrentValue.SampleRate,
-            });
+                // Do something
+            } else
+            {
+                Thread.Sleep(invalidFrameSleepTime);
+            }
         }
 
         public void Start()
         {
-            if (this.isStarted)
-                this.Stop();
+            if (this.isRunning)
+                return;
 
-            this.StartAudio();
-            this.isStarted = true;
+            this.worker = new Thread(this.StartLooper);
+            this.worker.Start();
+
+            this.isRunning = true;
         }
 
         public void Stop()
         {
-            if (!this.isStarted)
+            if (!this.isRunning)
                 return;
 
-            this.StopAudio();
-            this.isStarted = false;
+            this.looper.StopLooper();
+            this.worker?.Join();
+            this.audioService.SetAudioMode(AudioServiceMode.None);
+            this.isRunning = false;
         }
 
-        public void SetAudioSettingsChanged(AudioSettings changedAudioSettings)
+        private void StartLooper()
         {
-            this.audioReceiver.Initialize
-            (
-                changedAudioSettings.AudioDeviceId,
-                changedAudioSettings.Channels,
-                changedAudioSettings.FftSize,
-                changedAudioSettings.SampleRate,
-                () =>
-                {
-                    this.audioFftTransformer.Initialize(changedAudioSettings.Channels);
-                }
-            );
-        }
-
-        private void StartAudio()
-        {
-            this.audioReceiver.StartAudioStream(data =>
-            {
-                float[]? fftData = this.audioFftTransformer.ProcessAudioSamples(data);
-                if (fftData != null)
-                   this.audioValueProvider.SetNewFftData(fftData);
-            });
-        }
-
-        private void StopAudio()
-        {
-            this.audioReceiver.StopAudioStream();
+            this.looper.StartLooper();
         }
     }
 }
