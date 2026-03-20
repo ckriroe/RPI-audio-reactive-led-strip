@@ -1,4 +1,4 @@
-﻿namespace Application.Audio.AudioValueProvider
+﻿namespace Application.Audio.ValueProvider
 {
     public class MovingMaxAudioValueProviderSettings : BaseAudioValueProviderSettings
     {

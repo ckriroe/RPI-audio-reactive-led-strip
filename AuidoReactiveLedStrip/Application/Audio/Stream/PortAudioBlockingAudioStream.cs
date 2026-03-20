@@ -1,7 +1,7 @@
 ﻿using PortAudioSharp;
 using System.Runtime.InteropServices;
 
-namespace AudioProcessing.AudioStream
+namespace AudioProcessing.Stream
 {
     internal static partial class Native
     {

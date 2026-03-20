@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Application.Audio.AudioValueProvider
+namespace Application.Audio.ValueProvider
 {
     public class AudioFftDataProvider : IAudioDataProvider
     {

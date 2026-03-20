@@ -1,11 +1,11 @@
-﻿using Application.Audio.AudioReceiver;
-using Application.Audio.AudioValueProvider;
+﻿using Application.Audio.Receiver;
+using Application.Audio.ValueProvider;
 using Application.Audio.FftTransformer;
 using Application.Domain;
 using Application.Settings;
 using Microsoft.Extensions.Options;
 
-namespace Application.Audio.AudioService
+namespace Application.Audio.Service
 {
     public class AudioService : IAudioService
     {
