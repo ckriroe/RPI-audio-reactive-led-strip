@@ -8,11 +8,9 @@ namespace Application.Util
     {
         public static Color LerpColor(Color a, Color b, float t)
         {
-            t = MathHelper.Clamp(t, 0f, 1f);
-
-            int r = (int)(a.R + (b.R - a.R) * t);
-            int g = (int)(a.G + (b.G - a.G) * t);
-            int bVal = (int)(a.B + (b.B - a.B) * t);
+            int r = Math.Max(0, (int)(a.R + (b.R - a.R) * t));
+            int g = Math.Max(0, (int)(a.G + (b.G - a.G) * t));
+            int bVal = Math.Max(0, (int)(a.B + (b.B - a.B) * t));
 
             return Color.FromArgb(r, g, bVal);
         }
@@ -131,7 +129,7 @@ namespace Application.Util
                 return Color.Black;
 
             if (dynamicSettings.UseRainbow)
-                return ValueToRainbowColor(value, dynamicSettings);
+                return ValueToRainbowColor(value, dynamicSettings, bgThresholdOverride);
 
             var backgroundColor = dynamicSettings.Colors[0];
             if (colors.Count < 2)
@@ -145,11 +143,14 @@ namespace Application.Util
             for (int i = 0; i < colors.Count; i++)
             {
                 var entry = colors[i];
+                float threshold = entry.Threshold;
+                if (i == 0 && bgThresholdOverride != null)
+                    threshold = bgThresholdOverride.Value;
 
-                if (value < entry.Threshold || (value == 1.0f && value <= entry.Threshold))
+                if (value < threshold || (value == 1.0f && value <= threshold))
                 {
                     paletteIdx = i;
-                    sectionEnd = entry.Threshold;
+                    sectionEnd = threshold;
                     currColor = entry.Color;
                     break;
                 }
@@ -157,7 +158,13 @@ namespace Application.Util
 
             float sectionStart = 0f;
             if (paletteIdx != 0)
-                sectionStart = colors[paletteIdx - 1].Threshold;
+            {
+                if (paletteIdx - 1 == 0 && bgThresholdOverride != null)
+                    sectionStart = bgThresholdOverride.Value;
+                else
+                    sectionStart = colors[paletteIdx - 1].Threshold;
+            }
+                
 
             float sectionSize = sectionEnd - sectionStart;
             float transitionAreaSize = 0f;
@@ -183,7 +190,12 @@ namespace Application.Util
 
                 float prevStart = 0f;
                 if (paletteIdx > 1)
-                    prevStart = colors[paletteIdx - 2].Threshold;
+                {
+                    if (paletteIdx - 2 == 0 && bgThresholdOverride != null)
+                        prevStart = bgThresholdOverride.Value;
+                    else
+                        prevStart = colors[paletteIdx - 2].Threshold;
+                }
 
                 float prevSize = sectionStart - prevStart;
 
@@ -222,32 +234,33 @@ namespace Application.Util
             }
         }
 
-        private static Color ValueToRainbowColor(float value, DynamicSettings dynamicSettings)
+        private static Color ValueToRainbowColor(float value, DynamicSettings dynamicSettings, float? bgThresholdOverride)
         {
             var colorTransition = dynamicSettings.ColorTransition;
             var backgroundEntry = dynamicSettings.Colors[0];
+            var backgroundThreshold = bgThresholdOverride ?? backgroundEntry.Threshold;
             float transitionAreaSize = 0f;
 
-            if (backgroundEntry.Threshold > 0.5f)
-                transitionAreaSize = (1f - backgroundEntry.Threshold) * colorTransition;
+            if (backgroundThreshold > 0.5f)
+                transitionAreaSize = (1f - backgroundThreshold) * colorTransition;
             else
-                transitionAreaSize = backgroundEntry.Threshold * colorTransition;
+                transitionAreaSize = backgroundThreshold * colorTransition;
 
-            if (value < backgroundEntry.Threshold - transitionAreaSize || backgroundEntry.Threshold == 1f)
+            if (value < backgroundThreshold - transitionAreaSize || backgroundThreshold == 1f)
                 return backgroundEntry.Color;
 
-            float t = (value - backgroundEntry.Threshold) / (1f - backgroundEntry.Threshold);
+            float t = (value - backgroundThreshold) / (1f - backgroundThreshold);
             float hue = t * 0.75f;
             if (hue < 0f) hue = 0f;
 
             var color = HsvToRgb(hue, 1f, 1f);
 
-            if (value < backgroundEntry.Threshold)
+            if (value < backgroundThreshold)
             {
-                if (value < backgroundEntry.Threshold - transitionAreaSize || transitionAreaSize == 0)
+                if (value < backgroundThreshold - transitionAreaSize || transitionAreaSize == 0)
                     return backgroundEntry.Color;
 
-                t = (backgroundEntry.Threshold - value) / transitionAreaSize;
+                t = (backgroundThreshold - value) / transitionAreaSize;
                 t = MathHelper.Clamp(t, 0f, 1f);
 
                 return LerpColor(
@@ -258,10 +271,10 @@ namespace Application.Util
             }
             else
             {
-                if (value > backgroundEntry.Threshold + transitionAreaSize || transitionAreaSize == 0)
+                if (value > backgroundThreshold + transitionAreaSize || transitionAreaSize == 0)
                     return color;
 
-                t = (value - backgroundEntry.Threshold) / transitionAreaSize;
+                t = (value - backgroundThreshold) / transitionAreaSize;
                 t = MathHelper.Clamp(t, 0f, 1f);
 
                 return LerpColor(
@@ -277,7 +290,6 @@ namespace Application.Util
             float valueToColorBias = dynamicSettings.ValueColorBias;
             var colors = dynamicSettings.Colors;
             Color color;
-            Color? audioColor = null;
 
             if (valueToColorBias <= 0.0f)
             {
@@ -285,15 +297,13 @@ namespace Application.Util
             } 
             else if (valueToColorBias >= 1.0f)
             {
-                audioColor = ValueToColor(audioValue, dynamicSettings);
-                color = audioColor.Value;
+                color = ValueToColor(audioValue, dynamicSettings, 0.0f);
             } 
             else
             {
-                audioColor = ValueToColor(audioValue, dynamicSettings);
                 color = LerpColor(
                     ValueToColor(value, dynamicSettings, 0.0f),
-                    audioColor.Value,
+                    ValueToColor(audioValue, dynamicSettings, 0.0f),
                     valueToColorBias
                 );
             }

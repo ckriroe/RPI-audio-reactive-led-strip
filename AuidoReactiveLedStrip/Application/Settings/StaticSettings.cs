@@ -22,5 +22,9 @@
         public int ReloadSettingsAfterMs { get; set; }
         public bool PrintFrameTimes { get; set; }
         public float MinSanitizedValue {  get; set; }
+        public bool UseGuiVisualization { get; set; }
+        public int GuiWidth { get; set; }
+        public int GuiHeight { get; set; }
+        public int MainThreadSettingsCheckIntervalMs { get; set; }
     }
 }

@@ -6,7 +6,7 @@ using System.Drawing;
 
 namespace Application.Visualization.Screen
 {
-    public class ScreenVisualizer : GameWindow
+    public class ScreenVisualizer : GameWindow, IScreenVisualizer
     {
         public ScreenVisualizer(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings) : base(gameWindowSettings, nativeWindowSettings)
         {
@@ -40,21 +40,15 @@ namespace Application.Visualization.Screen
             float width = Size.X;
             float height = Size.Y;
             float spacing = width / count;
-
-            // radius in pixels
-            float radiusPx = 6f;
-
-            // convert radius to NDC (-1 to 1)
+            float radiusPx = spacing / 2f;
             float radiusNdcX = radiusPx / width * 2f;
             float radiusNdcY = radiusPx / height * 2f;
 
             for (int i = 0; i < count; i++)
             {
                 var c = colors[i];
-
-                // normalized device coordinates
                 float xNdc = ((i + 0.5f) * spacing) / width * 2f - 1f;
-                float yNdc = 0f; // center vertically
+                float yNdc = 0f;
 
                 DrawCircle(xNdc, yNdc, radiusNdcX, radiusNdcY, c);
             }
@@ -62,16 +56,10 @@ namespace Application.Visualization.Screen
             SwapBuffers();
         }
 
-        /// <summary>
-        /// Draws a circle using a triangle fan.
-        /// radiusX/Y are in NDC coordinates (-1..1)
-        /// </summary>
         private void DrawCircle(float x, float y, float radiusX, float radiusY, Color c, int segments = 20)
         {
             GL.Color3(c.R / 255f, c.G / 255f, c.B / 255f);
             GL.Begin(PrimitiveType.TriangleFan);
-
-            // center
             GL.Vertex2(x, y);
 
             for (int i = 0; i <= segments; i++)
@@ -88,12 +76,7 @@ namespace Application.Visualization.Screen
         protected override void OnResize(ResizeEventArgs e)
         {
             base.OnResize(e);
-
-            // Update the OpenGL viewport
             GL.Viewport(0, 0, Size.X, Size.Y);
-
-            // Force redraw
-            //this.Invalidate(); // requests OnRenderFrame to run again
         }
     }
 }

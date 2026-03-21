@@ -1,4 +1,6 @@
-﻿using Application;
+﻿using Application.Application.Lifetime;
+using Application.Application.Orchestration;
+using Application.Application.Service;
 using Application.Audio.FftTransformer;
 using Application.Audio.Receiver;
 using Application.Audio.Service;
@@ -12,27 +14,14 @@ using Application.Effect.Service;
 using Application.Gpio;
 using Application.Looper;
 using Application.Settings;
-using Application.Util;
 using Application.Visualization.Screen;
 using AudioProcessing.AudioProcessor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using OpenTK.Windowing.Common;
-using OpenTK.Windowing.Desktop;
+using Microsoft.Extensions.Options;
 using System.Drawing;
 
-var settings = new NativeWindowSettings()
-{
-    Size = new OpenTK.Mathematics.Vector2i(800, 200),
-    Title = "Screen Visualizer",
-    API = ContextAPI.OpenGL,
-    APIVersion = new Version(3, 3),
-    Flags = ContextFlags.Default,
-    Profile = ContextProfile.Compatability // Important!
-};
-
-var sv = new ScreenVisualizer(GameWindowSettings.Default, settings);
 var builder = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((hostingContext, config) =>
     {
@@ -67,7 +56,9 @@ var builder = Host.CreateDefaultBuilder(args)
                 }
             });
 
-        services.AddSingleton(sv);
+        services.AddSingleton<Application.Application.Lifetime.IApplicationLifetime, ApplicationLifetime>();
+        services.AddSingleton<IApplicationService, ApplicationService>();
+        services.AddSingleton<IScreenVisualizerFactory, ScreenVisualizerFactory>();
 
         if (OperatingSystem.IsWindows())
             services.AddTransient<ILooper, WindowsOverheadLooper>();
@@ -102,15 +93,12 @@ var builder = Host.CreateDefaultBuilder(args)
         services.AddSingleton<IAudioReceiver, PortAudioReceiver>();
         services.AddSingleton<IAudioFftTransformer, AudioFftTransformer>();
         services.AddSingleton<IAudioService, AudioService>();
-        services.AddSingleton<Orchestrator>();
+        services.AddSingleton<IOrchestrator, Orchestrator>();
     })
     .Build();
 
-Orchestrator processor = builder.Services.GetRequiredService<Orchestrator>();
-processor.Start();
-sv.Run();
-sv.Dispose();
-processor.Stop();
+IApplicationService applicationService = builder.Services.GetRequiredService<IApplicationService>();
+applicationService.StartApplication();
 
 /*using System.Drawing;
 

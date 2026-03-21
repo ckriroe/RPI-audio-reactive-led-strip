@@ -18,5 +18,9 @@
   "InvalidFrameSleepTime": 2000,
   "ReloadSettingsAfterMs": 1000,
   "PrintFrameTimes": true,
-  "MinSanitizedValue": 0.01
+  "MinSanitizedValue": 0.01,
+  "UseGuiVisualization": true,
+  "GuiWidth": 800,
+  "GuiHeight": 200,
+  "MainThreadSettingsCheckIntervalMs": 2000
 }
