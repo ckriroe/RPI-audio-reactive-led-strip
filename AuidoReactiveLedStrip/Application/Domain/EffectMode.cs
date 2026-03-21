@@ -9,6 +9,7 @@
         AudioParticle = 4,
         StaticAscending = 5,
         StaticValueOne = 6,
-        External = 7
+        External = 7,
+        AudioLineDescending = 8
     }
 }

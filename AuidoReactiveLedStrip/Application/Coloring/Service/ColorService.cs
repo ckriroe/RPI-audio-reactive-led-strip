@@ -83,77 +83,9 @@ namespace Application.Coloring.Service
 
         private void ColorCorrect(LedPixel led, DynamicSettings dynamicSettings)
         {
-            float inv255 = 1.0f / 255.0f;
-
-            float rc = dynamicSettings.RedCorr * 255.0f;
-            float gc = dynamicSettings.GreenCorr * 255.0f;
-            float bc = dynamicSettings.BlueCorr * 255.0f;
-            float hc = dynamicSettings.HueCorr * 360.0f;
-            float sc = dynamicSettings.SatCorr;
-            float vc = dynamicSettings.ValCorr;
-            float rt = dynamicSettings.RedThresh;
-            float gt = dynamicSettings.GreenThresh;
-            float bt = dynamicSettings.BlueThresh;
-            float ht = dynamicSettings.HueThresh;
-            float st = dynamicSettings.SatThresh;
-            float vt = dynamicSettings.ValThresh;
-
-            float r = led.Color.R;
-            float g = led.Color.G;
-            float b = led.Color.B;
-            float pv = led.Value;
-
-            float rf = rt < 1.0f
-                ? MathHelper.Clamp((pv - rt) / (1.0f - rt), 0.0f, 1.0f)
-                : 0.0f;
-
-            float gf = gt < 1.0f
-                ? MathHelper.Clamp((pv - gt) / (1.0f - gt), 0.0f, 1.0f)
-                : 0.0f;
-
-            float bf = bt < 1.0f
-                ? MathHelper.Clamp((pv - bt) / (1.0f - bt), 0.0f, 1.0f)
-                : 0.0f;
-
-            r += rc * rf;
-            g += gc * gf;
-            b += bc * bf;
-
-            r = MathHelper.Clamp(r, 0.0f, 255.0f);
-            g = MathHelper.Clamp(g, 0.0f, 255.0f);
-            b = MathHelper.Clamp(b, 0.0f, 255.0f);
-
-            ColorHelper.RgbToHsv(r * inv255, g * inv255, b * inv255, out float h, out float s, out float v);
-            h *= 360.0f;
-
-            float hf = ht < 1.0f
-                ? MathHelper.Clamp((pv - ht) / (1.0f - ht), 0.0f, 1.0f)
-                : 0.0f;
-
-            float sf = st < 1.0f
-                ? MathHelper.Clamp((pv - st) / (1.0f - st), 0.0f, 1.0f)
-                : 0.0f;
-
-            float vf = vt < 1.0f
-                ? MathHelper.Clamp((pv - vt) / (1.0f - vt), 0.0f, 1.0f)
-                : 0.0f;
-
-            h += hc * hf;
-            s += sc * sf;
-            v += vc * vf;
-
-            h = MathHelper.Clamp(h, 0.0f, 360.0f);
-            s = MathHelper.Clamp(s, 0.0f, 1.0f);
-            v = MathHelper.Clamp(v, 0.0f, 1.0f);
-            ColorHelper.HsvToRgb(h / 360.0f, s, v, out r, out g, out b);
-
-            r *= 255.0f;
-            g *= 255.0f;
-            b *= 255.0f;
-
-            int finalR = (int)Math.Min(255.0, ColorHelper.GammaCorrect(r * dynamicSettings.Brightness, dynamicSettings));
-            int finalG = (int)Math.Min(255.0, ColorHelper.GammaCorrect(g * dynamicSettings.Brightness, dynamicSettings));
-            int finalB = (int)Math.Min(255.0, ColorHelper.GammaCorrect(b * dynamicSettings.Brightness, dynamicSettings));
+            int finalR = (int)Math.Min(255.0, ColorHelper.GammaCorrect(led.Color.R * dynamicSettings.Brightness, dynamicSettings));
+            int finalG = (int)Math.Min(255.0, ColorHelper.GammaCorrect(led.Color.G * dynamicSettings.Brightness, dynamicSettings));
+            int finalB = (int)Math.Min(255.0, ColorHelper.GammaCorrect(led.Color.B * dynamicSettings.Brightness, dynamicSettings));
 
             led.Color = Color.FromArgb(finalR, finalG, finalB);
         }

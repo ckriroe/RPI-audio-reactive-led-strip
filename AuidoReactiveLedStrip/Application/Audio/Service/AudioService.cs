@@ -163,14 +163,14 @@ namespace Application.Audio.Service
                 MaxFrequency = dynamicSettings.MaxFreq,
                 MinFrequencyAmplitude = dynamicSettings.MinFreqAmplitude,
                 MaxFrequencyAmplitude = dynamicSettings.MaxFreqAmplitude,
-                LastExtraOrdanarySampleBufferSize = staticSettings.LastExtraOrdanarySampleBufferSize,
+                LastExtraOrdanarySampleBufferSize = dynamicSettings.MeanValueBufferSize,
                 BelowMinFreqAmplitudeFunctionFactor = staticSettings.BelowMinFreqAmplitudeFunctionFactor,
                 MaxFreqAmplitudeIncreaseRatio = staticSettings.MaxFreqAmplitudeIncreaseRatio,
                 MaxFreqAmplitudeDecreaseRatio = staticSettings.MaxFreqAmplitudeDecreaseRatio,
                 MaxFreqAmplitudeTTL = staticSettings.MaxFreqAmplitudeTTL,
                 MaxFreqAmplitudeProlongerThreshholdPercent = staticSettings.MaxFreqAmplitudeProlongerThreshholdPercent,
                 MaxFreqAmplitudeDecayRate = staticSettings.MaxFreqAmplitudeDecayRate,
-                PercentDiffFromMaxToBeExtraOrdanary = staticSettings.PercentDiffFromMaxToBeExtraOrdanary
+                PercentDiffFromMaxToBeExtraOrdanary = dynamicSettings.MeanValueThreshold
             });
         }
     }
