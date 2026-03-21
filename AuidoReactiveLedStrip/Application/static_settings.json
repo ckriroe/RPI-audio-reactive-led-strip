@@ -12,10 +12,11 @@
   "MaxFreqAmplitudeDecayRate": 0.003,
   "PercentDiffFromMaxToBeExtraOrdanary": 0.45,
   "Fps": 60,
-  "BounceLayers": 2,
+  "BounceLayers": 1,
   "MaxEffectSpeed": 600,
   "ExternalModeRelayGpio": 5,
   "InvalidFrameSleepTime": 2000,
   "ReloadSettingsAfterMs": 1000,
-  "PrintFrameTimes": true
+  "PrintFrameTimes": true,
+  "MinSanitizedValue": 0.01
 }

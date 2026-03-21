@@ -47,5 +47,17 @@
   "ColorOverflow": false,
   "Brightness": 1.0,
   "Gamma": 3.75,
-  "EffectRepeats": 12
+  "EffectRepeats": 12,
+  "RedCorr": 0.0,
+  "GreenCorr": 0.0,
+  "BlueCorr": 0.0,
+  "HueCorr": 0.0,
+  "SatCorr": 0.0,
+  "ValCorr": 0.0,
+  "RedThresh": 1.0,
+  "GreenThresh": 1.0,
+  "BlueThresh": 1.0,
+  "HueThresh": 1.0,
+  "SatThresh": 1.0,
+  "ValThresh": 1.0
 }

@@ -49,15 +49,18 @@ namespace Application.Effect
                 this.prevWaveStrip = LedHelper.CreateEmptyStrip(n).LedPixels;
 
             // TODO check if allocation can be removed
+
             IList<LedPixel> newStrip = this.prevWaveStrip
                 .Select(p => new LedPixel(p.Value))
                 .ToList();
 
+            // TODO: can these 2 be merged?
             MoveLeftSide(n, center, steps, newStrip);
             MoveRightSide(n, center, steps, newStrip);
             FillInterpolatedCenter(newValue, n, center, steps, newStrip);
 
             newStrip[center].Value = newValue;
+            // TODO: check if this can be integrated into other loops
             FadeWaveStrip(newStrip, center, dynamicSettings);
 
             this.prevWaveStrip = newStrip;
