@@ -43,5 +43,10 @@ namespace Application.Util
             rngState = x;
             return x;
         }
+
+        public static float PyMod(float x, float m)
+        {
+            return (x % m + m) % m;
+        }
     }
 }

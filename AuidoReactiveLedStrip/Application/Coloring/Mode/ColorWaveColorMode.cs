@@ -1,6 +1,7 @@
 ﻿using Application.Coloring.Noise;
 using Application.Domain;
 using Application.Settings;
+using Application.Util;
 using System.Drawing;
 
 namespace Application.Coloring.Mode
@@ -16,20 +17,18 @@ namespace Application.Coloring.Mode
         public override Color GetColorForValue(DynamicSettings dynamicSettings, float audioValue, int index, int length)
         {
             float distance = Math.Abs(index - dynamicSettings.ColorWaveOrigin);
-            float wavePosition = (distance + this.colorWavePhase) % dynamicSettings.ColorWaveSize;
+            float wavePosition = MathHelper.PyMod(distance + this.colorWavePhase, dynamicSettings.ColorWaveSize);
             float value = this.WaveEnvelope(wavePosition / dynamicSettings.ColorWaveSize);
             return base.NonAudioValueToColor(value, audioValue, index, length, dynamicSettings);
         }
 
         public override void PrecomputeValues(StaticSettings staticSettings, DynamicSettings dynamicSettings, LedStrip ledStrip)
         {
-            int direction = -1;
-            if (dynamicSettings.ColorWaveInwards)
-                direction = 1;
-
+            int direction = dynamicSettings.ColorWaveInwards ? 1 : -1;
             this.colorWavePhase += direction * dynamicSettings.ColorWaveSpeed / (float)staticSettings.Fps;
-            if (this.colorWavePhase >= dynamicSettings.ColorWaveSize)
-                this.colorWavePhase -= dynamicSettings.ColorWaveSize * direction;
+            if (Math.Abs(colorWavePhase) >= dynamicSettings.ColorWaveSize)
+                colorWavePhase -= dynamicSettings.ColorWaveSize * direction;
+            //this.colorWavePhase = MathHelper.PyMod(this.colorWavePhase, dynamicSettings.ColorWaveSize);
         }
 
         private float WaveEnvelope(float x)
