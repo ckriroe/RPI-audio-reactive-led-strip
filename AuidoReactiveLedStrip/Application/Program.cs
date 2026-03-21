@@ -76,8 +76,9 @@ var builder = Host.CreateDefaultBuilder(args)
         services.AddSingleton<IColorService, ColorService>();
 
         services.AddSingleton<IGpioControllerFactory, GpioControllerFactory>();
-        services.AddSingleton<AudioLineEffekt>();
-        services.AddSingleton<AudioPulseEffekt>();
+        services.AddSingleton<AudioLineDescendingEffect>();
+        services.AddSingleton<AudioLineEffect>();
+        services.AddSingleton<AudioPulseEffect>();
         services.AddSingleton<AudioRandomBurstEffect>();
         services.AddSingleton<AudioSepctrumEffect>();
         services.AddSingleton<AudioWaveEffect>();

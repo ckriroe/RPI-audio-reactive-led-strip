@@ -7,14 +7,15 @@ namespace Application.Effect.Service
     public class EffectService : IEffectService
     {
         private readonly IOptionsMonitor<DynamicSettings> dyamicSettings;
-        private readonly AudioLineEffekt audioLineEffekt;
-        private readonly AudioPulseEffekt audioPulseEffekt;
+        private readonly AudioLineEffect audioLineEffect;
+        private readonly AudioPulseEffect audioPulseEffect;
         private readonly AudioRandomBurstEffect audioRandomBurstEffect;
         private readonly AudioSepctrumEffect audioSepctrumEffect;
         private readonly AudioWaveEffect audioWaveEffect;
         private readonly GpioExternalEffect externalEffect;
         private readonly StaticAscendingValueEffect staticAscendingValueEffect;
         private readonly StaticValueOneEffect staticValueOneEffect;
+        private readonly AudioLineDescendingEffect audioLineDescendingEffect;
 
         private EffectMode? currentEffectMode = null;
         private IEffect? currentEffect = null;
@@ -22,72 +23,77 @@ namespace Application.Effect.Service
 
         public EffectService(
             IOptionsMonitor<DynamicSettings> dyamicSettings,
-            AudioLineEffekt audioLineEffekt,
-            AudioPulseEffekt audioPulseEffekt,
+            AudioLineEffect audioLineEffect,
+            AudioPulseEffect audioPulseEffect,
             AudioRandomBurstEffect audioRandomBurstEffect,
             AudioSepctrumEffect audioSepctrumEffect,
             AudioWaveEffect audioWaveEffect,
             GpioExternalEffect externalEffect,
             StaticAscendingValueEffect staticAscendingValueEffect,
-            StaticValueOneEffect staticValueOneEffect
+            StaticValueOneEffect staticValueOneEffect,
+            AudioLineDescendingEffect audioLineDescendingEffect
         )
         {
             this.dyamicSettings = dyamicSettings;
-            this.audioLineEffekt = audioLineEffekt;
-            this.audioPulseEffekt = audioPulseEffekt;
+            this.audioLineEffect = audioLineEffect;
+            this.audioPulseEffect = audioPulseEffect;
             this.audioRandomBurstEffect = audioRandomBurstEffect;
             this.audioSepctrumEffect = audioSepctrumEffect;
             this.audioWaveEffect = audioWaveEffect;
             this.externalEffect = externalEffect;
             this.staticAscendingValueEffect = staticAscendingValueEffect;
             this.staticValueOneEffect = staticValueOneEffect;
+            this.audioLineDescendingEffect = audioLineDescendingEffect;
         }
 
         public void SetEffectMode(EffectMode effectMode)
         {
-            if (currentEffectMode == effectMode)
+            if (this.currentEffectMode == effectMode)
                 return;
 
-            if (currentEffect is IStatefulEffect prevStatefulEffect)
+            if (this.currentEffect is IStatefulEffect prevStatefulEffect)
                 prevStatefulEffect.DisableEffect();
 
             switch (effectMode)
             {
                 case EffectMode.AudioPulsate:
-                    currentEffect = audioPulseEffekt;
+                    this.currentEffect = this.audioPulseEffect;
                     break;
                 case EffectMode.AudioLine:
-                    currentEffect = audioLineEffekt;
+                    this.currentEffect = this.audioLineEffect;
                     break;
                 case EffectMode.AudioWave:
-                    currentEffect = audioWaveEffect;
+                    this.currentEffect = this.audioWaveEffect;
                     break;
                 case EffectMode.AudioSpectrum:
-                    currentEffect = audioSepctrumEffect;
+                    this.currentEffect = this.audioSepctrumEffect;
                     break;
                 case EffectMode.AudioParticle:
-                    currentEffect = audioRandomBurstEffect;
+                    this.currentEffect = this.audioRandomBurstEffect;
                     break;
                 case EffectMode.StaticAscending:
-                    currentEffect = staticAscendingValueEffect;
+                    this.currentEffect = this.staticAscendingValueEffect;
                     break;
                 case EffectMode.StaticValueOne:
-                    currentEffect = staticValueOneEffect;
+                    this.currentEffect = this.staticValueOneEffect;
                     break;
                 case EffectMode.External:
-                    currentEffect = externalEffect;
+                    this.currentEffect = this.externalEffect;
+                    break;
+                case EffectMode.AudioLineDescending:
+                    this.currentEffect = this.audioLineDescendingEffect;
                     break;
             }
 
-            if (currentEffect != null)
+            if (this.currentEffect != null)
             {
-                if (currentEffect is IStatefulEffect newStatefulEffect)
+                if (this.currentEffect is IStatefulEffect newStatefulEffect)
                     newStatefulEffect.EnableEffect();
 
-                if (currentEffect.IsStatic)
+                if (this.currentEffect.IsStatic)
                 {
-                    DynamicSettings dynamicSettings = dyamicSettings.CurrentValue;
-                    prevLedStrip = currentEffect.RenderEffekt(prevLedStrip, dynamicSettings.LedCount);
+                    DynamicSettings dynamicSettings = this.dyamicSettings.CurrentValue;
+                    this.prevLedStrip = this.currentEffect.RenderEffekt(this.prevLedStrip, dynamicSettings.LedCount);
                 }
             }
 
@@ -96,17 +102,17 @@ namespace Application.Effect.Service
 
         public LedStrip? GetRenderedLedStrip()
         {
-            DynamicSettings dynamicSettings = dyamicSettings.CurrentValue;
-            if (prevLedStrip != null && dynamicSettings.LedCount != prevLedStrip.LedPixels.Count)
-                prevLedStrip = null;
+            DynamicSettings dynamicSettings = this.dyamicSettings.CurrentValue;
+            if (this.prevLedStrip != null && dynamicSettings.LedCount != this.prevLedStrip.LedPixels.Count)
+                this.prevLedStrip = null;
 
-            if (currentEffect == null)
+            if (this.currentEffect == null)
                 return null;
 
-            if (!currentEffect.IsStatic || prevLedStrip == null)
-                prevLedStrip = currentEffect.RenderEffekt(prevLedStrip, dynamicSettings.LedCount);
+            if (!this.currentEffect.IsStatic || this.prevLedStrip == null)
+                this.prevLedStrip = this.currentEffect.RenderEffekt(this.prevLedStrip, dynamicSettings.LedCount);
 
-            return prevLedStrip;
+            return this.prevLedStrip;
         }
 
         public AudioServiceMode GetRequiredAudioMode()

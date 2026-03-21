@@ -32,7 +32,7 @@ namespace Application.Effect
                 prevPixels[i].Value = prevPixels[i].Value * dynamicSettings.Fade;
             }
 
-            int intensityRadius = (int)dynamicSettings.ValueIncreaseFactor;
+            int intensityRadius = dynamicSettings.ParticleSize;
 
             float probabilityFactor = (dynamicSettings.Speed / (float)staticSettings.MaxEffectSpeed) * 0.01f;
             float effectiveProb = Math.Min(1f, value * probabilityFactor);
@@ -52,7 +52,8 @@ namespace Application.Effect
                                 float t = (float)offset / (intensityRadius + 1);
                                 float interpVal = value * (1f - t);
 
-                                prevPixels[neighbor].Value = interpVal;
+                                if (prevPixels[neighbor].Value < interpVal)
+                                    prevPixels[neighbor].Value = interpVal;
                             }
                         }
                     }

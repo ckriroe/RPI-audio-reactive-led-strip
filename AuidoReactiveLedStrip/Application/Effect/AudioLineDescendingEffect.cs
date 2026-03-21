@@ -6,10 +6,10 @@ using Microsoft.Extensions.Options;
 
 namespace Application.Effect
 {
-    public class AudioLineEffekt : AudioValueBasedEffect
+    public class AudioLineDescendingEffect : AudioValueBasedEffect
     {
-        public AudioLineEffekt(IAudioService audioService, IOptionsMonitor<DynamicSettings> dynamicSettings)
-            : base(audioService, dynamicSettings) {}
+        public AudioLineDescendingEffect(IAudioService audioService, IOptionsMonitor<DynamicSettings> dynamicSettings)
+            : base(audioService, dynamicSettings) { }
 
         public override LedStrip? RenderEffekt(LedStrip? prevStrip, int length)
         {
@@ -32,13 +32,31 @@ namespace Application.Effect
 
             for (int i = 0; i < n; i++)
             {
+                float valueToSet = 0.0f;
+
                 if (i >= start && i <= end)
                 {
-                    ledPixels[i].Value = value;
-                } 
+                    if (i == center)
+                    {
+                        valueToSet = value;
+                    } 
+                    else if (i < center)
+                    {
+                        valueToSet = ((i - start) / (float)leftExtent) * value;
+                    }
+                    else
+                    {
+                        valueToSet = ((end - i) / (float)rightExtent) * value;
+                    }
+                }
+                
+                if (ledPixels[i].Value < valueToSet)
+                {
+                    ledPixels[i].Value = valueToSet;
+                }
                 else
                 {
-                    ledPixels[i].Value *= dynamicSettings.Fade;
+                    ledPixels[i].Value *= dynamicSettings.FadeOverTime;
                 }
             }
 
