@@ -21,5 +21,6 @@
         public int InvalidFrameSleepTime { get; set; }
         public int ReloadSettingsAfterMs { get; set; }
         public bool PrintFrameTimes { get; set; }
+        public float MinSanitizedValue {  get; set; }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Application.Domain;
+using System.Drawing;
 
 namespace Application.Settings
 {
@@ -75,11 +76,24 @@ namespace Application.Settings
         public float Gamma { get; set; }
 
         public int EffectRepeats { get; set; }
+        public float RedCorr { get; set; }
+        public float GreenCorr { get; set; }
+        public float BlueCorr { get; set; }
+        public float HueCorr { get; set; }
+        public float SatCorr { get; set; }
+        public float ValCorr { get; set; }
+        public float RedThresh { get; set; }
+        public float GreenThresh { get; set; }
+        public float BlueThresh { get; set; }
+        public float HueThresh { get; set; }
+        public float SatThresh { get; set; }
+        public float ValThresh { get; set; }
     }
 
     public class ColorSetting
     {
-        public required string Color { get; set; }
+        public required string ColorString { get; set; }
+        public Color Color { get; set; }
 
         public required float Threshold { get; set; }
     }

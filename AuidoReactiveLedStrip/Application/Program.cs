@@ -1,18 +1,38 @@
 ﻿using Application;
+using Application.Audio.FftTransformer;
 using Application.Audio.Receiver;
 using Application.Audio.Service;
 using Application.Audio.ValueProvider;
-using Application.Audio.FftTransformer;
+using Application.Coloring.Mode;
+using Application.Coloring.Noise;
+using Application.Coloring.Sanitizing;
+using Application.Coloring.Service;
 using Application.Effect;
 using Application.Effect.Service;
 using Application.Gpio;
 using Application.Looper;
 using Application.Settings;
+using Application.Util;
+using Application.Visualization.Screen;
 using AudioProcessing.AudioProcessor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using OpenTK.Windowing.Common;
+using OpenTK.Windowing.Desktop;
+using System.Drawing;
 
+var settings = new NativeWindowSettings()
+{
+    Size = new OpenTK.Mathematics.Vector2i(800, 200),
+    Title = "Screen Visualizer",
+    API = ContextAPI.OpenGL,
+    APIVersion = new Version(3, 3),
+    Flags = ContextFlags.Default,
+    Profile = ContextProfile.Compatability // Important!
+};
+
+var sv = new ScreenVisualizer(GameWindowSettings.Default, settings);
 var builder = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((hostingContext, config) =>
     {
@@ -30,13 +50,39 @@ var builder = Host.CreateDefaultBuilder(args)
     })
     .ConfigureServices((context, services) =>
     {
-        services.Configure<StaticSettings>(context.Configuration);
-        services.Configure<DynamicSettings>(context.Configuration);
+        services.AddOptions<StaticSettings>()
+            .Bind(context.Configuration)
+            .PostConfigure(o =>
+            {
+
+            });
+        
+        services.AddOptions<DynamicSettings>()
+            .Bind(context.Configuration)
+            .PostConfigure(o =>
+            {
+                foreach (var color in o.Colors)
+                {
+                    color.Color = ColorTranslator.FromHtml(color.ColorString);
+                }
+            });
+
+        services.AddSingleton(sv);
 
         if (OperatingSystem.IsWindows())
             services.AddTransient<ILooper, WindowsOverheadLooper>();
         else
             services.AddTransient<ILooper, LinuxLooper>();
+
+        services.AddSingleton<ValueColorMode>();
+        services.AddSingleton<IndexColorMode>();
+        services.AddSingleton<DistanceToCenterColorMode>();
+        services.AddSingleton<DistanceToBorderColorMode>();
+        services.AddSingleton<ColorWaveColorMode>();
+        services.AddSingleton<ColorIslandColorMode>();
+        services.AddSingleton<INoiseGenerator, NoiseGenerator>();
+        services.AddSingleton<IValueSanitizer, ValueSanitizer>();
+        services.AddSingleton<IColorService, ColorService>();
 
         services.AddSingleton<IGpioControllerFactory, GpioControllerFactory>();
         services.AddSingleton<AudioLineEffekt>();
@@ -62,8 +108,8 @@ var builder = Host.CreateDefaultBuilder(args)
 
 Orchestrator processor = builder.Services.GetRequiredService<Orchestrator>();
 processor.Start();
-Console.WriteLine("Press enter to exit the application ...");
-Console.Read();
+sv.Run();
+sv.Dispose();
 processor.Stop();
 
 /*using System.Drawing;

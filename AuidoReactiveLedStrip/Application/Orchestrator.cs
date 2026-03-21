@@ -1,10 +1,11 @@
 ﻿using Application.Audio.Service;
+using Application.Coloring.Service;
 using Application.Domain;
 using Application.Effect.Service;
 using Application.Looper;
 using Application.Settings;
+using Application.Visualization.Screen;
 using Microsoft.Extensions.Options;
-using System.Diagnostics;
 
 namespace Application
 {
@@ -14,7 +15,9 @@ namespace Application
         private readonly IOptionsMonitor<DynamicSettings> dynamicSettings;
         private readonly IAudioService audioService;
         private readonly IEffectService effectService;
+        private readonly IColorService colorService;
         private readonly ILooper looper;
+        private readonly ScreenVisualizer screen;
 
         private int invalidFrameSleepTime = 100;
         private bool isRunning = false;        
@@ -25,14 +28,18 @@ namespace Application
             IOptionsMonitor<DynamicSettings> dynamicSettings,
             IAudioService audioService,
             IEffectService effectService,
-            ILooper looper
+            IColorService colorService,
+            ILooper looper,
+            ScreenVisualizer screen
         ) {
             this.staticSettings = staticSettings;
             this.dynamicSettings = dynamicSettings;
             this.audioService = audioService;
             this.effectService = effectService;
+            this.colorService = colorService;
             this.looper = looper;
             this.looper.SetConsumer(this);
+            this.screen = screen;
         }
 
         public void OnSettingsChanged(StaticSettings staticSettings, DynamicSettings dynamicSettings)
@@ -40,6 +47,7 @@ namespace Application
             invalidFrameSleepTime = staticSettings.InvalidFrameSleepTime;
             this.effectService.SetEffectMode(dynamicSettings.EffectMode);
             this.audioService.SetAudioMode(this.effectService.GetRequiredAudioMode());
+            this.colorService.SetColorMode(dynamicSettings.ColorMode);
         }
 
         public void OnTick()
@@ -48,8 +56,11 @@ namespace Application
 
             if (ledStrip != null)
             {
+                this.colorService.ColorizeLedStrip(ledStrip);
+                this.screen.UpdateColors(ledStrip.LedPixels.Select(lp => lp.Color).ToArray());
                 // Do something
-            } else
+            } 
+            else
             {
                 Thread.Sleep(invalidFrameSleepTime);
             }

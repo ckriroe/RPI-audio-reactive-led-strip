@@ -21,5 +21,10 @@ namespace Application.Util
         {
             return CreateFilledStrip(lenfth, 0.0f);
         }
+
+        public static float ApplyNoise(float value, float noise)
+        {
+            return MathHelper.Clamp(value + noise, 0.0f, 1.0f);
+        }
     }
 }
