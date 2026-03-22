@@ -1,70 +1,59 @@
-﻿using Application.Util;
+﻿using Application.Settings;
+using Application.Util;
 using System.Transactions;
 
 namespace Application.Audio.ValueProvider
 {
     public class MovingMaxAudioValueProvider : BaseAudioValueProvider
     {
-        private MovingMaxAudioValueProviderSettings? sepcificSettings = null;
-
-
         private LimitedBuffer<float>? lastExtraOrdanarySampleBuffer = null;
         private float lastAproxMaxFrequency = -1.0f;
         private int lastAproxMaxFreqEval = -1;
 
-        public override void Initialize(BaseAudioDataProviderSettings settings)
-        {
-            base.Initialize(settings);
-            if (settings is MovingMaxAudioValueProviderSettings sepcificSettings)
-            {
-                this.sepcificSettings = sepcificSettings;
-            }
-        }
-
         protected override void CalculateAudioValue(float maxFrequency)
         {
-            if (this.sepcificSettings == null)
+            if (base.staticSettings == null || base.dynamicSettings == null)
                 return;
 
-            if (maxFrequency > this.sepcificSettings.MaxFrequencyAmplitude)
-                maxFrequency = this.sepcificSettings.MaxFrequencyAmplitude;
+            if (maxFrequency > this.dynamicSettings.MaxFreqAmplitude)
+                maxFrequency = this.dynamicSettings.MaxFreqAmplitude;
 
             if (maxFrequency > this.lastAproxMaxFrequency)
             {
-                this.lastAproxMaxFrequency = (this.lastAproxMaxFrequency + maxFrequency * (this.sepcificSettings.MaxFreqAmplitudeIncreaseRatio - 1)) / this.sepcificSettings.MaxFreqAmplitudeIncreaseRatio;
+                this.lastAproxMaxFrequency = MathHelper.Lerp(this.lastAproxMaxFrequency, maxFrequency, base.staticSettings.MaxFreqAmplitudeIncreaseRatio);
                 this.lastAproxMaxFreqEval = Environment.TickCount;
             } 
-            else if (maxFrequency > this.lastAproxMaxFrequency - this.lastAproxMaxFrequency * this.sepcificSettings.MaxFreqAmplitudeProlongerThreshholdPercent)
+            else if (maxFrequency > this.lastAproxMaxFrequency - this.lastAproxMaxFrequency * base.staticSettings.MaxFreqAmplitudeProlongerThreshholdPercent)
             {
-                this.lastAproxMaxFrequency = (lastAproxMaxFrequency * (this.sepcificSettings.MaxFreqAmplitudeDecreaseRatio - 1) + maxFrequency) / this.sepcificSettings.MaxFreqAmplitudeDecreaseRatio;
+                this.lastAproxMaxFrequency = MathHelper.Lerp(this.lastAproxMaxFrequency, maxFrequency, base.staticSettings.MaxFreqAmplitudeDecreaseRatio);
                 this.lastAproxMaxFreqEval = Environment.TickCount;
                 maxFrequency = this.lastAproxMaxFrequency;
             } 
-            else if (Environment.TickCount - this.lastAproxMaxFreqEval > this.sepcificSettings.MaxFreqAmplitudeTTL)
+            else if (Environment.TickCount - this.lastAproxMaxFreqEval > this.staticSettings.MaxFreqAmplitudeTTL)
             {
-                this.lastAproxMaxFrequency *= (1.0f - this.sepcificSettings.MaxFreqAmplitudeDecayRate);
+                this.lastAproxMaxFrequency *= (1.0f - this.staticSettings.MaxFreqAmplitudeDecayRate);
             }
 
-            if (this.lastExtraOrdanarySampleBuffer == null || this.lastExtraOrdanarySampleBuffer.MaxSize != this.sepcificSettings.LastExtraOrdanarySampleBufferSize)
-                this.lastExtraOrdanarySampleBuffer = new LimitedBuffer<float>(this.sepcificSettings.LastExtraOrdanarySampleBufferSize);
+            if (this.lastExtraOrdanarySampleBuffer == null || this.lastExtraOrdanarySampleBuffer.MaxSize != this.dynamicSettings.MeanValueBufferSize)
+                this.lastExtraOrdanarySampleBuffer = new LimitedBuffer<float>(this.dynamicSettings.MeanValueBufferSize);
 
-            if (maxFrequency < this.lastAproxMaxFrequency - this.lastAproxMaxFrequency * this.sepcificSettings.PercentDiffFromMaxToBeExtraOrdanary || !this.lastExtraOrdanarySampleBuffer.Items.Any())
+            if (maxFrequency < this.lastAproxMaxFrequency - this.lastAproxMaxFrequency * this.dynamicSettings.MeanValueThreshold || !this.lastExtraOrdanarySampleBuffer.Items.Any())
                 this.lastExtraOrdanarySampleBuffer.Add(maxFrequency);
 
             float avg = this.lastExtraOrdanarySampleBuffer.Items.Average();
 
             float adjustedFreqValue;
-            if (maxFrequency > this.sepcificSettings.MinFrequencyAmplitude)
+            if (maxFrequency > this.dynamicSettings.MinFreqAmplitude)
             {
                 adjustedFreqValue = maxFrequency;
             } 
             else
             {
-                float scaleFactor = this.sepcificSettings.BelowMinFreqAmplitudeFunctionFactor;
-                adjustedFreqValue = this.sepcificSettings.MinFrequencyAmplitude -
+                float scaleFactor = this.staticSettings.BelowMinFreqAmplitudeFunctionFactor;
+                adjustedFreqValue = this.dynamicSettings.MinFreqAmplitude -
                     (1.0f / scaleFactor) +
                     (1.0f / scaleFactor) *
-                    (float)Math.Exp(scaleFactor * (maxFrequency - this.sepcificSettings.MinFrequencyAmplitude));
+                    (float)Math.Exp(scaleFactor * (maxFrequency - this.dynamicSettings.MinFreqAmplitude));
 
                 adjustedFreqValue = Math.Max(0.0f, adjustedFreqValue);
             }

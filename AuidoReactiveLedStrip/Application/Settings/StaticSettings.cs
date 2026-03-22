@@ -7,8 +7,8 @@
         public int FftSize { get; set; }
         public int AudioDeviceId { get; set; }
         public float BelowMinFreqAmplitudeFunctionFactor { get; set; }
-        public int MaxFreqAmplitudeIncreaseRatio { get; set; }
-        public int MaxFreqAmplitudeDecreaseRatio { get; set; }
+        public float MaxFreqAmplitudeIncreaseRatio { get; set; }
+        public float MaxFreqAmplitudeDecreaseRatio { get; set; }
         public int MaxFreqAmplitudeTTL { get; set; }
         public float MaxFreqAmplitudeProlongerThreshholdPercent { get; set; }
         public float MaxFreqAmplitudeDecayRate { get; set; }

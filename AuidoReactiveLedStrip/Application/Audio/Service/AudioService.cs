@@ -137,41 +137,10 @@ namespace Application.Audio.Service
             );
 
             var dynamicSettings = this.dynamicSettingsMonitor.CurrentValue;
-            this.audioFftDataProvider.Initialize(new BaseAudioDataProviderSettings()
-            {
-                FftSize = staticSettings.FftSize,
-                SampleRate = staticSettings.SampleRate,
-                MinFrequency = dynamicSettings.MinFreq,
-                MaxFrequency = dynamicSettings.MaxFreq
-            });
 
-            this.simpleAudioValueProvider.Initialize(new BaseAudioValueProviderSettings()
-            {
-                FftSize = staticSettings.FftSize,
-                SampleRate = staticSettings.SampleRate,
-                MinFrequency = dynamicSettings.MinFreq,
-                MaxFrequency = dynamicSettings.MaxFreq,
-                MinFrequencyAmplitude = dynamicSettings.MinFreqAmplitude,
-                MaxFrequencyAmplitude = dynamicSettings.MaxFreqAmplitude
-            });
-
-            this.movingMaxAudioValueProvider.Initialize(new MovingMaxAudioValueProviderSettings()
-            {
-                FftSize = staticSettings.FftSize,
-                SampleRate = staticSettings.SampleRate,
-                MinFrequency = dynamicSettings.MinFreq,
-                MaxFrequency = dynamicSettings.MaxFreq,
-                MinFrequencyAmplitude = dynamicSettings.MinFreqAmplitude,
-                MaxFrequencyAmplitude = dynamicSettings.MaxFreqAmplitude,
-                LastExtraOrdanarySampleBufferSize = dynamicSettings.MeanValueBufferSize,
-                BelowMinFreqAmplitudeFunctionFactor = staticSettings.BelowMinFreqAmplitudeFunctionFactor,
-                MaxFreqAmplitudeIncreaseRatio = staticSettings.MaxFreqAmplitudeIncreaseRatio,
-                MaxFreqAmplitudeDecreaseRatio = staticSettings.MaxFreqAmplitudeDecreaseRatio,
-                MaxFreqAmplitudeTTL = staticSettings.MaxFreqAmplitudeTTL,
-                MaxFreqAmplitudeProlongerThreshholdPercent = staticSettings.MaxFreqAmplitudeProlongerThreshholdPercent,
-                MaxFreqAmplitudeDecayRate = staticSettings.MaxFreqAmplitudeDecayRate,
-                PercentDiffFromMaxToBeExtraOrdanary = dynamicSettings.MeanValueThreshold
-            });
+            this.audioFftDataProvider.Initialize(staticSettings, dynamicSettings);
+            this.simpleAudioValueProvider.Initialize(staticSettings, dynamicSettings);
+            this.movingMaxAudioValueProvider.Initialize(staticSettings, dynamicSettings);
         }
     }
 }

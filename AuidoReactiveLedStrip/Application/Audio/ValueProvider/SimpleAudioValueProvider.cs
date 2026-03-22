@@ -1,9 +1,4 @@
 ﻿using Application.Util;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Application.Audio.ValueProvider
 {
@@ -11,17 +6,17 @@ namespace Application.Audio.ValueProvider
     {
         protected override void CalculateAudioValue(float maxFrequency)
         {
-            if (base.settings == null)
+            if (base.dynamicSettings == null || base.staticSettings == null)
                 return;
 
-            float frequencyDiff = base.settings.MaxFrequencyAmplitude - base.settings.MinFrequencyAmplitude;
+            float frequencyDiff = base.dynamicSettings.MaxFreqAmplitude - base.dynamicSettings.MinFreqAmplitude;
             if (frequencyDiff <= 0.0f)
             {
                 base.currentValue = 0.0f;
                 return;
             }
 
-            base.currentValue = MathHelper.Clamp((maxFrequency - base.settings.MinFrequencyAmplitude) / frequencyDiff, 0.0f, 1.0f);
+            base.currentValue = MathHelper.Clamp((maxFrequency - base.dynamicSettings.MinFreqAmplitude) / frequencyDiff, 0.0f, 1.0f);
         }
     }
 }

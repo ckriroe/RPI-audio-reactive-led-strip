@@ -931,6 +931,9 @@ def process_audio_data(indata):
     
     current_time_ms = int(time.time() * 1000)
 
+    if max_freq > max_freq_amplitude:
+        max_freq = max_freq_amplitude
+
     if max_freq > last_aprox_max_freq:
         last_aprox_max_freq = (last_aprox_max_freq + max_freq * (MAX_FREQ_AMPLITUDE_INCREASE_RATIO - 1)) / MAX_FREQ_AMPLITUDE_INCREASE_RATIO
         last_aprox_max_freq_eval = current_time_ms
@@ -948,9 +951,6 @@ def process_audio_data(indata):
         last_extra_ordinary_sample_buffer.add(max_freq)
 
     avg = np.mean(last_extra_ordinary_sample_buffer.items) if last_extra_ordinary_sample_buffer.items else 0
-
-    if max_freq > max_freq_amplitude:
-        max_freq = max_freq_amplitude
 
     if max_freq > min_freq_amplitude:
         adjusted_freq_value = max_freq
