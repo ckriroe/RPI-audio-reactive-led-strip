@@ -4,8 +4,8 @@
   "FftSize": 1024,
   "AudioDeviceId": 4,
   "BelowMinFreqAmplitudeFunctionFactor": -0.03,
-  "MaxFreqAmplitudeIncreaseRatio": 3,
-  "MaxFreqAmplitudeDecreaseRatio": 5,
+  "MaxFreqAmplitudeIncreaseRatio": 0.66, // Higher = rise faster
+  "MaxFreqAmplitudeDecreaseRatio": 0.2, // Higher = fall faster
   "MaxFreqAmplitudeTTL": 2000,
   "MaxFreqAmplitudeProlongerThreshholdPercent": 0.03,
   "MaxFreqAmplitudeDecayRate": 0.003,

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Application.Settings;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -9,11 +10,12 @@ namespace Application.Audio.ValueProvider
 {
     public class AudioFftDataProvider : IAudioDataProvider
     {
-        private BaseAudioDataProviderSettings? settings;
         private int? minBin = null;
         private int? maxBin = null;
 
         protected volatile float[]? filteredFftData = null;
+        protected StaticSettings? staticSettings = null;
+        protected DynamicSettings? dynamicSettings = null;
 
         public void SetNewFftData(float[] fftData)
         {
@@ -24,12 +26,21 @@ namespace Application.Audio.ValueProvider
             this.ProcessFftData();
         }
 
-        public virtual void Initialize(BaseAudioDataProviderSettings settings)
+        public void Initialize(StaticSettings staticSettings, DynamicSettings dynamicSettings)
         {
-            this.settings = settings;
-            double frequencyRangePerBin = this.settings.SampleRate / (double)this.settings.FftSize;
-            this.minBin = (int)Math.Round(this.settings.MinFrequency / frequencyRangePerBin);
-            this.maxBin = (int)Math.Round(this.settings.MaxFrequency / frequencyRangePerBin) + 1;
+            this.staticSettings = staticSettings;
+            this.dynamicSettings = dynamicSettings;
+
+            double frequencyRangePerBin = this.staticSettings.SampleRate / (double)this.staticSettings.FftSize;
+            int newMinBin = (int)Math.Round(this.dynamicSettings.MinFreq / frequencyRangePerBin);
+            int newMaxBin = (int)Math.Round(this.dynamicSettings.MaxFreq / frequencyRangePerBin) + 1;
+
+            if (newMinBin != this.minBin || newMaxBin != this.maxBin)
+            {
+                this.minBin = newMinBin;
+                this.maxBin = newMaxBin;
+                Console.WriteLine($"Actual frequency range: {newMinBin * frequencyRangePerBin}hz - {(newMaxBin - 1) * frequencyRangePerBin}hz");
+            }            
         }
 
         public float[]? GetCurrentFftData()

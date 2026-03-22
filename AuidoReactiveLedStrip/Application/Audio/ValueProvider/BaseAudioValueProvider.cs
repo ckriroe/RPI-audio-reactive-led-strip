@@ -1,4 +1,6 @@
-﻿namespace Application.Audio.ValueProvider
+﻿using Application.Settings;
+
+namespace Application.Audio.ValueProvider
 {
     public abstract class BaseAudioValueProvider : AudioFftDataProvider, IAudioValueProvider
     {
@@ -10,9 +12,9 @@
             return this.currentValue;
         }
 
-        public override void Initialize(BaseAudioDataProviderSettings settings)
+        public override void Initialize(StaticSettings staticSettings, DynamicSettings dynamicSettings)
         {
-            base.Initialize(settings);
+            base.Initialize(staticSettings, dynamicSettings);
             if (settings is BaseAudioValueProviderSettings specificSettings)
             {
                 this.settings = specificSettings;

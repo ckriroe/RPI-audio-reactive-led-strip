@@ -1,14 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Application.Settings;
 
 namespace Application.Audio.ValueProvider
 {
     public interface IAudioDataProvider
     {
-        void Initialize(BaseAudioDataProviderSettings settings);
+        void Initialize(StaticSettings staticSettings, DynamicSettings dynamicSettings);
 
         void SetNewFftData(float[] fftData);
 
