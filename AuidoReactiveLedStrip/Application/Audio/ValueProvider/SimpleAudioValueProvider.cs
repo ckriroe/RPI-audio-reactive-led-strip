@@ -1,4 +1,5 @@
 ﻿using Application.Util;
+using System.Runtime.Intrinsics.X86;
 
 namespace Application.Audio.ValueProvider
 {
@@ -17,6 +18,8 @@ namespace Application.Audio.ValueProvider
             }
 
             base.currentValue = MathHelper.Clamp((maxFrequency - base.dynamicSettings.MinFreqAmplitude) / frequencyDiff, 0.0f, 1.0f);
+            if (base.staticSettings.PrintFrequencyInfos)
+                Console.WriteLine($"Max freq: {maxFrequency,15:F5}\tResulting value: {base.currentValue,15:F5}");
         }
     }
 }

@@ -5,6 +5,8 @@ namespace Application.Settings
 {
     public class DynamicSettings
     {
+        public int PhysicalLedCount { get; set; }
+
         public List<ColorSetting> Colors { get; set; } = [];
 
         public int LedCount { get; set; }
@@ -77,31 +79,19 @@ namespace Application.Settings
 
         public int EffectRepeats { get; set; }
 
-        public float RedCorr { get; set; }
-
-        public float GreenCorr { get; set; }
-
-        public float BlueCorr { get; set; }
-
-        public float HueCorr { get; set; }
-
-        public float SatCorr { get; set; }
-
-        public float ValCorr { get; set; }
-
-        public float RedThresh { get; set; }
-
-        public float GreenThresh { get; set; }
-
-        public float BlueThresh { get; set; }
-
-        public float HueThresh { get; set; }
-
-        public float SatThresh { get; set; }
-
-        public float ValThresh { get; set; }
+        public float Acceleration { get; set; }
 
         public int ParticleSize { get; set; }
+
+        public int PatternSplits { get; set; }
+
+        public int PatternSpread { get; set; }
+
+        public int PatternFlip { get; set; }
+
+        public int PatternCenter { get; set; }
+        
+        public float PatternSectionSizeMod { get; set; }
     }
 
     public class ColorSetting

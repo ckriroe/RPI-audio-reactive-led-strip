@@ -2,6 +2,6 @@
 {
     public class LedStrip
     {
-        public IList<LedPixel> LedPixels { get; set; } = [];
+        public LedPixel[] LedPixels { get; set; } = [];
     }
 }

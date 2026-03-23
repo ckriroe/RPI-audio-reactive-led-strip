@@ -5,8 +5,11 @@ using Application.Audio.FftTransformer;
 using Application.Audio.Receiver;
 using Application.Audio.Service;
 using Application.Audio.ValueProvider;
+using Application.Coloring.ColorCorrection;
 using Application.Coloring.Mode;
 using Application.Coloring.Noise;
+using Application.Coloring.Remapping;
+using Application.Coloring.Remapping.Service;
 using Application.Coloring.Sanitizing;
 using Application.Coloring.Service;
 using Application.Effect;
@@ -19,7 +22,6 @@ using AudioProcessing.AudioProcessor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
 using System.Drawing;
 
 var builder = Host.CreateDefaultBuilder(args)
@@ -41,20 +43,11 @@ var builder = Host.CreateDefaultBuilder(args)
     {
         services.AddOptions<StaticSettings>()
             .Bind(context.Configuration)
-            .PostConfigure(o =>
-            {
+            .PostConfigure(o => SettingsCorrector.CorrectStaticSettings(o));
 
-            });
-        
         services.AddOptions<DynamicSettings>()
             .Bind(context.Configuration)
-            .PostConfigure(o =>
-            {
-                foreach (var color in o.Colors)
-                {
-                    color.Color = ColorTranslator.FromHtml(color.ColorString);
-                }
-            });
+            .PostConfigure(o => SettingsCorrector.CorrectDynamicSettings(o));
 
         services.AddSingleton<Application.Application.Lifetime.IApplicationLifetime, ApplicationLifetime>();
         services.AddSingleton<IApplicationService, ApplicationService>();
@@ -65,12 +58,19 @@ var builder = Host.CreateDefaultBuilder(args)
         else
             services.AddTransient<ILooper, LinuxLooper>();
 
+        services.AddSingleton<Accelerator>();
+        services.AddSingleton<Patternizer>();
+        services.AddSingleton<Repeater>();
+        services.AddSingleton<IRemapService, RemapService>();
+
         services.AddSingleton<ValueColorMode>();
         services.AddSingleton<IndexColorMode>();
         services.AddSingleton<DistanceToCenterColorMode>();
         services.AddSingleton<DistanceToBorderColorMode>();
         services.AddSingleton<ColorWaveColorMode>();
         services.AddSingleton<ColorIslandColorMode>();
+        services.AddSingleton<BrightnessAdjuster>();
+        services.AddSingleton<GammaCorrector>();
         services.AddSingleton<INoiseGenerator, NoiseGenerator>();
         services.AddSingleton<IValueSanitizer, ValueSanitizer>();
         services.AddSingleton<IColorService, ColorService>();
@@ -100,6 +100,7 @@ var builder = Host.CreateDefaultBuilder(args)
 
 IApplicationService applicationService = builder.Services.GetRequiredService<IApplicationService>();
 applicationService.StartApplication();
+
 
 /*using System.Drawing;
 

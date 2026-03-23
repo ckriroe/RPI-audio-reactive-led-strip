@@ -1,12 +1,9 @@
-﻿using Application.Coloring.Mode;
-using Application.Coloring.Noise;
+﻿using Application.Coloring.ColorCorrection;
+using Application.Coloring.Mode;
 using Application.Coloring.Sanitizing;
 using Application.Domain;
 using Application.Settings;
-using Application.Util;
 using Microsoft.Extensions.Options;
-using rpi_ws281x;
-using System;
 using System.Drawing;
 
 namespace Application.Coloring.Service
@@ -23,6 +20,9 @@ namespace Application.Coloring.Service
         private readonly ColorWaveColorMode colorWaveColorMode;
         private readonly ColorIslandColorMode colorIslandColorMode;
 
+        private readonly GammaCorrector gammaCorrector;
+        private readonly BrightnessAdjuster brightnessAdjuster;
+
         private ColorMode? currentColorModeType = null;
         private IColorMode? currentColorMode = null;
 
@@ -35,7 +35,9 @@ namespace Application.Coloring.Service
             DistanceToCenterColorMode distanceToCenterColorMode,
             DistanceToBorderColorMode distanceToBorderColorMode,
             ColorWaveColorMode colorWaveColorMode,
-            ColorIslandColorMode colorIslandColorMode
+            ColorIslandColorMode colorIslandColorMode,
+            GammaCorrector gammaCorrector,
+            BrightnessAdjuster brightnessAdjuster
         )
         {
             this.dyamicSettings = dyamicSettings;
@@ -47,21 +49,23 @@ namespace Application.Coloring.Service
             this.distanceToBorderColorMode = distanceToBorderColorMode;
             this.colorWaveColorMode = colorWaveColorMode;
             this.colorIslandColorMode = colorIslandColorMode;
+            this.gammaCorrector = gammaCorrector;
+            this.brightnessAdjuster = brightnessAdjuster;
         }
 
         public void ColorizeLedStrip(LedStrip ledStrip)
         {
-            IList<LedPixel> pixels = ledStrip.LedPixels;
+            LedPixel[] pixels = ledStrip.LedPixels;
             DynamicSettings dynamicSettings = this.dyamicSettings.CurrentValue;
             StaticSettings staticSettings = this.staticSettings.CurrentValue;
 
-            if (pixels.Count < 2 || dynamicSettings.Colors.Count < 2 || this.currentColorMode == null)
+            if (pixels.Length < 2 || dynamicSettings.Colors.Count < 2 || this.currentColorMode == null)
             {
                 return;
             }
 
             this.currentColorMode.PrecomputeValues(staticSettings, dynamicSettings, ledStrip);
-            int length = pixels.Count;
+            int length = pixels.Length;
             var bgColor = dynamicSettings.Colors[0].Color;
 
             for (int i = 0; i < length; i++)
@@ -83,11 +87,16 @@ namespace Application.Coloring.Service
 
         private void ColorCorrect(LedPixel led, DynamicSettings dynamicSettings)
         {
-            int finalR = (int)Math.Min(255.0, ColorHelper.GammaCorrect(led.Color.R * dynamicSettings.Brightness, dynamicSettings));
-            int finalG = (int)Math.Min(255.0, ColorHelper.GammaCorrect(led.Color.G * dynamicSettings.Brightness, dynamicSettings));
-            int finalB = (int)Math.Min(255.0, ColorHelper.GammaCorrect(led.Color.B * dynamicSettings.Brightness, dynamicSettings));
+            (float R, float G, float B) result = this.gammaCorrector.ColorCorrect(this.brightnessAdjuster.ColorCorrect(
+                (led.Color.R, led.Color.G, led.Color.B),
+                dynamicSettings
+            ), dynamicSettings);
 
-            led.Color = Color.FromArgb(finalR, finalG, finalB);
+            led.Color = Color.FromArgb(
+                (int)Math.Clamp(result.R, 0, 255),
+                (int)Math.Clamp(result.G, 0, 255),
+                (int)Math.Clamp(result.B, 0, 255)
+            );
         }
 
         public void SetColorMode(ColorMode colorMode)

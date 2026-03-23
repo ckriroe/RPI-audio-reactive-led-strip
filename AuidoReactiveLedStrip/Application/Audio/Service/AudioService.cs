@@ -51,13 +51,17 @@ namespace Application.Audio.Service
             if (this.currentAudioMode == audioMode)
                 return;
 
+            this.currentDataProvider?.SetActive(false);
             this.currentAudioMode = audioMode;
             if (audioMode == AudioServiceMode.None)
             {
                 this.StopAudioProcessing();
                 this.currentDataProvider = null;
-            } else
+                Console.WriteLine("Disabled audio processing");
+            } 
+            else
             {
+                Console.WriteLine("Enabled audio processing with mode: " + audioMode.ToString());
                 if (audioMode == AudioServiceMode.Fft)
                     this.currentDataProvider = this.audioFftDataProvider;
                 else if (audioMode == AudioServiceMode.Simple)
@@ -66,7 +70,10 @@ namespace Application.Audio.Service
                     this.currentDataProvider = this.movingMaxAudioValueProvider;
 
                 if (this.currentDataProvider != null)
+                {
+                    this.currentDataProvider.SetActive(true);
                     this.StartAudioProcessing();
+                }                    
             }
         }
 

@@ -1,17 +1,13 @@
 ﻿using Application.Settings;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Application.Audio.ValueProvider
 {
     public class AudioFftDataProvider : IAudioDataProvider
     {
+        private float? frequencyRangePerBin = null;
         private int? minBin = null;
         private int? maxBin = null;
+        private bool isActive;
 
         protected volatile float[]? filteredFftData = null;
         protected StaticSettings? staticSettings = null;
@@ -19,7 +15,7 @@ namespace Application.Audio.ValueProvider
 
         public void SetNewFftData(float[] fftData)
         {
-            if (this.minBin == null || this.maxBin == null)
+            if (this.minBin == null || this.maxBin == null || !this.isActive)
                 return;
 
             this.filteredFftData = fftData[this.minBin.Value..this.maxBin.Value];
@@ -31,15 +27,15 @@ namespace Application.Audio.ValueProvider
             this.staticSettings = staticSettings;
             this.dynamicSettings = dynamicSettings;
 
-            double frequencyRangePerBin = this.staticSettings.SampleRate / (double)this.staticSettings.FftSize;
-            int newMinBin = (int)Math.Round(this.dynamicSettings.MinFreq / frequencyRangePerBin);
-            int newMaxBin = (int)Math.Round(this.dynamicSettings.MaxFreq / frequencyRangePerBin) + 1;
+            this.frequencyRangePerBin = this.staticSettings.SampleRate / (float)this.staticSettings.FftSize;
+            int newMinBin = (int)Math.Round(this.dynamicSettings.MinFreq / this.frequencyRangePerBin.Value);
+            int newMaxBin = (int)Math.Round(this.dynamicSettings.MaxFreq / this.frequencyRangePerBin.Value) + 1;
 
             if (newMinBin != this.minBin || newMaxBin != this.maxBin)
             {
                 this.minBin = newMinBin;
                 this.maxBin = newMaxBin;
-                Console.WriteLine($"Actual frequency range: {newMinBin * frequencyRangePerBin}hz - {(newMaxBin - 1) * frequencyRangePerBin}hz");
+                this.PrintFrequencyInfo();
             }            
         }
 
@@ -51,6 +47,20 @@ namespace Application.Audio.ValueProvider
         protected virtual void ProcessFftData()
         {
             // Do nothing by default
+        }
+
+        public void SetActive(bool isActive)
+        {
+            this.isActive = isActive;
+            this.PrintFrequencyInfo();
+        }
+
+        private void PrintFrequencyInfo()
+        {
+            if (this.isActive)
+            {
+                Console.WriteLine($"Actual frequency range for {this.GetType().Name}: {this.minBin * this.frequencyRangePerBin}hz - {(this.maxBin - 1) * this.frequencyRangePerBin}hz");
+            }
         }
     }
 }

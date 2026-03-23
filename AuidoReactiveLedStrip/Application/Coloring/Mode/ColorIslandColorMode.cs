@@ -27,7 +27,7 @@ namespace Application.Coloring.Mode
 
         public override void PrecomputeValues(StaticSettings staticSettings, DynamicSettings dynamicSettings, LedStrip ledStrip)
         {
-            int n = ledStrip.LedPixels.Count;
+            int n = ledStrip.LedPixels.Length;
             if (this.preComutedValues.Length != n)
                 this.preComutedValues = new float[n];
 

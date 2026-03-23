@@ -102,12 +102,6 @@ namespace Application.Util
             if (h < 0) h += 1.0f;
         }
 
-        public static int GammaCorrect(float value, DynamicSettings dynamicSettings)
-        {
-            return (int)(Math.Pow(value / 255.0f, dynamicSettings.Gamma) * 255.0f + 0.5f);
-        }
-
-
         public static Color ValueToColor(float value, DynamicSettings dynamicSettings, float? bgThresholdOverride = null)
         {
             value *= dynamicSettings.ColorIncreaseFactor;

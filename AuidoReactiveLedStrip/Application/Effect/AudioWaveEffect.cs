@@ -11,7 +11,7 @@ namespace Application.Effect
         private readonly IOptionsMonitor<StaticSettings> staticSettings;
 
         private float waveDistanceAccumulator = 0f;
-        private IList<LedPixel> prevWaveStrip = [];
+        private LedPixel[] prevWaveStrip = [];
 
         public AudioWaveEffect(
             IAudioService audioService, 
@@ -45,14 +45,14 @@ namespace Application.Effect
                     return LedHelper.CreateEmptyStrip(length);
             }
 
-            if (this.prevWaveStrip.Count != n)
+            if (this.prevWaveStrip.Length != n)
                 this.prevWaveStrip = LedHelper.CreateEmptyStrip(n).LedPixels;
 
             // TODO check if allocation can be removed
 
-            IList<LedPixel> newStrip = this.prevWaveStrip
+            LedPixel[] newStrip = this.prevWaveStrip
                 .Select(p => new LedPixel(p.Value))
-                .ToList();
+                .ToArray();
 
             // TODO: can these 2 be merged?
             MoveLeftSide(n, center, steps, newStrip);
@@ -71,12 +71,12 @@ namespace Application.Effect
                 return CreateBouncedWaveStrip(length, bounceLayers, newStrip);
         }
 
-        private static LedStrip CreateBouncedWaveStrip(int length, int bounceLayers, IList<LedPixel> newStrip)
+        private static LedStrip CreateBouncedWaveStrip(int length, int bounceLayers, LedPixel[] newStrip)
         {
             int bounceLayerLength = length;
             var bounced = LedHelper.CreateEmptyStrip(bounceLayerLength);
 
-            for (int i = 0; i < bounced.LedPixels.Count; i++)
+            for (int i = 0; i < bounced.LedPixels.Length; i++)
             {
                 float baseVal = newStrip[i + bounceLayers * bounceLayerLength].Value;
 
@@ -118,14 +118,14 @@ namespace Application.Effect
             {
                 int distToCenter = Math.Abs(center - i);
 
-                float factor = 1f - (distToCenter * settings.FadeOverTime);
+                float factor = 1f - (distToCenter * (settings.FadeOverTime / 1000.0f));
                 factor = Math.Clamp(factor, 0f, 10f);
 
                 stripToFade[i].Value *= factor;
             }
         }
 
-        private static void FillInterpolatedCenter(float newValue, int n, int center, int steps, IList<LedPixel> newStrip)
+        private static void FillInterpolatedCenter(float newValue, int n, int center, int steps, LedPixel[] newStrip)
         {
             foreach (int direction in new[] { -1, 1 })
             {
@@ -158,7 +158,7 @@ namespace Application.Effect
             }
         }
 
-        private void MoveRightSide(int n, int center, int steps, IList<LedPixel> newStrip)
+        private void MoveRightSide(int n, int center, int steps, LedPixel[] newStrip)
         {
             for (int i = n - 1; i >= center; i--)
             {
@@ -175,7 +175,7 @@ namespace Application.Effect
             }
         }
 
-        private void MoveLeftSide(int n, int center, int steps, IList<LedPixel> newStrip)
+        private void MoveLeftSide(int n, int center, int steps, LedPixel[] newStrip)
         {
             for (int i = 0; i <= center; i++)
             {

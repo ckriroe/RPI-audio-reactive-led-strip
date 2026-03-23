@@ -23,7 +23,7 @@ namespace Application.Coloring.Mode
 
         public override void PrecomputeValues(StaticSettings staticSettings, DynamicSettings dynamicSettings, LedStrip ledStrip)
         {
-            this.maxDistance = (ledStrip.LedPixels.Count - 1) / 2.0f;
+            this.maxDistance = (ledStrip.LedPixels.Length - 1) / 2.0f;
             if (maxDistance <= 0.0f)
                 this.maxDistance = 1.0f;
         }
