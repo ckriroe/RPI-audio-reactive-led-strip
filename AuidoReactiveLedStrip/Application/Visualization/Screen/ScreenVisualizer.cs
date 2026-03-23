@@ -1,5 +1,4 @@
-﻿using Application.Domain;
-using OpenTK.Graphics.OpenGL;
+﻿using OpenTK.Graphics.OpenGL;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 using System.Drawing;
@@ -17,12 +16,12 @@ namespace Application.Visualization.Screen
         public void UpdateColors(Color[] colors)
         {
             this.colors = colors;
+            
         }
 
         protected override void OnLoad()
         {
             base.OnLoad();
-
             GL.ClearColor(Color.Black);
             GL.PointSize(6f);
             VSync = VSyncMode.On;

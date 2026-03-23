@@ -9,5 +9,7 @@ namespace Application.Audio.ValueProvider
         void SetNewFftData(float[] fftData);
 
         float[]? GetCurrentFftData();
+
+        void SetActive(bool isActive);
     }
 }

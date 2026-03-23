@@ -1,10 +1,5 @@
 ﻿using MathNet.Numerics.IntegralTransforms;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Application.Audio.FftTransformer
 {
@@ -32,7 +27,8 @@ namespace Application.Audio.FftTransformer
                 for (int c = 0; c < channels; c++)
                 {
                     float sample = samples[f * channels.Value + c];
-                    if (Math.Abs(sample) > maxSample) maxSample = Math.Abs(sample);
+                    if (Math.Abs(sample) > maxSample)
+                        maxSample = Math.Abs(sample);
                 }
 
                 fftInput[f] = new Complex(maxSample, 0.0);

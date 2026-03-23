@@ -1,8 +1,8 @@
 ﻿using Application.Application.Orchestration;
 using Application.Settings;
 using Application.Visualization.Screen;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using System.Diagnostics;
 
 namespace Application.Application.Service
 {
@@ -52,9 +52,12 @@ namespace Application.Application.Service
                     this.prevGuiHeight = staticSettings.GuiHeight;
                     this.currentScreenVisualizer = this.screenVisualizerFactory.Create(staticSettings.GuiWidth, staticSettings.GuiHeight);
                     this.orchestrator.SetCurrentScreen(this.currentScreenVisualizer);
+                    Console.WriteLine($"Displaying visualization (Width: {staticSettings.GuiWidth}px, Height: {staticSettings.GuiHeight}px)");
                     this.currentScreenVisualizer.Run();
+                    Console.WriteLine("Closed visualization");
                     this.currentScreenVisualizer.Dispose();
                     this.currentScreenVisualizer = null;
+                    this.ForceCloseWindow(staticSettings);
                 }
                 else
                 {
@@ -84,6 +87,18 @@ namespace Application.Application.Service
             this.settingsSubscription?.Dispose();
             this.isRunnging = false;
             this.currentScreenVisualizer?.Close();
+        }
+
+        private void ForceCloseWindow(StaticSettings staticSettings)
+        {
+            if (OperatingSystem.IsLinux())
+            {
+                // Open a pre-clsoed instance of the visualizer to force close the existing window, necessary due to Wayland not handling window close requests correctly
+                IScreenVisualizer deadVisualizer = this.screenVisualizerFactory.Create(staticSettings.GuiWidth, staticSettings.GuiHeight);
+                deadVisualizer.Close();
+                deadVisualizer.Run();
+                deadVisualizer.Dispose();
+            }
         }
     }
 }

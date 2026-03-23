@@ -1,10 +1,13 @@
 ﻿using Application.Audio.Service;
+using Application.Coloring.Remapping.Service;
 using Application.Coloring.Service;
 using Application.Domain;
 using Application.Effect.Service;
 using Application.Looper;
 using Application.Settings;
 using Application.Visualization.Screen;
+using OpenTK.Mathematics;
+using System.Drawing;
 
 namespace Application.Application.Orchestration
 {
@@ -13,23 +16,29 @@ namespace Application.Application.Orchestration
         private readonly IAudioService audioService;
         private readonly IEffectService effectService;
         private readonly IColorService colorService;
+        private readonly IRemapService remapService;
         private readonly ILooper looper;
 
+        private StaticSettings staticSettings;
+        private DynamicSettings dynamicSettings;
         private IScreenVisualizer? screenVisualizer;
         private int invalidFrameSleepTime = 100;
         private bool isRunning = false;
         private Thread? worker = null;
+        private Color[] currColors = [];
 
         public Orchestrator(
             IAudioService audioService,
             IEffectService effectService,
             IColorService colorService,
+            IRemapService remapService,
             ILooper looper
         )
         {
             this.audioService = audioService;
             this.effectService = effectService;
             this.colorService = colorService;
+            this.remapService = remapService;
             this.looper = looper;
             this.looper.SetConsumer(this);
         }
@@ -45,6 +54,8 @@ namespace Application.Application.Orchestration
             this.effectService.SetEffectMode(dynamicSettings.EffectMode);
             this.audioService.SetAudioMode(this.effectService.GetRequiredAudioMode());
             this.colorService.SetColorMode(dynamicSettings.ColorMode);
+            this.staticSettings = staticSettings;
+            this.dynamicSettings = dynamicSettings;
         }
 
         public void OnTick()
@@ -54,8 +65,8 @@ namespace Application.Application.Orchestration
             if (ledStrip != null)
             {
                 this.colorService.ColorizeLedStrip(ledStrip);
-                this.screenVisualizer?.UpdateColors(ledStrip.LedPixels.Select(lp => lp.Color).ToArray());
-                // TODO color actual leds
+                Color[] remappedColors = this.remapService.RemapColors(ledStrip);
+                this.screenVisualizer?.UpdateColors(remappedColors);
             }
             else
             {

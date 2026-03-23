@@ -19,6 +19,7 @@
         public int InvalidFrameSleepTime { get; set; }
         public int ReloadSettingsAfterMs { get; set; }
         public bool PrintFrameTimes { get; set; }
+        public bool PrintFrequencyInfos { get; set; }
         public float MinSanitizedValue {  get; set; }
         public bool UseGuiVisualization { get; set; }
         public int GuiWidth { get; set; }

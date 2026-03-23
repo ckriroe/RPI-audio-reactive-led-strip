@@ -12,9 +12,9 @@ namespace Application.Visualization.Screen
                 ClientSize = new OpenTK.Mathematics.Vector2i(initialWidth, initialHeight),
                 Title = "Screen Visualizer",
                 API = ContextAPI.OpenGL,
-                APIVersion = new Version(3, 3),
+                APIVersion = new Version(3, 0),
                 Flags = ContextFlags.Default,
-                Profile = ContextProfile.Compatability
+                Profile = ContextProfile.Any
             };
 
             return new ScreenVisualizer(GameWindowSettings.Default, settings);

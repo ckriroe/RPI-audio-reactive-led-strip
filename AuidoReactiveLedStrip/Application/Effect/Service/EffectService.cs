@@ -103,7 +103,7 @@ namespace Application.Effect.Service
         public LedStrip? GetRenderedLedStrip()
         {
             DynamicSettings dynamicSettings = this.dyamicSettings.CurrentValue;
-            if (this.prevLedStrip != null && dynamicSettings.LedCount != this.prevLedStrip.LedPixels.Count)
+            if (this.prevLedStrip != null && dynamicSettings.LedCount != this.prevLedStrip.LedPixels.Length)
                 this.prevLedStrip = null;
 
             if (this.currentEffect == null)

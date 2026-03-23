@@ -59,6 +59,9 @@ namespace Application.Audio.ValueProvider
             }
 
             base.currentValue = Math.Max(0, (adjustedFreqValue - avg) / this.lastAproxMaxFrequency);
+
+            if (base.staticSettings.PrintFrequencyInfos)
+                Console.WriteLine($"Last approx. max freq: {this.lastAproxMaxFrequency,15:F5}\t\tCurrrent avg. mean amplitude: {avg,15:F5}\t\tMax freq: {maxFrequency,15:F5}\tResulting value: {base.currentValue,15:F5}");
         }
     }
 }
