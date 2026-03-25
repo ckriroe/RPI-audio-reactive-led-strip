@@ -27,5 +27,6 @@
         public int GuiWidth { get; set; }
         public int GuiHeight { get; set; }
         public int MainThreadSettingsCheckIntervalMs { get; set; }
+        public bool RunIndefinitely { get; set; }
     }
 }

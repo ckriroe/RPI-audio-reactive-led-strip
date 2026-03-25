@@ -23,5 +23,6 @@
   "UseLedVisualization": true,
   "GuiWidth": 800,
   "GuiHeight": 200,
-  "MainThreadSettingsCheckIntervalMs": 2000
+  "MainThreadSettingsCheckIntervalMs": 2000,
+  "RunIndefinitely": true
 }
