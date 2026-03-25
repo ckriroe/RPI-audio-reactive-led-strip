@@ -1,11 +1,20 @@
 ﻿using Application.Application.Service;
+using Application.RuntimeSettings;
+using Microsoft.Extensions.Options;
 
 namespace Application.Application.Lifetime
 {
     public class ApplicationLifetime : IApplicationLifetime
     {
+        private readonly bool runIndefinitely;
+
         private Thread? lifetimeThread = null;
         private IApplicationService? currentApplication;
+
+        private ApplicationLifetime(IOptions<StaticSettings> options)
+        {
+            this.runIndefinitely = options.Value.RunIndefinitely;
+        }
 
         public void StartLifetime(IApplicationService application)
         {
@@ -15,9 +24,20 @@ namespace Application.Application.Lifetime
             this.currentApplication = application;
             this.lifetimeThread = new Thread(() =>
             {
-                Console.WriteLine("Press any key to close this application...");
-                Console.ReadKey();
-                Console.WriteLine("\nShutting down...");
+                if (this.runIndefinitely)
+                {
+                    while (true)
+                    {
+                        Thread.Sleep(10000);
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Press any key to close this application...");
+                    Console.ReadKey();
+                    Console.WriteLine("\nShutting down...");
+                }
+
                 this.currentApplication?.StopApplication();
             });
 
