@@ -1,6 +1,6 @@
 ﻿using Application.Application.Orchestration;
-using Application.Settings;
-using Application.Visualization.Screen;
+using Application.RuntimeSettings;
+using Application.Visualization;
 using Microsoft.Extensions.Options;
 using System.Diagnostics;
 
@@ -9,7 +9,7 @@ namespace Application.Application.Service
     public class ApplicationService : IApplicationService
     {
 
-        private readonly IScreenVisualizerFactory screenVisualizerFactory;
+        private readonly IVisualizerFactory screenVisualizerFactory;
         private readonly IOptionsMonitor<StaticSettings> staticSettingsMonitor;
         private readonly IOrchestrator orchestrator;
         private readonly Lifetime.IApplicationLifetime applicationLifetime;
@@ -18,11 +18,11 @@ namespace Application.Application.Service
         private volatile bool isRunnging = false;
         private int prevGuiWidth = 0;
         private int prevGuiHeight = 0;
-        private IScreenVisualizer? currentScreenVisualizer = null;
+        private IVisualizer? currentScreenVisualizer = null;
 
 
         public ApplicationService(
-            IScreenVisualizerFactory screenVisualizerFactory,
+            IVisualizerFactory screenVisualizerFactory,
             IOptionsMonitor<StaticSettings> staticSettingsMonitor,
             IOrchestrator orchestrator,
             Lifetime.IApplicationLifetime applicationLifetime
@@ -52,9 +52,9 @@ namespace Application.Application.Service
                     this.prevGuiHeight = staticSettings.GuiHeight;
                     this.currentScreenVisualizer = this.screenVisualizerFactory.Create(staticSettings.GuiWidth, staticSettings.GuiHeight);
                     this.orchestrator.SetCurrentScreen(this.currentScreenVisualizer);
-                    Console.WriteLine($"Displaying visualization (Width: {staticSettings.GuiWidth}px, Height: {staticSettings.GuiHeight}px)");
-                    this.currentScreenVisualizer.Run();
-                    Console.WriteLine("Closed visualization");
+                    Console.WriteLine($"Starting screen visualization (Width: {staticSettings.GuiWidth}px, Height: {staticSettings.GuiHeight}px)");
+                    this.currentScreenVisualizer.Start();
+                    Console.WriteLine("Stopping screen visualization");
                     this.currentScreenVisualizer.Dispose();
                     this.currentScreenVisualizer = null;
                     this.ForceCloseWindow(staticSettings);
@@ -78,7 +78,7 @@ namespace Application.Application.Service
             ) && this.isRunnging)
             {
                 // Window gets closed until its configured again or gets reopened with new size
-                this.currentScreenVisualizer?.Close();
+                this.currentScreenVisualizer?.Stop();
             }
         }
 
@@ -86,7 +86,7 @@ namespace Application.Application.Service
         {
             this.settingsSubscription?.Dispose();
             this.isRunnging = false;
-            this.currentScreenVisualizer?.Close();
+            this.currentScreenVisualizer?.Stop();
         }
 
         private void ForceCloseWindow(StaticSettings staticSettings)
@@ -94,9 +94,9 @@ namespace Application.Application.Service
             if (OperatingSystem.IsLinux())
             {
                 // Open a pre-clsoed instance of the visualizer to force close the existing window, necessary due to Wayland not handling window close requests correctly
-                IScreenVisualizer deadVisualizer = this.screenVisualizerFactory.Create(staticSettings.GuiWidth, staticSettings.GuiHeight);
-                deadVisualizer.Close();
-                deadVisualizer.Run();
+                IVisualizer deadVisualizer = this.screenVisualizerFactory.Create(staticSettings.GuiWidth, staticSettings.GuiHeight);
+                deadVisualizer.Stop();
+                deadVisualizer.Start();
                 deadVisualizer.Dispose();
             }
         }

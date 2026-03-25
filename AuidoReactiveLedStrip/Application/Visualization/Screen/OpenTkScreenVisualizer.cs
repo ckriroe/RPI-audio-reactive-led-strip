@@ -5,9 +5,9 @@ using System.Drawing;
 
 namespace Application.Visualization.Screen
 {
-    public class ScreenVisualizer : GameWindow, IScreenVisualizer
+    public class OpenTkScreenVisualizer : GameWindow, IVisualizer
     {
-        public ScreenVisualizer(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings) : base(gameWindowSettings, nativeWindowSettings)
+        public OpenTkScreenVisualizer(GameWindowSettings gameWindowSettings, NativeWindowSettings nativeWindowSettings) : base(gameWindowSettings, nativeWindowSettings)
         {
         }
 
@@ -16,7 +16,16 @@ namespace Application.Visualization.Screen
         public void UpdateColors(Color[] colors)
         {
             this.colors = colors;
-            
+        }
+
+        public void Start()
+        {
+            base.Run();
+        }
+
+        public void Stop()
+        {
+            base.Close();
         }
 
         protected override void OnLoad()

@@ -1,6 +1,6 @@
 ﻿using Application.Coloring.Noise;
 using Application.Domain;
-using Application.Settings;
+using Application.RuntimeSettings;
 using Application.Util;
 using System.Drawing;
 

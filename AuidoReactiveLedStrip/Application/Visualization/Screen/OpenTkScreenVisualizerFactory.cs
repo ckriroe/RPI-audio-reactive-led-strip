@@ -3,9 +3,9 @@ using OpenTK.Windowing.Desktop;
 
 namespace Application.Visualization.Screen
 {
-    public class ScreenVisualizerFactory : IScreenVisualizerFactory
+    public class OpenTkScreenVisualizerFactory : IVisualizerFactory
     {
-        public IScreenVisualizer Create(int initialWidth, int initialHeight)
+        public IVisualizer Create(int initialWidth, int initialHeight)
         {
             var settings = new NativeWindowSettings()
             {
@@ -17,7 +17,7 @@ namespace Application.Visualization.Screen
                 Profile = ContextProfile.Any
             };
 
-            return new ScreenVisualizer(GameWindowSettings.Default, settings);
+            return new OpenTkScreenVisualizer(GameWindowSettings.Default, settings);
         }
     }
 }

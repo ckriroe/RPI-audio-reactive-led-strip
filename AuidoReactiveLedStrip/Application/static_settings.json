@@ -10,6 +10,7 @@
   "MaxFreqAmplitudeProlongerThreshholdPercent": 0.03,
   "MaxFreqAmplitudeDecayRate": 0.003,
   "Fps": 60,
+  "LedUpdateFrequency": 1200000,
   "BounceLayers": 1,
   "MaxEffectSpeed": 600,
   "ExternalModeRelayGpio": 5,
@@ -19,6 +20,7 @@
   "PrintFrequencyInfos": false,
   "MinSanitizedValue": 0.01,
   "UseGuiVisualization": true,
+  "UseLedVisualization": true,
   "GuiWidth": 800,
   "GuiHeight": 200,
   "MainThreadSettingsCheckIntervalMs": 2000

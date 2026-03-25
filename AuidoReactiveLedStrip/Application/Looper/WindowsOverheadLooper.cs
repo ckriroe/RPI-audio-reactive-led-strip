@@ -1,5 +1,5 @@
 ﻿using Application.Domain;
-using Application.Settings;
+using Application.RuntimeSettings;
 using Microsoft.Extensions.Options;
 
 namespace Application.Looper
@@ -18,6 +18,7 @@ namespace Application.Looper
         {
             var frameStart = sw.Elapsed;
 
+            base.looperConsumer?.OnBeforeTick();
             base.TryToReloadSettings();
             base.looperConsumer?.OnTick();
 

@@ -1,6 +1,6 @@
 ﻿using Application.Audio.Service;
 using Application.Domain;
-using Application.Settings;
+using Application.RuntimeSettings;
 using Application.Util;
 using Microsoft.Extensions.Options;
 

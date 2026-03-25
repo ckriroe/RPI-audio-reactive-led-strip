@@ -16,13 +16,14 @@ using Application.Effect;
 using Application.Effect.Service;
 using Application.Gpio;
 using Application.Looper;
-using Application.Settings;
+using Application.RuntimeSettings;
+using Application.Visualization;
+using Application.Visualization.Led;
 using Application.Visualization.Screen;
 using AudioProcessing.AudioProcessor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using System.Drawing;
 
 var builder = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((hostingContext, config) =>
@@ -51,7 +52,7 @@ var builder = Host.CreateDefaultBuilder(args)
 
         services.AddSingleton<Application.Application.Lifetime.IApplicationLifetime, ApplicationLifetime>();
         services.AddSingleton<IApplicationService, ApplicationService>();
-        services.AddSingleton<IScreenVisualizerFactory, ScreenVisualizerFactory>();
+        services.AddSingleton<IVisualizerFactory, OpenTkScreenVisualizerFactory>();
 
         if (OperatingSystem.IsWindows())
             services.AddTransient<ILooper, WindowsOverheadLooper>();
@@ -63,6 +64,7 @@ var builder = Host.CreateDefaultBuilder(args)
         services.AddSingleton<Repeater>();
         services.AddSingleton<IRemapService, RemapService>();
 
+        services.AddSingleton<Ws281xLedVisualizer>();
         services.AddSingleton<ValueColorMode>();
         services.AddSingleton<IndexColorMode>();
         services.AddSingleton<DistanceToCenterColorMode>();

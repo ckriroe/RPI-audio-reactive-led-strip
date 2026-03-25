@@ -1,4 +1,4 @@
-﻿using Application.Settings;
+﻿using Application.RuntimeSettings;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,5 +11,6 @@ namespace Application.Looper
     {
         public void OnSettingsChanged(StaticSettings staticSettings, DynamicSettings dynamicSettings);
         public void OnTick();
+        public void OnBeforeTick();
     }
 }

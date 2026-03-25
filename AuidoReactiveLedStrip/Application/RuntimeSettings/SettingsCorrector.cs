@@ -1,7 +1,7 @@
 ﻿using Application.Util;
 using System.Drawing;
 
-namespace Application.Settings
+namespace Application.RuntimeSettings
 {
     public static class SettingsCorrector
     {
