@@ -11,7 +11,7 @@ namespace Application.Application.Lifetime
         private Thread? lifetimeThread = null;
         private IApplicationService? currentApplication;
 
-        private ApplicationLifetime(IOptions<StaticSettings> options)
+        public ApplicationLifetime(IOptions<StaticSettings> options)
         {
             this.runIndefinitely = options.Value.RunIndefinitely;
         }
