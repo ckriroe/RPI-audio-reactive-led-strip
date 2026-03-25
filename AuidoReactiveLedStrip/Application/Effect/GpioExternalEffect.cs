@@ -1,6 +1,6 @@
 ﻿using Application.Domain;
 using Application.Gpio;
-using Application.Settings;
+using Application.RuntimeSettings;
 using Application.Util;
 using Microsoft.Extensions.Options;
 using System.Device.Gpio;

@@ -1,4 +1,4 @@
-﻿using Application.Settings;
+﻿using Application.RuntimeSettings;
 using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;

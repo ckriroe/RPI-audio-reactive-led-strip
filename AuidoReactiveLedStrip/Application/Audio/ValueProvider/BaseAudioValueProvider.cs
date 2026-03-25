@@ -1,4 +1,4 @@
-﻿using Application.Settings;
+﻿using Application.RuntimeSettings;
 
 namespace Application.Audio.ValueProvider
 {

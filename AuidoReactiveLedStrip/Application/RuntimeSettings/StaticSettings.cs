@@ -1,4 +1,4 @@
-﻿namespace Application.Settings
+﻿namespace Application.RuntimeSettings
 {
     public class StaticSettings
     {
@@ -13,6 +13,7 @@
         public float MaxFreqAmplitudeProlongerThreshholdPercent { get; set; }
         public float MaxFreqAmplitudeDecayRate { get; set; }
         public int Fps { get; set; }
+        public int LedUpdateFrequency { get; set; }
         public int BounceLayers { get; set; }
         public int MaxEffectSpeed { get; set; }
         public int ExternalModeRelayGpio { get; set; }
@@ -22,6 +23,7 @@
         public bool PrintFrequencyInfos { get; set; }
         public float MinSanitizedValue {  get; set; }
         public bool UseGuiVisualization { get; set; }
+        public bool UseLedVisualization { get; set; }
         public int GuiWidth { get; set; }
         public int GuiHeight { get; set; }
         public int MainThreadSettingsCheckIntervalMs { get; set; }

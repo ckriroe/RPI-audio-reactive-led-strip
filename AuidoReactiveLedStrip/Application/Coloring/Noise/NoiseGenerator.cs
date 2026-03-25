@@ -1,4 +1,4 @@
-﻿using Application.Settings;
+﻿using Application.RuntimeSettings;
 using Application.Util;
 
 namespace Application.Coloring.Noise

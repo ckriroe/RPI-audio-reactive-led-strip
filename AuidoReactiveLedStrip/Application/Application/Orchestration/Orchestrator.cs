@@ -4,9 +4,9 @@ using Application.Coloring.Service;
 using Application.Domain;
 using Application.Effect.Service;
 using Application.Looper;
-using Application.Settings;
-using Application.Visualization.Screen;
-using OpenTK.Mathematics;
+using Application.RuntimeSettings;
+using Application.Visualization;
+using Application.Visualization.Led;
 using System.Drawing;
 
 namespace Application.Application.Orchestration
@@ -17,21 +17,23 @@ namespace Application.Application.Orchestration
         private readonly IEffectService effectService;
         private readonly IColorService colorService;
         private readonly IRemapService remapService;
+        private readonly IVisualizer ledVisualizer;
         private readonly ILooper looper;
 
-        private StaticSettings staticSettings;
-        private DynamicSettings dynamicSettings;
-        private IScreenVisualizer? screenVisualizer;
+        private IVisualizer? screenVisualizer;
+        private bool isLedVisualizerRunning = false;
+
         private int invalidFrameSleepTime = 100;
         private bool isRunning = false;
         private Thread? worker = null;
-        private Color[] currColors = [];
+        private Color[]? currentColors = null;
 
         public Orchestrator(
             IAudioService audioService,
             IEffectService effectService,
             IColorService colorService,
             IRemapService remapService,
+            Ws281xLedVisualizer ledVisualizer,
             ILooper looper
         )
         {
@@ -39,11 +41,12 @@ namespace Application.Application.Orchestration
             this.effectService = effectService;
             this.colorService = colorService;
             this.remapService = remapService;
+            this.ledVisualizer = ledVisualizer;
             this.looper = looper;
             this.looper.SetConsumer(this);
         }
 
-        public void SetCurrentScreen(IScreenVisualizer screenVisualizer)
+        public void SetCurrentScreen(IVisualizer screenVisualizer)
         {
             this.screenVisualizer = screenVisualizer;
         }
@@ -54,8 +57,27 @@ namespace Application.Application.Orchestration
             this.effectService.SetEffectMode(dynamicSettings.EffectMode);
             this.audioService.SetAudioMode(this.effectService.GetRequiredAudioMode());
             this.colorService.SetColorMode(dynamicSettings.ColorMode);
-            this.staticSettings = staticSettings;
-            this.dynamicSettings = dynamicSettings;
+            this.HandleLedVisualizer(staticSettings);
+        }
+
+        private void HandleLedVisualizer(StaticSettings staticSettings)
+        {
+            if (this.isLedVisualizerRunning == staticSettings.UseLedVisualization)
+                return;
+
+            if (staticSettings.UseLedVisualization)
+            {
+                Console.WriteLine("Starting led visualization");
+                this.ledVisualizer.Start();
+                this.isLedVisualizerRunning = true;
+            }
+            else
+            {
+                Console.WriteLine("Stopping led visualization");
+                this.ledVisualizer.Stop();
+                this.ledVisualizer.Dispose();
+                this.isLedVisualizerRunning = false;
+            }
         }
 
         public void OnTick()
@@ -65,11 +87,11 @@ namespace Application.Application.Orchestration
             if (ledStrip != null)
             {
                 this.colorService.ColorizeLedStrip(ledStrip);
-                Color[] remappedColors = this.remapService.RemapColors(ledStrip);
-                this.screenVisualizer?.UpdateColors(remappedColors);
+                this.currentColors = this.remapService.RemapColors(ledStrip);
             }
             else
             {
+                this.currentColors = null;
                 Thread.Sleep(this.invalidFrameSleepTime);
             }
         }
@@ -92,6 +114,8 @@ namespace Application.Application.Orchestration
 
             this.looper.StopLooper();
             this.worker?.Join();
+            this.ledVisualizer.Stop();
+            this.ledVisualizer.Dispose();
             this.audioService.SetAudioMode(AudioServiceMode.None);
             this.isRunning = false;
         }
@@ -99,6 +123,15 @@ namespace Application.Application.Orchestration
         private void StartLooper()
         {
             this.looper.StartLooper();
+        }
+
+        public void OnBeforeTick()
+        {
+            if (this.currentColors != null)
+            {
+                this.screenVisualizer?.UpdateColors(this.currentColors);
+                this.ledVisualizer.UpdateColors(this.currentColors);
+            }
         }
     }
 }

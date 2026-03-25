@@ -1,4 +1,4 @@
-﻿using Application.Settings;
+﻿using Application.RuntimeSettings;
 using MathNet.Numerics.Distributions;
 using System.Drawing;
 

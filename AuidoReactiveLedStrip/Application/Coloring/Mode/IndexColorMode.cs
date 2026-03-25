@@ -1,5 +1,5 @@
 ﻿using Application.Coloring.Noise;
-using Application.Settings;
+using Application.RuntimeSettings;
 using Application.Util;
 using System.Drawing;
 

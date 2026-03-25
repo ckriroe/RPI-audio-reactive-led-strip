@@ -1,7 +1,7 @@
 ﻿using Application.Domain;
 using System.Drawing;
 
-namespace Application.Settings
+namespace Application.RuntimeSettings
 {
     public class DynamicSettings
     {
