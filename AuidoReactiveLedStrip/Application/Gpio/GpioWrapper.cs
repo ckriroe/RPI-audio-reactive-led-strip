@@ -56,7 +56,7 @@ namespace Application.Gpio
                 }
 
                 if (!this.gpioController.IsPinOpen(staticSettings.ExternalModeRelayGpio))
-                    this.gpioController.OpenPin(staticSettings.ExternalModeRelayGpio);
+                    this.gpioController.OpenPin(staticSettings.ExternalModeRelayGpio, PinMode.Output);
 
                 this.externalGpioPin = staticSettings.ExternalModeRelayGpio;
             }
