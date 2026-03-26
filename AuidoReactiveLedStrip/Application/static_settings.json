@@ -24,5 +24,6 @@
   "GuiWidth": 800,
   "GuiHeight": 200,
   "MainThreadSettingsCheckIntervalMs": 2000,
-  "RunIndefinitely": true
+  "RunIndefinitely": true,
+  "OutputWhenGpioOff": false
 }

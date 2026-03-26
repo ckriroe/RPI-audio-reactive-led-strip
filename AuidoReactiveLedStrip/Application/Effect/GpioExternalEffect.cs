@@ -3,27 +3,22 @@ using Application.Gpio;
 using Application.RuntimeSettings;
 using Application.Util;
 using Microsoft.Extensions.Options;
-using System.Device.Gpio;
-using System.Security.AccessControl;
 
 namespace Application.Effect
 {
     public class GpioExternalEffect : IStatefulEffect
     {
         private readonly IOptionsMonitor<StaticSettings> staticSettings;
-        private readonly IGpioControllerFactory gpioControllerFactory;
-        private readonly GpioController? gpioController = null;
+        private readonly GpioWrapper gpioWrapper;
 
         private bool isEnabled = false;
         private bool pendingGpioEnable = false;
         private bool isGpioTurnedOn = false;
-        private int? lastGpioPin = null;
 
-        public GpioExternalEffect(IOptionsMonitor<StaticSettings> staticSettings, IGpioControllerFactory gpioControllerFactory)
+        public GpioExternalEffect(IOptionsMonitor<StaticSettings> staticSettings, GpioWrapper gpioWrapper)
         {
             this.staticSettings = staticSettings;
-            this.gpioControllerFactory = gpioControllerFactory;
-            this.gpioController = this.gpioControllerFactory.GetGpioController();
+            this.gpioWrapper = gpioWrapper;
         }
 
         public bool IsStatic => false;
@@ -37,27 +32,16 @@ namespace Application.Effect
             if (!this.isEnabled)
                 return;
 
-            if (this.lastGpioPin != null)
-            {
-                if (this.isGpioTurnedOn)
-                    this.gpioController?.Write(this.lastGpioPin.Value, PinValue.Low);
-
-                this.gpioController?.ClosePin(this.lastGpioPin.Value);
-            }
-
+            this.gpioWrapper.TemporarilChangeGpio(true, this.staticSettings.CurrentValue);
             this.isGpioTurnedOn = false;
             this.pendingGpioEnable = false;
             this.isEnabled = false;
-            this.lastGpioPin = null;
         }
 
         public void EnableEffect()
         {
             if (this.isEnabled)
                 return;
-
-            this.lastGpioPin = this.staticSettings.CurrentValue.ExternalModeRelayGpio;
-            this.gpioController?.OpenPin(this.lastGpioPin.Value, PinMode.Output);
 
             this.isGpioTurnedOn = false;
             this.pendingGpioEnable = false;
@@ -66,9 +50,11 @@ namespace Application.Effect
 
         public LedStrip? RenderEffekt(LedStrip? prevStrip, int length)
         {
-            if (this.isEnabled && this.pendingGpioEnable && !this.isGpioTurnedOn && this.lastGpioPin != null)
+            StaticSettings currentStaticSettings = this.staticSettings.CurrentValue;
+
+            if (this.isEnabled && this.pendingGpioEnable && !this.isGpioTurnedOn || this.gpioWrapper.UpdatePending(currentStaticSettings))
             {
-                this.gpioController?.Write(this.lastGpioPin.Value, PinValue.High);
+                this.gpioWrapper.TemporarilChangeGpio(false, currentStaticSettings);
                 this.isGpioTurnedOn = true;
             }
 
