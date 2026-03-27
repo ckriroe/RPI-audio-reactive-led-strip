@@ -66,7 +66,7 @@ namespace Application.Coloring.Service
 
             this.currentColorMode.PrecomputeValues(staticSettings, dynamicSettings, ledStrip);
             int length = pixels.Length;
-            var bgColor = dynamicSettings.Colors[0].Color;
+            var bgColor = dynamicSettings.Colors[0].ColorInstance;
 
             for (int i = 0; i < length; i++)
             {
