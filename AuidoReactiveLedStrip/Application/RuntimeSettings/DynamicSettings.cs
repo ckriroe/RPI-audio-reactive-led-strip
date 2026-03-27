@@ -96,8 +96,8 @@ namespace Application.RuntimeSettings
 
     public class ColorSetting
     {
-        public required string ColorString { get; set; }
-        public Color Color { get; set; }
+        public required string Color { get; set; }
+        public Color ColorInstance { get; set; }
 
         public required float Threshold { get; set; }
     }

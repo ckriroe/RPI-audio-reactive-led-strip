@@ -127,12 +127,12 @@ namespace Application.Util
 
             var backgroundColor = dynamicSettings.Colors[0];
             if (colors.Count < 2)
-                return backgroundColor.Color;
+                return backgroundColor.ColorInstance;
 
             float colorTransition = dynamicSettings.ColorTransition;
             int paletteIdx = 0;
             float sectionEnd = bgThresholdOverride ?? backgroundColor.Threshold;
-            Color currColor = backgroundColor.Color;
+            Color currColor = backgroundColor.ColorInstance;
 
             for (int i = 0; i < colors.Count; i++)
             {
@@ -145,7 +145,7 @@ namespace Application.Util
                 {
                     paletteIdx = i;
                     sectionEnd = threshold;
-                    currColor = entry.Color;
+                    currColor = entry.ColorInstance;
                     break;
                 }
             }
@@ -207,7 +207,7 @@ namespace Application.Util
                 t = MathHelper.Clamp(t, 0f, 1f);
 
                 return LerpColor(
-                    LerpColor(colors[paletteIdx + 1].Color, currColor, 0.5f),
+                    LerpColor(colors[paletteIdx + 1].ColorInstance, currColor, 0.5f),
                     currColor,
                     t
                 );
@@ -221,7 +221,7 @@ namespace Application.Util
                 t = MathHelper.Clamp(t, 0f, 1f);
 
                 return LerpColor(
-                    LerpColor(colors[paletteIdx - 1].Color, currColor, 0.5f),
+                    LerpColor(colors[paletteIdx - 1].ColorInstance, currColor, 0.5f),
                     currColor,
                     t
                 );
@@ -241,7 +241,7 @@ namespace Application.Util
                 transitionAreaSize = backgroundThreshold * colorTransition;
 
             if (value < backgroundThreshold - transitionAreaSize || backgroundThreshold == 1f)
-                return backgroundEntry.Color;
+                return backgroundEntry.ColorInstance;
 
             float t = (value - backgroundThreshold) / (1f - backgroundThreshold);
             float hue = t * 0.75f;
@@ -252,14 +252,14 @@ namespace Application.Util
             if (value < backgroundThreshold)
             {
                 if (value < backgroundThreshold - transitionAreaSize || transitionAreaSize == 0)
-                    return backgroundEntry.Color;
+                    return backgroundEntry.ColorInstance;
 
                 t = (backgroundThreshold - value) / transitionAreaSize;
                 t = MathHelper.Clamp(t, 0f, 1f);
 
                 return LerpColor(
-                    LerpColor(color, backgroundEntry.Color, 0.5f),
-                    backgroundEntry.Color,
+                    LerpColor(color, backgroundEntry.ColorInstance, 0.5f),
+                    backgroundEntry.ColorInstance,
                     t
                 );
             }
@@ -272,7 +272,7 @@ namespace Application.Util
                 t = MathHelper.Clamp(t, 0f, 1f);
 
                 return LerpColor(
-                    LerpColor(backgroundEntry.Color, color, 0.5f),
+                    LerpColor(backgroundEntry.ColorInstance, color, 0.5f),
                     color,
                     t
                 );
@@ -313,19 +313,19 @@ namespace Application.Util
                 : backgroundEntry.Threshold * colorTransition;
 
             if (audioValue < backgroundEntry.Threshold - transitionAreaSize || backgroundEntry.Threshold == 1f)
-                return backgroundEntry.Color;
+                return backgroundEntry.ColorInstance;
 
             if (audioValue < backgroundEntry.Threshold)
             {
                 if (audioValue < backgroundEntry.Threshold - transitionAreaSize || transitionAreaSize == 0)
-                    return backgroundEntry.Color;
+                    return backgroundEntry.ColorInstance;
 
                 float t = (backgroundEntry.Threshold - audioValue) / transitionAreaSize;
                 t = MathHelper.Clamp(t, 0f, 1f);
 
                 return LerpColor(
-                    LerpColor(color, backgroundEntry.Color, 0.5f),
-                    backgroundEntry.Color,
+                    LerpColor(color, backgroundEntry.ColorInstance, 0.5f),
+                    backgroundEntry.ColorInstance,
                     t
                 );
             } 
@@ -338,7 +338,7 @@ namespace Application.Util
                 t = MathHelper.Clamp(t, 0f, 1f);
 
                 return LerpColor(
-                    LerpColor(backgroundEntry.Color, color, 0.5f),
+                    LerpColor(backgroundEntry.ColorInstance, color, 0.5f),
                     color,
                     t
                 );

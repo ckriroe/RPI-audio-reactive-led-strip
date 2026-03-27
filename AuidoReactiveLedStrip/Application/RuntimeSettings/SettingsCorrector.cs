@@ -31,10 +31,10 @@ namespace Application.RuntimeSettings
             {
                 ColorSetting colorSetting = dynamicSettings.Colors[i];
 
-                if (string.IsNullOrEmpty(colorSetting.ColorString))
-                    colorSetting.Color = Color.Black;
+                if (string.IsNullOrEmpty(colorSetting.Color))
+                    colorSetting.ColorInstance = Color.Black;
                 else
-                    colorSetting.Color = ColorTranslator.FromHtml(colorSetting.ColorString);
+                    colorSetting.ColorInstance = ColorTranslator.FromHtml(colorSetting.Color);
 
                 colorSetting.Threshold = MathHelper.Clamp(colorSetting.Threshold, 0.0f, 1.0f);
                 if (i == dynamicSettings.Colors.Count - 1)
