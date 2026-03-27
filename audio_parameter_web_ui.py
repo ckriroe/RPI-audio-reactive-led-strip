@@ -3,7 +3,7 @@ import json
 import os
 import copy
 
-CONFIG_FILE = "audio_params.json"
+CONFIG_FILE = "dynamic_settings.json"
 PRESETS_FILE = "presets.json"
 
 AUDIO_MODES = {
@@ -19,7 +19,8 @@ EFFECT_MODES = {
     4: "Partikel",
     5: "Statisch (Aufsteigend)",
     6: "Statisch (Wert von 1.0)",
-    7: "Extern"
+    7: "Extern",
+    8: "Linienverlauf"
 }
 
 COLOR_MODES = {
@@ -70,7 +71,14 @@ DEFAULTS = {
     "noiseSmoothing": 1.00,
     "brightness": 1.00,
     "gamma": 1.00,
-    "effectRepeats": 1
+    "effectRepeats": 1,
+    "acceleration": 1.0,
+    "particleSize": 20,
+    "patternSplits": 0,
+    "patternSpread": 0,
+    "patternFlip": -1,
+    "patternCenter": 0,
+    "patternSectionSizeMod": 0.0
 }
 
 def load_presets():
@@ -167,7 +175,14 @@ def get_current_values_from_state():
         "colorOverflow": st.session_state.colorOverflow,
         "brightness": st.session_state.brightness,
         "gamma": st.session_state.gamma,
-        "effectRepeats": st.session_state.effectRepeats
+        "effectRepeats": st.session_state.effectRepeats,
+        "acceleration": st.session_state.acceleration,
+        "particleSize": st.session_state.particleSize,
+        "patternSplits": st.session_state.patternSplits,
+        "patternSpread": st.session_state.patternSpread,
+        "patternFlip": st.session_state.patternFlip,
+        "patternCenter": st.session_state.patternCenter,
+        "patternSectionSizeMod": st.session_state.patternSectionSizeMod
     }
 
 def update_session_state_from_preset(preset_data):
@@ -209,6 +224,13 @@ def update_session_state_from_preset(preset_data):
     st.session_state.brightness = vals.get("brightness", DEFAULTS["brightness"])
     st.session_state.gamma = vals.get("gamma", DEFAULTS["gamma"])
     st.session_state.effectRepeats = vals.get("effectRepeats", DEFAULTS["effectRepeats"])
+    st.session_state.acceleration = vals.get("acceleration", DEFAULTS["acceleration"])
+    st.session_state.particleSize = vals.get("particleSize", DEFAULTS["particleSize"])
+    st.session_state.patternSplits = vals.get("patternSplits", DEFAULTS["patternSplits"])
+    st.session_state.patternSpread = vals.get("patternSpread", DEFAULTS["patternSpread"])
+    st.session_state.patternFlip = vals.get("patternFlip", DEFAULTS["patternFlip"])
+    st.session_state.patternCenter = vals.get("patternCenter", DEFAULTS["patternCenter"])
+    st.session_state.patternSectionSizeMod = vals.get("patternSectionSizeMod", DEFAULTS["patternSectionSizeMod"])
 
     a_mode = vals.get("audioMode", DEFAULTS["audioMode"])
     e_mode = vals.get("effectMode", DEFAULTS["effectMode"])
@@ -371,11 +393,8 @@ st.divider()
 st.subheader("Effekt")
 
 st.selectbox("Effektmodus", list(EFFECT_MODES.values()), key="effectMode", on_change=save_params)
-
-st.session_state.effectOrigin = curr_preset.get("effectOrigin")
-if get_effect_mode_id() in (1, 2, 3) or get_color_mode_id() == 2:
-    st.number_input("Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="effectOrigin", on_change=save_params)
-
+st.number_input("Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="effectOrigin", on_change=save_params)
+st.slider("Effekt Beschleunigung", 0.0, 5.0, step=0.01, key="acceleration", on_change=save_params)
 
 st.session_state.speed = curr_preset.get("speed")
 if get_effect_mode_id() in (2, 4):
@@ -389,18 +408,32 @@ if get_effect_mode_id() == 3:
     st.toggle("Statisches Spektrum", key="staticSpectrum", on_change=save_params)
     st.slider("Spektrum Sektionen", 1, 50, step=1, key="spectrumSections", on_change=save_params)
 
+st.session_state.particleSize = curr_preset.get("particleSize")
+if get_effect_mode_id() == 4:
+    st.slider("Partikel Größe", 1, 1000, step=1, key="particleSize", on_change=save_params)
+
 st.session_state.bouncyWave = curr_preset.get("bouncyWave")
-st.session_state.fadeOverTime = curr_preset.get("fadeOverTime")
 if get_effect_mode_id() == 2:
     st.toggle("Abprallen", key="bouncyWave", on_change=save_params)
+
+st.session_state.fadeOverTime = curr_preset.get("fadeOverTime")
+if get_effect_mode_id() == 2 or get_effect_mode_id() == 8:
     st.slider("Verblassung nach Zeit", -0.999, 0.999, step=0.001, key="fadeOverTime", on_change=save_params)
 
 st.slider("Verblassung", 0.001, 0.999, step=0.001, key="fade", on_change=save_params)
 st.slider("Sättigung", 0.01, 1.0, step=0.01, key="saturate", on_change=save_params)
 st.slider("Sättigungs Grenzwert", 0.0, 1.0, step=0.01, key="saturateThreshold", on_change=save_params)
-st.slider("Effekt Wiederholungen", 1, 50, step=1, key="effectRepeats", on_change=save_params)
 st.number_input("LED Anzahl", min_value=2, max_value=99999, step=1, format="%d", key="ledCount", on_change=save_params)
 
+st.divider()
+st.subheader("Muster")
+st.slider("Effekt Wiederholungen", 1, 50, step=1, key="effectRepeats", on_change=save_params)
+st.slider("Muster Teilungen", 0, 50, step=1, key="patternSplits", on_change=save_params)
+st.slider("Jedes N'te Muster verdrehen", -1, 50, step=1, key="patternFlip", on_change=save_params)
+st.number_input("Muster Verteilung", min_value=0, max_value=999999, step=1, format="%d", key="patternSpread", on_change=save_params)
+st.number_input("Muster Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="patternCenter", on_change=save_params)
+st.slider("Muster Größenveränderung", -5.00, 5.00, step=0.01, key="patternSectionSizeMod", on_change=save_params)   
+    
 st.divider()
 st.subheader("Farben")
 st.selectbox("Farbmodus", list(COLOR_MODES.values()), key="colorMode", on_change=save_params)
