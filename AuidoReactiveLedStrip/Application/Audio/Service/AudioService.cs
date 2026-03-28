@@ -130,20 +130,20 @@ namespace Application.Audio.Service
 
         private void ApplySettings()
         {
-            var staticSettings = this.staticSettingsMonitor.CurrentValue;
+            StaticSettings staticSettings = this.staticSettingsMonitor.CurrentValue;
+            DynamicSettings dynamicSettings = this.dynamicSettingsMonitor.CurrentValue;
+
             this.audioReceiver.Initialize
             (
                 staticSettings.AudioDeviceId,
                 staticSettings.Channels,
-                staticSettings.FftSize,
+                dynamicSettings.FftSize,
                 staticSettings.SampleRate,
                 () =>
                 {
                     this.audioFftTransformer.Initialize(staticSettings.Channels);
                 }
             );
-
-            var dynamicSettings = this.dynamicSettingsMonitor.CurrentValue;
 
             this.audioFftDataProvider.Initialize(staticSettings, dynamicSettings);
             this.simpleAudioValueProvider.Initialize(staticSettings, dynamicSettings);

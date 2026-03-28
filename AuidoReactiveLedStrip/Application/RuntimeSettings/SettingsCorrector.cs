@@ -5,12 +5,6 @@ namespace Application.RuntimeSettings
 {
     public static class SettingsCorrector
     {
-        public static void CorrectStaticSettings(StaticSettings staticSettings)
-        {
-            staticSettings.Fps = Math.Max(staticSettings.Fps, 1);
-            staticSettings.FftSize = Math.Max(staticSettings.FftSize, 1);
-        }
-
         public static void CorrectDynamicSettings(DynamicSettings dynamicSettings)
         {
             dynamicSettings.PhysicalLedCount = dynamicSettings.LedCount;
@@ -20,6 +14,9 @@ namespace Application.RuntimeSettings
             dynamicSettings.PatternCenter = Math.Min(dynamicSettings.LedCount, dynamicSettings.PatternCenter / dynamicSettings.EffectRepeats);
             dynamicSettings.MinFreq = Math.Clamp(dynamicSettings.MinFreq, 0, 20000);
             dynamicSettings.MaxFreq = Math.Clamp(dynamicSettings.MaxFreq, 0, 20000);
+            dynamicSettings.Fps = Math.Max(dynamicSettings.Fps, 1);
+            dynamicSettings.FftSize = Math.Max(dynamicSettings.FftSize, 1);
+
             if (dynamicSettings.MaxFreq < dynamicSettings.MinFreq)
                 dynamicSettings.MaxFreq = dynamicSettings.MinFreq;
 

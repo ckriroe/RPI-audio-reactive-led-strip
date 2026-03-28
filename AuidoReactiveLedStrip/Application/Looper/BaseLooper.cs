@@ -63,7 +63,7 @@ namespace Application.Looper
 
                 this.printFrameTimes = staticSettings.PrintFrameTimes;
                 this.reloadSettingsAfterMs = staticSettings.ReloadSettingsAfterMs;
-                this.fps = staticSettings.Fps;
+                this.fps = dynamicSettings.Fps;
                 this.frameTime = 1.0 / fps;
 
                 this.looperConsumer?.OnSettingsChanged(staticSettings, dynamicSettings);

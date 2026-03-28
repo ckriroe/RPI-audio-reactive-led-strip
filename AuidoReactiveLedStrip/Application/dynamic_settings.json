@@ -54,5 +54,7 @@
   "patternSpread": 0,
   "patternFlip": -1,
   "patternCenter": 0,
-  "patternSectionSizeMod": 0.0
+  "patternSectionSizeMod": 0.0,
+  "fps": 60,
+  "fftSize": 512
 }

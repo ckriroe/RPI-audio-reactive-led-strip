@@ -1,7 +1,6 @@
 {
   "sampleRate": 48000,
   "channels": 2,
-  "fftSize": 1024,
   "audioDeviceId": 4,
   "belowMinFreqAmplitudeFunctionFactor": -0.03,
   "maxFreqAmplitudeIncreaseRatio": 0.66, // Higher = rise faster
@@ -9,7 +8,6 @@
   "maxFreqAmplitudeTTL": 2000,
   "maxFreqAmplitudeProlongerThreshholdPercent": 0.03,
   "maxFreqAmplitudeDecayRate": 0.003,
-  "fps": 60,
   "ledUpdateFrequency": 1200000,
   "bounceLayers": 1,
   "maxEffectSpeed": 600,
@@ -25,5 +23,6 @@
   "guiHeight": 200,
   "mainThreadSettingsCheckIntervalMs": 2000,
   "runIndefinitely": true,
-  "outputWhenGpioOff": false
+  "outputWhenGpioOff": false,
+  "accurateSleeping": false
 }

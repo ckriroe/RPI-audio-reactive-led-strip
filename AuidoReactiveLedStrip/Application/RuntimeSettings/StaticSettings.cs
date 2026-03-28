@@ -4,7 +4,6 @@
     {
         public int SampleRate { get; set; }
         public int Channels { get; set; }
-        public int FftSize { get; set; }
         public int AudioDeviceId { get; set; }
         public float BelowMinFreqAmplitudeFunctionFactor { get; set; }
         public float MaxFreqAmplitudeIncreaseRatio { get; set; }
@@ -12,7 +11,6 @@
         public int MaxFreqAmplitudeTTL { get; set; }
         public float MaxFreqAmplitudeProlongerThreshholdPercent { get; set; }
         public float MaxFreqAmplitudeDecayRate { get; set; }
-        public int Fps { get; set; }
         public int LedUpdateFrequency { get; set; }
         public int BounceLayers { get; set; }
         public int MaxEffectSpeed { get; set; }
@@ -29,5 +27,6 @@
         public int MainThreadSettingsCheckIntervalMs { get; set; }
         public bool RunIndefinitely { get; set; }
         public bool OutputWhenGpioOff { get; set; }
+        public bool AccurateSleeping { get; set; }
     }
 }

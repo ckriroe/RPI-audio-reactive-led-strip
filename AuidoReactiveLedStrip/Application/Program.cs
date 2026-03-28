@@ -43,8 +43,7 @@ var builder = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
     {
         services.AddOptions<StaticSettings>()
-            .Bind(context.Configuration)
-            .PostConfigure(o => SettingsCorrector.CorrectStaticSettings(o));
+            .Bind(context.Configuration);
 
         services.AddOptions<DynamicSettings>()
             .Bind(context.Configuration)
@@ -53,11 +52,7 @@ var builder = Host.CreateDefaultBuilder(args)
         services.AddSingleton<Application.Application.Lifetime.IApplicationLifetime, ApplicationLifetime>();
         services.AddSingleton<IApplicationService, ApplicationService>();
         services.AddSingleton<IVisualizerFactory, OpenTkScreenVisualizerFactory>();
-
-        if (OperatingSystem.IsWindows())
-            services.AddTransient<ILooper, WindowsOverheadLooper>();
-        else
-            services.AddTransient<ILooper, LinuxLooper>();
+        services.AddSingleton<ILooperFactory, StaticLooperFactory>();
 
         services.AddSingleton<Accelerator>();
         services.AddSingleton<Patternizer>();
