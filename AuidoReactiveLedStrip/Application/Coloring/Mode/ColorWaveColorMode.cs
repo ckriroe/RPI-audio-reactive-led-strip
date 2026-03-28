@@ -25,10 +25,9 @@ namespace Application.Coloring.Mode
         public override void PrecomputeValues(StaticSettings staticSettings, DynamicSettings dynamicSettings, LedStrip ledStrip)
         {
             int direction = dynamicSettings.ColorWaveInwards ? 1 : -1;
-            this.colorWavePhase += direction * dynamicSettings.ColorWaveSpeed / (float)staticSettings.Fps;
+            this.colorWavePhase += direction * dynamicSettings.ColorWaveSpeed / (float)dynamicSettings.Fps;
             if (Math.Abs(colorWavePhase) >= dynamicSettings.ColorWaveSize)
-                colorWavePhase -= dynamicSettings.ColorWaveSize * direction;
-            //this.colorWavePhase = MathHelper.PyMod(this.colorWavePhase, dynamicSettings.ColorWaveSize);
+                this.colorWavePhase -= dynamicSettings.ColorWaveSize * direction;
         }
 
         private float WaveEnvelope(float x)

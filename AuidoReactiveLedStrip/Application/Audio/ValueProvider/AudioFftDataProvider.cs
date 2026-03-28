@@ -27,7 +27,7 @@ namespace Application.Audio.ValueProvider
             this.staticSettings = staticSettings;
             this.dynamicSettings = dynamicSettings;
 
-            this.frequencyRangePerBin = this.staticSettings.SampleRate / (float)this.staticSettings.FftSize;
+            this.frequencyRangePerBin = this.staticSettings.SampleRate / (float)this.dynamicSettings.FftSize;
             int newMinBin = (int)Math.Round(this.dynamicSettings.MinFreq / this.frequencyRangePerBin.Value);
             int newMaxBin = (int)Math.Round(this.dynamicSettings.MaxFreq / this.frequencyRangePerBin.Value) + 1;
 

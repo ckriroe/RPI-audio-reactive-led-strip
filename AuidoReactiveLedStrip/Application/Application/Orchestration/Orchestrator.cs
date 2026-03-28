@@ -34,7 +34,7 @@ namespace Application.Application.Orchestration
             IColorService colorService,
             IRemapService remapService,
             Ws281xLedVisualizer ledVisualizer,
-            ILooper looper
+            ILooperFactory looperFactory
         )
         {
             this.audioService = audioService;
@@ -42,7 +42,7 @@ namespace Application.Application.Orchestration
             this.colorService = colorService;
             this.remapService = remapService;
             this.ledVisualizer = ledVisualizer;
-            this.looper = looper;
+            this.looper = looperFactory.GetLooper();
             this.looper.SetConsumer(this);
         }
 

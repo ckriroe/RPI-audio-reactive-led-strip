@@ -78,7 +78,9 @@ DEFAULTS = {
     "patternSpread": 0,
     "patternFlip": -1,
     "patternCenter": 0,
-    "patternSectionSizeMod": 0.0
+    "patternSectionSizeMod": 0.0,
+    "fps": 60,
+    "fftSize": 512
 }
 
 def load_presets():
@@ -182,7 +184,9 @@ def get_current_values_from_state():
         "patternSpread": st.session_state.patternSpread,
         "patternFlip": st.session_state.patternFlip,
         "patternCenter": st.session_state.patternCenter,
-        "patternSectionSizeMod": st.session_state.patternSectionSizeMod
+        "patternSectionSizeMod": st.session_state.patternSectionSizeMod,
+        "fps": st.session_state.fps,
+        "fftSize": st.session_state.fftSize,
     }
 
 def update_session_state_from_preset(preset_data):
@@ -231,6 +235,8 @@ def update_session_state_from_preset(preset_data):
     st.session_state.patternFlip = vals.get("patternFlip", DEFAULTS["patternFlip"])
     st.session_state.patternCenter = vals.get("patternCenter", DEFAULTS["patternCenter"])
     st.session_state.patternSectionSizeMod = vals.get("patternSectionSizeMod", DEFAULTS["patternSectionSizeMod"])
+    st.session_state.fps = vals.get("fps", DEFAULTS["fps"])
+    st.session_state.fftSize = vals.get("fftSize", DEFAULTS["fftSize"])
 
     a_mode = vals.get("audioMode", DEFAULTS["audioMode"])
     e_mode = vals.get("effectMode", DEFAULTS["effectMode"])
@@ -388,6 +394,7 @@ if get_audio_mode_id() == 0:
 
 st.number_input("Min. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="minFreq", on_change=save_params)
 st.number_input("Max. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="maxFreq", on_change=save_params)
+st.number_input("Audio Puffer Größe", min_value=1, max_value=50000, step=1, format="%d", key="fftSize", on_change=save_params)
 
 st.divider()
 st.subheader("Effekt")
@@ -423,6 +430,7 @@ if get_effect_mode_id() == 2 or get_effect_mode_id() == 8:
 st.slider("Verblassung", 0.001, 0.999, step=0.001, key="fade", on_change=save_params)
 st.slider("Sättigung", 0.01, 1.0, step=0.01, key="saturate", on_change=save_params)
 st.slider("Sättigungs Grenzwert", 0.0, 1.0, step=0.01, key="saturateThreshold", on_change=save_params)
+st.number_input("FPS", min_value=1, max_value=400, step=1, format="%d", key="fps", on_change=save_params)
 st.number_input("LED Anzahl", min_value=2, max_value=99999, step=1, format="%d", key="ledCount", on_change=save_params)
 
 st.divider()

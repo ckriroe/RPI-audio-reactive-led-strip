@@ -33,7 +33,7 @@ namespace Application.Effect
             int n = length * (1 + bounceLayers * 2);
             int center = dynamicSettings.EffectOrigin + length * bounceLayers;
 
-            this.waveDistanceAccumulator += dynamicSettings.Speed / (float)staticSettings.Fps;
+            this.waveDistanceAccumulator += dynamicSettings.Speed / (float)dynamicSettings.Fps;
             int steps = (int)this.waveDistanceAccumulator;
             this.waveDistanceAccumulator -= steps;
 
