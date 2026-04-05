@@ -80,7 +80,10 @@ DEFAULTS = {
     "patternCenter": 0,
     "patternSectionSizeMod": 0.0,
     "fps": 60,
-    "fftSize": 512
+    "fftSize": 512,
+    "bpmLimit": -1,
+    "audioResponseCurve": 1.0,
+    "audioPeakHoldTimeMs": 0
 }
 
 def load_presets():
@@ -187,6 +190,9 @@ def get_current_values_from_state():
         "patternSectionSizeMod": st.session_state.patternSectionSizeMod,
         "fps": st.session_state.fps,
         "fftSize": st.session_state.fftSize,
+        "bpmLimit": st.session_state.bpmLimit,
+        "audioResponseCurve": st.session_state.audioResponseCurve,
+        "audioPeakHoldTimeMs": st.session_state.audioPeakHoldTimeMs
     }
 
 def update_session_state_from_preset(preset_data):
@@ -237,6 +243,9 @@ def update_session_state_from_preset(preset_data):
     st.session_state.patternSectionSizeMod = vals.get("patternSectionSizeMod", DEFAULTS["patternSectionSizeMod"])
     st.session_state.fps = vals.get("fps", DEFAULTS["fps"])
     st.session_state.fftSize = vals.get("fftSize", DEFAULTS["fftSize"])
+    st.session_state.bpmLimit = vals.get("bpmLimit", DEFAULTS["bpmLimit"])
+    st.session_state.audioResponseCurve = vals.get("audioResponseCurve", DEFAULTS["audioResponseCurve"])
+    st.session_state.audioPeakHoldTimeMs = vals.get("audioPeakHoldTimeMs", DEFAULTS["audioPeakHoldTimeMs"])
 
     a_mode = vals.get("audioMode", DEFAULTS["audioMode"])
     e_mode = vals.get("effectMode", DEFAULTS["effectMode"])
@@ -392,6 +401,9 @@ if get_audio_mode_id() == 0:
     st.slider("Vergleichswert Puffergröße", 1, 100, step=1, key="meanValueBufferSize", on_change=save_params)
     st.slider("Vergleichswert Grenzwert", 0.01, 1.0, step=0.01, key="meanValueThreshold", on_change=save_params)
 
+st.slider("BPM Limit", -1, 999, step=1, key="bpmLimit", on_change=save_params)
+st.slider("Audiowert Skalierung", 0.01, 5.00, step=0.01, key="audioResponseCurve", on_change=save_params)
+st.slider("Min. Peakdauer in ms", 0, 999, step=1, key="audioPeakHoldTimeMs", on_change=save_params)
 st.number_input("Min. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="minFreq", on_change=save_params)
 st.number_input("Max. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="maxFreq", on_change=save_params)
 st.number_input("Audio Puffer Größe", min_value=1, max_value=50000, step=1, format="%d", key="fftSize", on_change=save_params)

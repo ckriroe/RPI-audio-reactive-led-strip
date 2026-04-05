@@ -57,5 +57,7 @@
   "patternSectionSizeMod": 0.0,
   "fps": 60,
   "fftSize": 512,
-  "bpmLimit": 200
+  "bpmLimit": -1,
+  "audioResponseCurve": 1.0,
+  "audioPeakHoldTimeMs": 0
 }
