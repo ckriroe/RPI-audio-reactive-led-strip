@@ -94,6 +94,7 @@ namespace Application.RuntimeSettings
         public float PatternSectionSizeMod { get; set; }
         public int Fps { get; set; }
         public int FftSize { get; set; }
+        public int BpmLimit { get; set; }
     }
 
     public class ColorSetting
