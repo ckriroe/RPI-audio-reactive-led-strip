@@ -7,11 +7,14 @@ namespace Application.Audio.ValueProvider
     {
         private volatile float lastAudioValue = 0.0f;
         private long lastValueRaise = 0;
+        private long lastPeakTime = 0;
 
         public float GetAudioValue()
         {
             return this.lastAudioValue;
         }
+
+        private long lastBeatTime = 0;
 
         protected void SetAudioValue(float newValue)
         {
@@ -19,18 +22,37 @@ namespace Application.Audio.ValueProvider
             if (dynamicSettings == null)
                 return;
 
-            float minMsPerBeat = 1000.0f / (dynamicSettings.BpmLimit / 60.0f);
             long now = Environment.TickCount;
-            bool shouldAllowBeat = dynamicSettings.BpmLimit == -1 || now - this.lastValueRaise > minMsPerBeat;
+            float minMsPerBeat = dynamicSettings.BpmLimit == -1
+                ? 0f
+                : 1000.0f / (dynamicSettings.BpmLimit / 60.0f);
 
-            if (newValue > this.lastAudioValue && newValue > dynamicSettings.SaturateThreshold && shouldAllowBeat)
+            newValue = MathF.Pow(newValue, dynamicSettings.AudioResponseCurve);
+            bool isAboveThreshold = newValue > dynamicSettings.SaturateThreshold;
+            float timeSinceLastBeat = now - lastBeatTime;
+            bool onTime = timeSinceLastBeat >= minMsPerBeat;
+
+            if (onTime && isAboveThreshold && newValue > this.lastAudioValue)
             {
-                this.lastAudioValue = MathHelper.Lerp(this.lastAudioValue, newValue, dynamicSettings.Saturate);
-                this.lastValueRaise = now;
+                this.lastAudioValue = MathHelper.Lerp(
+                    this.lastAudioValue,
+                    newValue,
+                    dynamicSettings.Saturate
+                );
+
+                lastBeatTime = now;
+                lastPeakTime = now;
             }
             else
             {
-                this.lastAudioValue *= dynamicSettings.Fade;
+                if (now - lastPeakTime < dynamicSettings.AudioPeakHoldTimeMs)
+                    return;
+
+                this.lastAudioValue = MathHelper.Lerp(
+                    this.lastAudioValue,
+                    0f,
+                    1f - dynamicSettings.Fade
+                );
             }
         }
 
