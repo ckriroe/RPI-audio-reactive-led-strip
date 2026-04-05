@@ -56,5 +56,6 @@
   "patternCenter": 0,
   "patternSectionSizeMod": 0.0,
   "fps": 60,
-  "fftSize": 512
+  "fftSize": 512,
+  "bpmLimit": 200
 }

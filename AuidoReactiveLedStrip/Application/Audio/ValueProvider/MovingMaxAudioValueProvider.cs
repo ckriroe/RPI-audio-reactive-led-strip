@@ -37,10 +37,10 @@ namespace Application.Audio.ValueProvider
             if (this.lastExtraOrdanarySampleBuffer == null || this.lastExtraOrdanarySampleBuffer.MaxSize != this.dynamicSettings.MeanValueBufferSize)
                 this.lastExtraOrdanarySampleBuffer = new LimitedBuffer<float>(this.dynamicSettings.MeanValueBufferSize);
 
-            if (maxFrequency < this.lastAproxMaxFrequency - this.lastAproxMaxFrequency * this.dynamicSettings.MeanValueThreshold || !this.lastExtraOrdanarySampleBuffer.Items.Any())
+            if (maxFrequency < this.lastAproxMaxFrequency - this.lastAproxMaxFrequency * this.dynamicSettings.MeanValueThreshold)
                 this.lastExtraOrdanarySampleBuffer.Add(maxFrequency);
 
-            float avg = this.lastExtraOrdanarySampleBuffer.Items.Average();
+            float avg = this.lastExtraOrdanarySampleBuffer.Items.Any() ? this.lastExtraOrdanarySampleBuffer.Items.Average() : 0.0f;
 
             float adjustedFreqValue;
             if (maxFrequency > this.dynamicSettings.MinFreqAmplitude)
@@ -58,10 +58,11 @@ namespace Application.Audio.ValueProvider
                 adjustedFreqValue = Math.Max(0.0f, adjustedFreqValue);
             }
 
-            base.currentValue = Math.Max(0, (adjustedFreqValue - avg) / this.lastAproxMaxFrequency);
+            float newAudioValue = Math.Max(0, (adjustedFreqValue - avg) / this.lastAproxMaxFrequency);
+            base.SetAudioValue(newAudioValue);
 
             if (base.staticSettings.PrintFrequencyInfos)
-                Console.WriteLine($"Last approx. max freq: {this.lastAproxMaxFrequency,15:F5}\t\tCurrrent avg. mean amplitude: {avg,15:F5}\t\tMax freq: {maxFrequency,15:F5}\tResulting value: {base.currentValue,15:F5}");
+                Console.WriteLine($"Last approx. max freq: {this.lastAproxMaxFrequency,15:F5}\t\tCurrrent avg. mean amplitude: {avg,15:F5}\t\tMax freq: {maxFrequency,15:F5}\tResulting value: {newAudioValue,15:F5}");
         }
     }
 }
