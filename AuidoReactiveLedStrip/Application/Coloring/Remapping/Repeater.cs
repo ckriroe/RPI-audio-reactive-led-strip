@@ -20,6 +20,9 @@ namespace Application.Coloring.Remapping
 
             for (int i = 0; i < times; i++)
             {
+                if (i * len + (len - 1) >= result.Length)
+                    break;
+
                 Array.Copy(source, 0, result, i * len, len);
             }
 
