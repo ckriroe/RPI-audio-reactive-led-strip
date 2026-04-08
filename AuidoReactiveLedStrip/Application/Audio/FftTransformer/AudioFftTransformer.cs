@@ -36,11 +36,11 @@ namespace Application.Audio.FftTransformer
 
             Fourier.Forward(fftInput, FourierOptions.Matlab);
 
-            int halfSize = frames / 2 + 1;
-            float[] mags = new float[halfSize];
-            for (int i = 0; i < halfSize; i++)
+            int magSize = frames - 1;
+            float[] mags = new float[magSize];
+            for (int i = 0; i < magSize; i++)
             {
-                mags[i] = (float)fftInput[i].Magnitude;
+                mags[i] = ((float)fftInput[i + 1].Magnitude / frames) * 512;
             }
 
             return mags;

@@ -406,7 +406,7 @@ st.slider("Audiowert Skalierung", 0.01, 5.00, step=0.01, key="audioResponseCurve
 st.slider("Min. Peakdauer in ms", 0, 999, step=1, key="audioPeakHoldTimeMs", on_change=save_params)
 st.number_input("Min. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="minFreq", on_change=save_params)
 st.number_input("Max. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="maxFreq", on_change=save_params)
-st.number_input("Audio Puffer Größe", min_value=1, max_value=50000, step=1, format="%d", key="fftSize", on_change=save_params)
+st.number_input("Audio Puffer Größe", min_value=2, max_value=50000, step=1, format="%d", key="fftSize", on_change=save_params)
 
 st.divider()
 st.subheader("Effekt")
