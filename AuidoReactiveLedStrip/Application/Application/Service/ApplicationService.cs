@@ -1,4 +1,5 @@
 ﻿using Application.Application.Orchestration;
+using Application.Domain;
 using Application.RuntimeSettings;
 using Application.Visualization;
 using Microsoft.Extensions.Options;
@@ -18,6 +19,7 @@ namespace Application.Application.Service
         private volatile bool isRunnging = false;
         private int prevGuiWidth = 0;
         private int prevGuiHeight = 0;
+
         private IVisualizer? currentScreenVisualizer = null;
 
 
@@ -71,11 +73,12 @@ namespace Application.Application.Service
 
         public void OnStaticSettingsChanged(StaticSettings staticSettings)
         {
-            if (this.currentScreenVisualizer != null && (
-                !staticSettings.UseGuiVisualization ||
+            if (this.currentScreenVisualizer == null || !this.isRunnging)
+                return;
+
+            if (!staticSettings.UseGuiVisualization ||
                 staticSettings.GuiWidth != this.prevGuiWidth ||
-                staticSettings.GuiHeight != this.prevGuiHeight
-            ) && this.isRunnging)
+                staticSettings.GuiHeight != this.prevGuiHeight)
             {
                 // Window gets closed until its configured again or gets reopened with new size
                 this.currentScreenVisualizer?.Stop();

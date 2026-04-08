@@ -24,5 +24,7 @@
   "mainThreadSettingsCheckIntervalMs": 2000,
   "runIndefinitely": true,
   "outputWhenGpioOff": false,
-  "accurateSleeping": false
+  "accurateSleeping": false,
+  "guiVisualizationMode": 0,
+  "rectangleGuiVisualizationHeight": 50
 }

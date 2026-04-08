@@ -1,10 +1,19 @@
-﻿using OpenTK.Windowing.Common;
+﻿using Application.RuntimeSettings;
+using Microsoft.Extensions.Options;
+using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
 
 namespace Application.Visualization.Screen
 {
     public class OpenTkScreenVisualizerFactory : IVisualizerFactory
     {
+        private readonly IOptionsMonitor<StaticSettings> staticSettings;
+
+        public OpenTkScreenVisualizerFactory(IOptionsMonitor<StaticSettings> staticSettings)
+        {
+            this.staticSettings = staticSettings;
+        }
+
         public IVisualizer Create(int initialWidth, int initialHeight)
         {
             var settings = new NativeWindowSettings()
@@ -17,7 +26,7 @@ namespace Application.Visualization.Screen
                 Profile = ContextProfile.Any
             };
 
-            return new OpenTkScreenVisualizer(GameWindowSettings.Default, settings);
+            return new OpenTkScreenVisualizer(GameWindowSettings.Default, settings, this.staticSettings);
         }
     }
 }

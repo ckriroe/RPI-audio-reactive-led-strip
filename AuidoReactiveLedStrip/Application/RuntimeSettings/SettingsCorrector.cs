@@ -45,6 +45,7 @@ namespace Application.RuntimeSettings
             }
 
             dynamicSettings.Colors = correctedColorSettings;
+            dynamicSettings.MaxFreqAmplitude = 500;
         }
     }
 }
