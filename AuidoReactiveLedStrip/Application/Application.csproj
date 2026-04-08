@@ -28,6 +28,8 @@
     <None Update="static_settings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+	<None Include="../../audio_parameter_web_ui.py">
+	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
   </ItemGroup>
-
 </Project>

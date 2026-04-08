@@ -1,4 +1,6 @@
-﻿namespace Application.RuntimeSettings
+﻿using Application.Domain;
+
+namespace Application.RuntimeSettings
 {
     public class StaticSettings
     {
@@ -28,5 +30,7 @@
         public bool RunIndefinitely { get; set; }
         public bool OutputWhenGpioOff { get; set; }
         public bool AccurateSleeping { get; set; }
+        public GuiVisualizationMode GuiVisualizationMode { get; set; }
+        public int RectangleGuiVisualizationHeight { get; set; }
     }
 }
