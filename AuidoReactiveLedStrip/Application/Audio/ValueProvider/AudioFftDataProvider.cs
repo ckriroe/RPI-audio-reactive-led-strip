@@ -18,6 +18,9 @@ namespace Application.Audio.ValueProvider
             if (this.minBin == null || this.maxBin == null || !this.isActive)
                 return;
 
+            if (this.minBin.Value >= fftData.Length || this.maxBin.Value >= fftData.Length)
+                return;
+
             this.filteredFftData = fftData[this.minBin.Value..this.maxBin.Value];
             this.ProcessFftData();
         }
@@ -27,7 +30,7 @@ namespace Application.Audio.ValueProvider
             this.staticSettings = staticSettings;
             this.dynamicSettings = dynamicSettings;
 
-            this.frequencyRangePerBin = this.staticSettings.SampleRate / (float)this.dynamicSettings.FftSize;
+            this.frequencyRangePerBin = (this.staticSettings.SampleRate / (float)this.dynamicSettings.FftSize) / 2.0f;
             int newMinBin = (int)Math.Round(this.dynamicSettings.MinFreq / this.frequencyRangePerBin.Value);
             int newMaxBin = (int)Math.Round(this.dynamicSettings.MaxFreq / this.frequencyRangePerBin.Value) + 1;
 

@@ -3,19 +3,19 @@
   "channels": 2,
   "audioDeviceId": 4,
   "belowMinFreqAmplitudeFunctionFactor": -0.03,
-  "maxFreqAmplitudeIncreaseRatio": 0.66, // Higher = rise faster
-  "maxFreqAmplitudeDecreaseRatio": 0.2, // Higher = fall faster
-  "maxFreqAmplitudeTTL": 2000,
+  "maxFreqAmplitudeIncreaseRatio": 0.22, // Higher = rise faster
+  "maxFreqAmplitudeDecreaseRatio": 0.5, // Higher = fall faster
+  "maxFreqAmplitudeTTL": 4000,
   "maxFreqAmplitudeProlongerThreshholdPercent": 0.03,
-  "maxFreqAmplitudeDecayRate": 0.003,
+  "maxFreqAmplitudeDecayRate": 0.002,
   "ledUpdateFrequency": 1200000,
   "bounceLayers": 1,
   "maxEffectSpeed": 600,
   "externalModeRelayGpio": 5,
   "invalidFrameSleepTime": 2000,
   "reloadSettingsAfterMs": 1000,
-  "printFrameTimes": true,
-  "printFrequencyInfos": false,
+  "printFrameTimes": false,
+  "printFrequencyInfos": true,
   "minSanitizedValue": 0.01,
   "useGuiVisualization": true,
   "useLedVisualization": true,
