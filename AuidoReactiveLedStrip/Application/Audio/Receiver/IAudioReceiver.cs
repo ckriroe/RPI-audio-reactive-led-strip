@@ -1,11 +1,13 @@
-﻿namespace Application.Audio.Receiver
+﻿using Application.RuntimeSettings;
+
+namespace Application.Audio.Receiver
 {
     public interface IAudioReceiver
     {
-        void Initialize(int audioDeviceId, int channelCount, int bufferSize, int sampleRate, Action? initCallback = null);
+        void ApplyStaticSettings(StaticSettings staticSettings);
 
-        void StartAudioStream(Action<float[]> audioCallback);
+        void RegisterAudioConsumer(Guid identifier, int requestedBufferSize, Action<float[]> audioCallback);
 
-        void StopAudioStream();
+        void UnregisterAudioConsumer(Guid identifier);
     }
 }
