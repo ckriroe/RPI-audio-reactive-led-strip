@@ -61,7 +61,7 @@ namespace Application.Sequencing
             }
             else
             {
-                return this.CompleteTransition(staticSettings, dynamicPresetSettings, timestamp, nextSettings);
+                return this.CompleteTransition(staticSettings, dynamicPresetSettings, timestamp, currentSetting, nextSettings);
             }
         }
 
@@ -88,9 +88,9 @@ namespace Application.Sequencing
             this.transitionRenderer.Disable();
         }
 
-        private Color[]? GetCurrentEffect(StaticSettings staticSettings, Preset currentSetting, Preset? nextSettings, long deltaTime)
+        private Color[]? GetCurrentEffect(StaticSettings staticSettings, Preset currentSettings, Preset? nextSettings, long deltaTime)
         {
-            if (nextSettings != null && deltaTime > currentSetting.EffectSettings.EffectDurationMs - currentSetting.EffectSettings.EffectTransitionWarmupDuration)
+            if (nextSettings != null && deltaTime > currentSettings.EffectSettings.EffectDurationMs - currentSettings.EffectSettings.EffectTransitionWarmupDuration)
             {
                 if (!this.isTransitioning)
                 {
@@ -102,7 +102,7 @@ namespace Application.Sequencing
                 {
                     this.currentState = LedSequenceState.WarumupNextEffect;
                     if (staticSettings.PrintSequenceInfos)
-                        Console.WriteLine($"Sequencer: Warmup next effect. Current effect: '{currentSetting.Name}' ({currentSetting.Id}), next effect: '{nextSettings.Name}' ({nextSettings.Id})");
+                        Console.WriteLine($"Sequencer: Warmup next effect. Current effect: '{currentSettings.Name}' ({currentSettings.Id}), next effect: '{nextSettings.Name}' ({nextSettings.Id})");
                 }                    
 
                 this.transitionRenderer.RenderLedStrip();
@@ -112,13 +112,13 @@ namespace Application.Sequencing
             {
                 this.currentState = LedSequenceState.UseCurrentEffect;
                 if (staticSettings.PrintSequenceInfos)
-                    Console.WriteLine($"Sequencer: Calculate effect for '{currentSetting.Name}' ({currentSetting.Id})");
+                    Console.WriteLine($"Sequencer: Calculate effect for '{currentSettings.Name}' ({currentSettings.Id})");
             }
 
             return this.mainRenderer.RenderLedStrip();
         }
 
-        private Color[]? GetTransitionEffect(StaticSettings staticSettings, long timestamp, Preset currentSetting, Preset nextSettings)
+        private Color[]? GetTransitionEffect(StaticSettings staticSettings, long timestamp, Preset currentSettings, Preset nextSettings)
         {
             if (!this.isTransitioning)
             {
@@ -130,15 +130,15 @@ namespace Application.Sequencing
             {
                 this.currentState = LedSequenceState.Transition;
                 if (staticSettings.PrintSequenceInfos)
-                    Console.WriteLine($"Sequencer: transitioning to next effect. Current effect: '{currentSetting.Name}' ({currentSetting.Id}), next effect: '{nextSettings.Name}' ({nextSettings.Id})");
+                    Console.WriteLine($"Sequencer: transitioning to next effect. Current effect: '{currentSettings.Name}' ({currentSettings.Id}), next effect: '{nextSettings.Name}' ({nextSettings.Id})");
             }
 
-            long start = this.referenceTimestamp + currentSetting.EffectSettings.EffectDurationMs;
-            long end = start + currentSetting.EffectSettings.EffectTransitionDurationMs;
+            long start = this.referenceTimestamp + currentSettings.EffectSettings.EffectDurationMs;
+            long end = start + currentSettings.EffectSettings.EffectTransitionDurationMs;
 
-            float t = currentSetting.EffectSettings.EffectTransitionDurationMs == 0
+            float t = currentSettings.EffectSettings.EffectTransitionDurationMs == 0
                 ? 1f
-                : (timestamp - start) / (float)currentSetting.EffectSettings.EffectTransitionDurationMs;
+                : (timestamp - start) / (float)currentSettings.EffectSettings.EffectTransitionDurationMs;
 
             t = Math.Clamp(t, 0f, 1f);
 
@@ -148,7 +148,7 @@ namespace Application.Sequencing
             return ColorHelper.LerpColors(mainColors, transitionColors, t);
         }
 
-        private Color[]? CompleteTransition(StaticSettings staticSettings, DynamicPresetSettings dynamicPresetSettings, long timestamp, Preset nextSettings)
+        private Color[]? CompleteTransition(StaticSettings staticSettings, DynamicPresetSettings dynamicPresetSettings, long timestamp, Preset currentSettings, Preset nextSettings)
         {
             if (!this.isTransitioning)
             {
@@ -166,6 +166,8 @@ namespace Application.Sequencing
             this.mainRenderer = this.transitionRenderer;
             this.transitionRenderer = tmp;
             this.transitionRenderer.Disable();
+            if (currentSettings.EffectSettings.ResetEffectAfterTransition)
+                this.transitionRenderer.Reset();
 
             this.SetPresets(dynamicPresetSettings, this.nextPreset?.Id);
             this.isTransitioning = false;

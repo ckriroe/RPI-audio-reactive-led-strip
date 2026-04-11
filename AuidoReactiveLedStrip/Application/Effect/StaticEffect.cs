@@ -22,7 +22,7 @@ namespace Application.Effect
         {
             prevStrip ??= LedHelper.CreateEmptyStrip(length);
 
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < length && i < prevStrip.LedPixels.Length; i++)
             {
                 prevStrip.LedPixels[i].Value = this.GetValueForIndex(i, length);
             }
