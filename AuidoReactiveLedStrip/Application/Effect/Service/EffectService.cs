@@ -79,6 +79,12 @@ namespace Application.Effect.Service
             return this.prevLedStrip;
         }
 
+        public void Reset()
+        {
+            this.prevLedStrip = null;
+            this.audioWaveEffect.Reset();
+        }
+
         private AudioServiceMode GetRequiredAudioMode()
         {
             DynamicEffectSettings? dynamicSettings = this.dynamicSettings;

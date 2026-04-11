@@ -7,6 +7,9 @@ namespace Application.Effect.Service
     public interface IEffectService
     {
         LedStrip? GetLedStrip();
+
         void ApplySettings(IAudioService affectedAudioService, StaticSettings staticSettings, DynamicEffectSettings dynamicSettings);
+
+        void Reset();
     }
 }
