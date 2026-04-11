@@ -50,7 +50,7 @@ namespace Application.LedStripRendering
             this.remapService.ApplySettings(staticSettings, dynamicSettings);
         }
 
-        public void Dispose()
+        public void Disable()
         {
             this.audioService.SetAudioMode(AudioServiceMode.None);
         }

@@ -18,6 +18,7 @@ using Application.Gpio;
 using Application.LedStripRendering;
 using Application.Looper;
 using Application.RuntimeSettings;
+using Application.Sequencing;
 using Application.Visualization;
 using Application.Visualization.Led;
 using Application.Visualization.Screen;
@@ -60,6 +61,7 @@ var builder = Host.CreateDefaultBuilder(args)
         services.AddSingleton<IGpioControllerFactory, GpioControllerFactory>();
         services.AddSingleton<GpioWrapper>();
 
+        services.AddTransient<ILedStripSequencer, LedStripSequencer>();
         services.AddTransient<ILedStripRenderer, LedStripRenderer>();
         services.AddTransient<Accelerator>();
         services.AddTransient<Patternizer>();

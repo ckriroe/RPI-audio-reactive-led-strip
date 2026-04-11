@@ -1,5 +1,4 @@
 ﻿using Application.RuntimeSettings;
-using MathNet.Numerics.Distributions;
 using System.Drawing;
 
 namespace Application.Util
@@ -13,6 +12,31 @@ namespace Application.Util
             int bVal = Math.Max(0, (int)(a.B + (b.B - a.B) * t));
 
             return Color.FromArgb(r, g, bVal);
+        }
+
+        public static Color[]? LerpColors(Color[]? colorsA, Color[]? colorsB, float t)
+        {
+            if (colorsA == null && colorsB == null)
+                return null;
+
+            if (colorsA == null)
+                return colorsB;
+
+            if (colorsB == null)
+                return colorsA;
+
+            Color[] target = colorsA.Length >= colorsB.Length ? colorsA : colorsB;
+            int maxLength = target.Length;
+
+            for (int i = 0; i < maxLength; i++)
+            {
+                Color a = i < colorsA.Length ? colorsA[i] : colorsA[^1];
+                Color b = i < colorsB.Length ? colorsB[i] : colorsB[^1];
+
+                target[i] = LerpColor(a, b, t);
+            }
+
+            return target;
         }
 
         public static Color HsvToRgb(float h, float s, float v)

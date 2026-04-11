@@ -141,7 +141,8 @@ namespace AudioProcessing.AudioProcessor
             this.currentAudioStream.Start();
             this.audioWorker = new Thread(AudioProcessingLoop);
             this.isAudioThreadRunning = true;
-            this.audioWorker.Start();            
+            this.audioWorker.Start();
+            Console.WriteLine("Stated audio processing");
         }
 
         private void StopAudioStream()
@@ -157,6 +158,7 @@ namespace AudioProcessing.AudioProcessor
             this.currentAudioStream = null;
 
             PortAudio.Terminate();
+            Console.WriteLine("Disabled audio processing");
             this.isRunnging = false;
         }
 

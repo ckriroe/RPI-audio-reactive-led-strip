@@ -1,6 +1,7 @@
 ﻿using Application.LedStripRendering;
 using Application.Looper;
 using Application.RuntimeSettings;
+using Application.Sequencing;
 using Application.Visualization;
 using Application.Visualization.Led;
 using System.Drawing;
@@ -10,7 +11,7 @@ namespace Application.Application.Orchestration
     public class Orchestrator : ILooperConsumer, IOrchestrator
     {
         private readonly IVisualizer ledVisualizer;
-        private readonly ILedStripRenderer ledStripRenderer;
+        private readonly ILedStripSequencer ledStripSequencer;
         private readonly ILooper looper;
 
         private IVisualizer? screenVisualizer;
@@ -24,13 +25,13 @@ namespace Application.Application.Orchestration
         public Orchestrator(
             Ws281xLedVisualizer ledVisualizer,
             ILooperFactory looperFactory,
-            ILedStripRenderer ledStripRenderer
+            ILedStripSequencer ledStripSequencer
         )
         {
             this.ledVisualizer = ledVisualizer;
             this.looper = looperFactory.GetLooper();
             this.looper.SetConsumer(this);
-            this.ledStripRenderer = ledStripRenderer;
+            this.ledStripSequencer = ledStripSequencer;
         }
 
         public void SetCurrentScreen(IVisualizer screenVisualizer)
@@ -41,7 +42,7 @@ namespace Application.Application.Orchestration
         public void OnSettingsChanged(StaticSettings staticSettings, DynamicPresetSettings dynamicSettings)
         {
             this.invalidFrameSleepTime = staticSettings.InvalidFrameSleepTime;
-            this.ledStripRenderer.ApplySettings(staticSettings, dynamicSettings.Presets.First().EffectSettings);
+            this.ledStripSequencer.ApplySettings(staticSettings, dynamicSettings);
             this.HandleLedVisualizer(staticSettings);
         }
 
@@ -67,7 +68,7 @@ namespace Application.Application.Orchestration
 
         public void OnTick()
         {
-            this.currentColors = this.ledStripRenderer.RenderLedStrip();
+            this.currentColors = this.ledStripSequencer.RenderLedStrip();
             if (currentColors == null)
                 Thread.Sleep(this.invalidFrameSleepTime);
         }
@@ -92,7 +93,7 @@ namespace Application.Application.Orchestration
             this.worker?.Join();
             this.ledVisualizer.Stop();
             this.ledVisualizer.Dispose();
-            this.ledStripRenderer.Dispose();
+            this.ledStripSequencer.Disable();
             this.isRunning = false;
         }
 

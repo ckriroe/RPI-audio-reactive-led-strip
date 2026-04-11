@@ -1,7 +1,9 @@
 {
   "selected_index": 1,
+  "selectedPresetId": "cc13fb26-bb84-4a59-969b-b44ee6971774",
   "presets": [
     {
+      "id": "cc13fb26-bb84-4a59-969b-b44ee6971774",
       "name": "Standard",
       "values": {
         "colors": [
@@ -62,10 +64,15 @@
         "fftSize": 512,
         "bpmLimit": -1,
         "audioResponseCurve": 1.21,
-        "audioPeakHoldTimeMs": 0
+        "audioPeakHoldTimeMs": 0,
+        "nextEffectId": "09205740-eb5b-455c-ac9a-7a0c9deccf87",
+        "effectDurationMs": 5000,
+        "effectTransitionDurationMs": 2000,
+        "effectTransitionWarmupDuration": 500
       }
     },
     {
+      "id": "09205740-eb5b-455c-ac9a-7a0c9deccf87",
       "name": "Statisch",
       "values": {
         "colors": [
@@ -126,7 +133,11 @@
         "fftSize": 512,
         "bpmLimit": -1,
         "audioResponseCurve": 1.21,
-        "audioPeakHoldTimeMs": 0
+        "audioPeakHoldTimeMs": 0,
+        "nextEffectId": "cc13fb26-bb84-4a59-969b-b44ee6971774",
+        "effectDurationMs": 5000,
+        "effectTransitionDurationMs": 2000,
+        "effectTransitionWarmupDuration": 500
       }
     }
   ]

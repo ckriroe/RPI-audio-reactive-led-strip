@@ -18,9 +18,9 @@ namespace Application.RuntimeSettings
         public int MaxEffectSpeed { get; set; }
         public int ExternalModeRelayGpio { get; set; }
         public int InvalidFrameSleepTime { get; set; }
-        public int ReloadSettingsAfterMs { get; set; }
         public bool PrintFrameTimes { get; set; }
         public bool PrintFrequencyInfos { get; set; }
+        public bool PrintSequenceInfos { get; set; }
         public float MinSanitizedValue {  get; set; }
         public bool UseGuiVisualization { get; set; }
         public bool UseLedVisualization { get; set; }
