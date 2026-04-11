@@ -12,7 +12,7 @@ namespace Application.Effect
 
         protected float GetCurrentAudioValue()
         {
-            float valueIncreaseFactor = this.dynamicEffectSettings?.ValueColorBias ?? 0.0f;
+            float valueIncreaseFactor = this.dynamicEffectSettings?.ValueIncreaseFactor ?? 0.0f;
             return (this.audioService?.GetCurrentAudioValue() ?? 0.0f) * valueIncreaseFactor;
         }
 

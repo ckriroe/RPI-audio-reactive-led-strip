@@ -28,9 +28,11 @@ namespace Application.RuntimeSettings
         private static void CorrectDynamicEffectSettings(DynamicEffectSettings dynamicSettings, StaticSettings staticSettings)
         {
             dynamicSettings.CalculatedLedCount = Math.Max(2, staticSettings.LedCount / dynamicSettings.EffectRepeats);
-            dynamicSettings.EffectOrigin = Math.Min(dynamicSettings.CalculatedLedCount, dynamicSettings.EffectOrigin / dynamicSettings.EffectRepeats);
-            dynamicSettings.ColorWaveOrigin = Math.Min(dynamicSettings.CalculatedLedCount, dynamicSettings.ColorWaveOrigin / dynamicSettings.EffectRepeats);
-            dynamicSettings.PatternCenter = Math.Min(dynamicSettings.CalculatedLedCount, dynamicSettings.PatternCenter / dynamicSettings.EffectRepeats);
+
+            dynamicSettings.EffectOrigin = Math.Min(dynamicSettings.CalculatedLedCount - 1, dynamicSettings.EffectOrigin / dynamicSettings.EffectRepeats);
+            dynamicSettings.ColorWaveOrigin = Math.Min(dynamicSettings.CalculatedLedCount - 1, dynamicSettings.ColorWaveOrigin / dynamicSettings.EffectRepeats);
+            dynamicSettings.PatternCenter = Math.Min(dynamicSettings.CalculatedLedCount - 1, dynamicSettings.PatternCenter / dynamicSettings.EffectRepeats);
+
             dynamicSettings.MinFreq = Math.Clamp(dynamicSettings.MinFreq, 0, 20000);
             dynamicSettings.MaxFreq = Math.Clamp(dynamicSettings.MaxFreq, 0, 20000);
             

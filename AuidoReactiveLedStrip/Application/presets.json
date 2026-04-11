@@ -4,7 +4,7 @@
   "presets": [
     {
       "id": "cc13fb26-bb84-4a59-969b-b44ee6971774",
-      "name": "Standard",
+      "name": "Wave 1",
       "values": {
         "colors": [
           {
@@ -12,21 +12,21 @@
             "threshold": 0.17
           },
           {
-            "color": "#ff0000",
+            "color": "#0000ff",
             "threshold": 0.7
           },
           {
-            "color": "#ff5353",
+            "color": "#5353ff",
             "threshold": 1.0
           }
         ],
-        "useRainbow": true,
-        "effectOrigin": 600,
-        "speed": 546,
-        "minFreq": 200,
-        "maxFreq": 5000,
+        "useRainbow": false,
+        "effectOrigin": 300,
+        "speed": 300,
+        "minFreq": 100,
+        "maxFreq": 200,
         "fade": 0.727,
-        "fadeOverTime": 0.003,
+        "fadeOverTime": 0.000,
         "staticSpectrum": false,
         "spectrumSections": 1,
         "bouncyWave": false,
@@ -35,14 +35,14 @@
         "meanValueBufferSize": 35,
         "meanValueThreshold": 0.75,
         "audioMode": 0,
-        "effectMode": 6,
-        "colorMode": 4,
+        "effectMode": 2,
+        "colorMode": 0,
         "minFreqAmplitude": 1.42,
         "maxFreqAmplitude": 500.0,
         "colorIncreaseFactor": 1.0,
         "valueIncreaseFactor": 1.01,
         "colorTransition": 0.5,
-        "valueColorBias": 0.0,
+        "valueColorBias": 1.0,
         "colorWaveOrigin": 150,
         "colorWaveSpeed": 18,
         "colorWaveSize": 100,
@@ -66,14 +66,15 @@
         "audioResponseCurve": 1.21,
         "audioPeakHoldTimeMs": 0,
         "nextEffectId": "09205740-eb5b-455c-ac9a-7a0c9deccf87",
-        "effectDurationMs": 5000,
-        "effectTransitionDurationMs": 2000,
-        "effectTransitionWarmupDuration": 500
+        "effectDurationMs": 500,
+        "effectTransitionDurationMs": 200,
+        "effectTransitionWarmupDuration": 500,
+        "resetEffectAfterTransition": false
       }
     },
     {
       "id": "09205740-eb5b-455c-ac9a-7a0c9deccf87",
-      "name": "Statisch",
+      "name": "Wave 2",
       "values": {
         "colors": [
           {
@@ -89,31 +90,31 @@
             "threshold": 1.0
           }
         ],
-        "useRainbow": true,
+        "useRainbow": false,
         "effectOrigin": 300,
-        "speed": 488,
-        "minFreq": 110,
-        "maxFreq": 160,
-        "fade": 0.825,
-        "fadeOverTime": 0.003,
+        "speed": 300,
+        "minFreq": 100,
+        "maxFreq": 200,
+        "fade": 0.727,
+        "fadeOverTime": 0.000,
         "staticSpectrum": false,
         "spectrumSections": 1,
         "bouncyWave": false,
         "saturate": 1.0,
-        "saturateThreshold": 0.46,
+        "saturateThreshold": 0.13,
         "meanValueBufferSize": 35,
         "meanValueThreshold": 0.75,
         "audioMode": 0,
-        "effectMode": 6,
-        "colorMode": 4,
-        "minFreqAmplitude": 9.23,
+        "effectMode": 2,
+        "colorMode": 0,
+        "minFreqAmplitude": 1.42,
         "maxFreqAmplitude": 500.0,
         "colorIncreaseFactor": 1.0,
-        "valueIncreaseFactor": 1.0,
+        "valueIncreaseFactor": 1.01,
         "colorTransition": 0.5,
-        "valueColorBias": 0.0,
+        "valueColorBias": 1.0,
         "colorWaveOrigin": 150,
-        "colorWaveSpeed": 50,
+        "colorWaveSpeed": 18,
         "colorWaveSize": 100,
         "colorWaveInwards": false,
         "noiseAmount": 0.0,
@@ -121,7 +122,7 @@
         "getAlphaFromValue": false,
         "colorOverflow": false,
         "brightness": 1.0,
-        "gamma": 0.99,
+        "gamma": 1.01,
         "effectRepeats": 1,
         "acceleration": 1.0,
         "particleSize": 20,
@@ -135,9 +136,10 @@
         "audioResponseCurve": 1.21,
         "audioPeakHoldTimeMs": 0,
         "nextEffectId": "cc13fb26-bb84-4a59-969b-b44ee6971774",
-        "effectDurationMs": 5000,
-        "effectTransitionDurationMs": 2000,
-        "effectTransitionWarmupDuration": 500
+        "effectDurationMs": 500,
+        "effectTransitionDurationMs": 200,
+        "effectTransitionWarmupDuration": 500,
+        "resetEffectAfterTransition": false
       }
     }
   ]

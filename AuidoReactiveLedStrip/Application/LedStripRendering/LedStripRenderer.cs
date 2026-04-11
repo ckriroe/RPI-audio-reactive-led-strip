@@ -53,6 +53,10 @@ namespace Application.LedStripRendering
         public void Disable()
         {
             this.audioService.SetAudioMode(AudioServiceMode.None);
+        }
+
+        public void Reset()
+        {
             this.effectService.Reset();
         }
     }

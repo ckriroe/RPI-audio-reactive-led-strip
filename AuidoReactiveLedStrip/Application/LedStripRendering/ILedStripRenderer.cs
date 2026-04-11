@@ -10,5 +10,7 @@ namespace Application.LedStripRendering
         void ApplySettings(StaticSettings staticSettings, DynamicEffectSettings dynamicSettings);
 
         void Disable();
+
+        void Reset();
     }
 }

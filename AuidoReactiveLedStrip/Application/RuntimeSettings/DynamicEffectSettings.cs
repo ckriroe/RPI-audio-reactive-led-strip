@@ -106,6 +106,8 @@ namespace Application.RuntimeSettings
         public long EffectTransitionDurationMs { get; set; }
 
         public long EffectTransitionWarmupDuration { get; set; }
+
+        public bool ResetEffectAfterTransition { get; set; }
     }
 
     public class ColorSetting
