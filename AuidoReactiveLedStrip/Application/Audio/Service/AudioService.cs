@@ -75,11 +75,10 @@ namespace Application.Audio.Service
             {
                 this.StopAudioProcessing();
                 this.currentDataProvider = null;
-                Console.WriteLine("Disabled audio processing");
             } 
             else
             {
-                Console.WriteLine("Enabled audio processing with mode: " + audioMode.ToString());
+                Console.WriteLine("Set audio mode: " + audioMode.ToString());
                 if (audioMode == AudioServiceMode.Fft)
                     this.currentDataProvider = this.audioFftDataProvider;
                 else if (audioMode == AudioServiceMode.Simple)

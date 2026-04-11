@@ -1,11 +1,6 @@
 ﻿using Application.RuntimeSettings;
 using Microsoft.Extensions.Options;
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Application.Looper
 {
@@ -13,17 +8,21 @@ namespace Application.Looper
     {
         protected readonly IOptionsMonitor<StaticSettings> staticSettings;
         protected readonly IOptionsMonitor<DynamicPresetSettings> dynamicSettings;
+        private readonly object lck = new object();
 
         private volatile bool isLooperRunning = false;
-        private bool isInitialFrame = true;
         private int fps = 10;
-        private int reloadSettingsAfterMs = 100;
         private bool printFrameTimes = false;
+
+        private IDisposable? staticSettingsSubscription;
+        private IDisposable? dynamicSettingsSubscription;
+        private StaticSettings? currentStaticSettings;
+        private DynamicPresetSettings? currentDynamicSettings;
+        private bool shouldReloadSettings = false;
 
         protected double frameTime = 100.0;
         protected Stopwatch sw = Stopwatch.StartNew();
         protected ILooperConsumer? looperConsumer;
-        protected TimeSpan? lastSettingsReload = null;
 
         public BaseLooper(IOptionsMonitor<StaticSettings> staticSettings, IOptionsMonitor<DynamicPresetSettings> dynamicSettings)
         {
@@ -42,6 +41,30 @@ namespace Application.Looper
                 return;
 
             this.isLooperRunning = true;
+            this.staticSettingsSubscription?.Dispose();
+            this.staticSettingsSubscription = this.staticSettings.OnChange((staticSettings) =>
+            {
+                lock (this.lck)
+                {
+                    this.currentStaticSettings = staticSettings;
+                    this.shouldReloadSettings = true;
+                }
+            });
+
+            this.dynamicSettingsSubscription?.Dispose();
+            this.dynamicSettingsSubscription = this.dynamicSettings.OnChange((dynamicSettings) =>
+            {
+                lock (this.lck)
+                {
+                    this.currentDynamicSettings = dynamicSettings;
+                    this.shouldReloadSettings = true;
+                }
+            });
+
+            this.currentStaticSettings = this.staticSettings.CurrentValue;
+            this.currentDynamicSettings = this.dynamicSettings.CurrentValue;
+            this.shouldReloadSettings = true;
+
             this.sw.Restart();
             while (this.isLooperRunning)
             {
@@ -51,24 +74,32 @@ namespace Application.Looper
 
         public void StopLooper()
         {
+            this.staticSettingsSubscription?.Dispose();
+            this.dynamicSettingsSubscription?.Dispose();
             this.isLooperRunning = false;
         }
 
         protected void TryToReloadSettings()
         {
-            if ((this.lastSettingsReload != null && (sw.Elapsed - this.lastSettingsReload.Value).TotalMilliseconds > this.reloadSettingsAfterMs) || this.isInitialFrame)
+            if (!this.shouldReloadSettings)
+                return;
+
+            lock (this.lck)
             {
-                DynamicPresetSettings dynamicSettings = this.dynamicSettings.CurrentValue;
-                StaticSettings staticSettings = this.staticSettings.CurrentValue;
+                if (!this.shouldReloadSettings)
+                    return;
+
+                DynamicPresetSettings? dynamicSettings = this.currentDynamicSettings;
+                StaticSettings? staticSettings = this.currentStaticSettings;
+                if (dynamicSettings == null || staticSettings == null)
+                    return;
 
                 this.printFrameTimes = staticSettings.PrintFrameTimes;
-                this.reloadSettingsAfterMs = staticSettings.ReloadSettingsAfterMs;
                 this.fps = staticSettings.Fps;
                 this.frameTime = 1.0 / fps;
 
                 this.looperConsumer?.OnSettingsChanged(staticSettings, dynamicSettings);
-                isInitialFrame = false;
-                this.lastSettingsReload = sw.Elapsed;
+                this.shouldReloadSettings = false;
             }
         }
 

@@ -88,11 +88,24 @@ namespace Application.RuntimeSettings
         public int PatternCenter { get; set; }
         
         public float PatternSectionSizeMod { get; set; }
+
         public int FftSize { get; set; }
+
         public int BpmLimit { get; set; } = -1;
+
         public float AudioResponseCurve { get; set; } = 1.0f;
+
         public int AudioPeakHoldTimeMs { get; set; } = 0;
+
         public int CalculatedLedCount { get; set; }
+
+        public Guid? NextEffectId { get; set; }
+
+        public long EffectDurationMs { get; set; }
+
+        public long EffectTransitionDurationMs { get; set; }
+
+        public long EffectTransitionWarmupDuration { get; set; }
     }
 
     public class ColorSetting
