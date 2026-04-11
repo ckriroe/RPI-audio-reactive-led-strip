@@ -2,18 +2,17 @@
 using Application.Domain;
 using Application.RuntimeSettings;
 using Application.Util;
-using Microsoft.Extensions.Options;
 
 namespace Application.Effect
 {
     public class AudioLineDescendingEffect : AudioValueBasedEffect
     {
-        public AudioLineDescendingEffect(IAudioService audioService, IOptionsMonitor<DynamicSettings> dynamicSettings)
-            : base(audioService, dynamicSettings) { }
-
         public override LedStrip? RenderEffekt(LedStrip? prevStrip, int length)
         {
-            DynamicSettings dynamicSettings = base.dynamicSettings.CurrentValue;
+            DynamicEffectSettings? dynamicSettings = base.dynamicEffectSettings;
+            if (dynamicSettings == null)
+                return null;
+
             float value = base.GetCurrentAudioValue();
 
             int n = length;

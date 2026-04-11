@@ -1,4 +1,5 @@
-﻿using Application.Domain;
+﻿using Application.Audio.Service;
+using Application.Domain;
 using Application.Gpio;
 using Application.RuntimeSettings;
 using Application.Util;
@@ -8,16 +9,15 @@ namespace Application.Effect
 {
     public class GpioExternalEffect : IStatefulEffect
     {
-        private readonly IOptionsMonitor<StaticSettings> staticSettings;
         private readonly GpioWrapper gpioWrapper;
 
+        private StaticSettings? staticSettings = null;
         private bool isEnabled = false;
         private bool pendingGpioEnable = false;
         private bool isGpioTurnedOn = false;
 
         public GpioExternalEffect(IOptionsMonitor<StaticSettings> staticSettings, GpioWrapper gpioWrapper)
         {
-            this.staticSettings = staticSettings;
             this.gpioWrapper = gpioWrapper;
         }
 
@@ -27,12 +27,19 @@ namespace Application.Effect
 
         public bool UseAudioValue => false;
 
+        public void ApplySettings(IAudioService audioService, StaticSettings staticSettings, DynamicEffectSettings dynamicEffectSettings)
+        {
+            this.staticSettings = staticSettings;
+        }
+
         public void DisableEffect()
         {
-            if (!this.isEnabled)
+            StaticSettings? staticSettings = this.staticSettings;
+
+            if (!this.isEnabled || staticSettings == null)
                 return;
 
-            this.gpioWrapper.TemporarilChangeGpio(true, this.staticSettings.CurrentValue);
+            this.gpioWrapper.TemporarilyChangeGpio(true, staticSettings);
             this.isGpioTurnedOn = false;
             this.pendingGpioEnable = false;
             this.isEnabled = false;
@@ -50,11 +57,13 @@ namespace Application.Effect
 
         public LedStrip? RenderEffekt(LedStrip? prevStrip, int length)
         {
-            StaticSettings currentStaticSettings = this.staticSettings.CurrentValue;
+            StaticSettings? staticSettings = this.staticSettings;
+            if (staticSettings == null)
+                return null;
 
-            if (this.isEnabled && this.pendingGpioEnable && !this.isGpioTurnedOn || this.gpioWrapper.UpdatePending(currentStaticSettings))
+            if (this.isEnabled && this.pendingGpioEnable && !this.isGpioTurnedOn || this.gpioWrapper.UpdatePending(staticSettings))
             {
-                this.gpioWrapper.TemporarilChangeGpio(false, currentStaticSettings);
+                this.gpioWrapper.TemporarilyChangeGpio(false, staticSettings);
                 this.isGpioTurnedOn = true;
             }
 

@@ -12,7 +12,7 @@ namespace Application.Looper
     public abstract class BaseLooper : ILooper
     {
         protected readonly IOptionsMonitor<StaticSettings> staticSettings;
-        protected readonly IOptionsMonitor<DynamicSettings> dynamicSettings;
+        protected readonly IOptionsMonitor<DynamicPresetSettings> dynamicSettings;
 
         private volatile bool isLooperRunning = false;
         private bool isInitialFrame = true;
@@ -25,7 +25,7 @@ namespace Application.Looper
         protected ILooperConsumer? looperConsumer;
         protected TimeSpan? lastSettingsReload = null;
 
-        public BaseLooper(IOptionsMonitor<StaticSettings> staticSettings, IOptionsMonitor<DynamicSettings> dynamicSettings)
+        public BaseLooper(IOptionsMonitor<StaticSettings> staticSettings, IOptionsMonitor<DynamicPresetSettings> dynamicSettings)
         {
             this.staticSettings = staticSettings;
             this.dynamicSettings = dynamicSettings;
@@ -58,12 +58,12 @@ namespace Application.Looper
         {
             if ((this.lastSettingsReload != null && (sw.Elapsed - this.lastSettingsReload.Value).TotalMilliseconds > this.reloadSettingsAfterMs) || this.isInitialFrame)
             {
-                DynamicSettings dynamicSettings = this.dynamicSettings.CurrentValue;
+                DynamicPresetSettings dynamicSettings = this.dynamicSettings.CurrentValue;
                 StaticSettings staticSettings = this.staticSettings.CurrentValue;
 
                 this.printFrameTimes = staticSettings.PrintFrameTimes;
                 this.reloadSettingsAfterMs = staticSettings.ReloadSettingsAfterMs;
-                this.fps = dynamicSettings.Fps;
+                this.fps = staticSettings.Fps;
                 this.frameTime = 1.0 / fps;
 
                 this.looperConsumer?.OnSettingsChanged(staticSettings, dynamicSettings);

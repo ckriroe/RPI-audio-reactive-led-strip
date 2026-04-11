@@ -11,7 +11,7 @@ namespace Application.Audio.ValueProvider
 
         protected volatile float[]? filteredFftData = null;
         protected StaticSettings? staticSettings = null;
-        protected DynamicSettings? dynamicSettings = null;
+        protected DynamicEffectSettings? dynamicSettings = null;
 
         public void SetNewFftData(float[] fftData)
         {
@@ -25,7 +25,7 @@ namespace Application.Audio.ValueProvider
             this.ProcessFftData();
         }
 
-        public void Initialize(StaticSettings staticSettings, DynamicSettings dynamicSettings)
+        public void ApplySettings(StaticSettings staticSettings, DynamicEffectSettings dynamicSettings)
         {
             this.staticSettings = staticSettings;
             this.dynamicSettings = dynamicSettings;

@@ -7,7 +7,7 @@ namespace Application.Coloring.Noise
     {
         private float[] ledNoise = [];
 
-        public float GetSmoothNoise(int index, int length, DynamicSettings dynamicSettings)
+        public float GetSmoothNoise(int index, int length, DynamicEffectSettings dynamicSettings)
         {
             if (this.ledNoise.Length != length)
                 this.ledNoise = new float[length];

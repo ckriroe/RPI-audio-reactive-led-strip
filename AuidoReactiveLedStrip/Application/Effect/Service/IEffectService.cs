@@ -1,11 +1,12 @@
-﻿using Application.Domain;
+﻿using Application.Audio.Service;
+using Application.Domain;
+using Application.RuntimeSettings;
 
 namespace Application.Effect.Service
 {
     public interface IEffectService
     {
-        LedStrip? GetRenderedLedStrip();
-        void SetEffectMode(EffectMode effectMode);
-        AudioServiceMode GetRequiredAudioMode();
+        LedStrip? GetLedStrip();
+        void ApplySettings(IAudioService affectedAudioService, StaticSettings staticSettings, DynamicEffectSettings dynamicSettings);
     }
 }

@@ -7,7 +7,7 @@ namespace Application.Coloring.Remapping
     {
         private Color[] remapped = [];
 
-        public Color[] Remap(Color[] colors, DynamicSettings dynamicSettings)
+        public Color[] Remap(Color[] colors, DynamicEffectSettings dynamicSettings, StaticSettings staticSettings)
         {
             if (dynamicSettings.Acceleration == 1.0f)
                 return colors;

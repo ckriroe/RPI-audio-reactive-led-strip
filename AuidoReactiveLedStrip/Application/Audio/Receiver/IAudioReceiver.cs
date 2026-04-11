@@ -6,7 +6,7 @@ namespace Application.Audio.Receiver
     {
         void ApplyStaticSettings(StaticSettings staticSettings);
 
-        void RegisterAudioConsumer(Guid identifier, int requestedBufferSize, Action<float[]> audioCallback);
+        void RegisterAudioConsumer(Guid identifier, int requestedBufferSize, Action<float[], int> audioCallback);
 
         void UnregisterAudioConsumer(Guid identifier);
     }

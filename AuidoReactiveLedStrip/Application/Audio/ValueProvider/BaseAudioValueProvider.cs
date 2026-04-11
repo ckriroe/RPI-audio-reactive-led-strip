@@ -6,7 +6,6 @@ namespace Application.Audio.ValueProvider
     public abstract class BaseAudioValueProvider : AudioFftDataProvider, IAudioValueProvider
     {
         private volatile float lastAudioValue = 0.0f;
-        private long lastValueRaise = 0;
         private long lastPeakTime = 0;
 
         public float GetAudioValue()
@@ -18,7 +17,7 @@ namespace Application.Audio.ValueProvider
 
         protected void SetAudioValue(float newValue)
         {
-            DynamicSettings? dynamicSettings = base.dynamicSettings;
+            DynamicEffectSettings? dynamicSettings = base.dynamicSettings;
             if (dynamicSettings == null)
                 return;
 

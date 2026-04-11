@@ -6,8 +6,8 @@ namespace Application.Coloring.Mode
 {
     public interface IColorMode
     {
-        void PrecomputeValues(StaticSettings staticSettings, DynamicSettings dynamicSettings, LedStrip ledStrip);
+        void PrecomputeValues(StaticSettings staticSettings, DynamicEffectSettings dynamicSettings, LedStrip ledStrip);
 
-        Color GetColorForValue(DynamicSettings dynamicSettings, float audioValue, int index, int length);
+        Color GetColorForValue(DynamicEffectSettings dynamicSettings, float audioValue, int index, int length);
     }
 }

@@ -5,20 +5,9 @@ namespace Application.Audio.FftTransformer
 {
     public class AudioFftTransformer : IAudioFftTransformer
     {
-        private int? channelCount;
-
-        public void Initialize(int channelCount)
+        public float[] ProcessAudioSamples(float[] samples, int channels)
         {
-            this.channelCount = channelCount;
-        }
-
-        public float[]? ProcessAudioSamples(float[] samples)
-        {
-            int? channels = this.channelCount;
-            if (channels == null)
-                return null;
-
-            int frames = samples.Length / channels.Value;
+            int frames = samples.Length / channels;
 
             Complex[] fftInput = new Complex[frames];
             for (int f = 0; f < frames; f++)
@@ -26,7 +15,7 @@ namespace Application.Audio.FftTransformer
                 float maxSample = float.MinValue;
                 for (int c = 0; c < channels; c++)
                 {
-                    float sample = samples[f * channels.Value + c];
+                    float sample = samples[f * channels + c];
                     if (Math.Abs(sample) > maxSample)
                         maxSample = Math.Abs(sample);
                 }

@@ -14,14 +14,14 @@ namespace Application.Coloring.Mode
         {
         }
 
-        public override Color GetColorForValue(DynamicSettings dynamicSettings, float audioValue, int index, int length)
+        public override Color GetColorForValue(DynamicEffectSettings dynamicSettings, float audioValue, int index, int length)
         {
             int distance = Math.Abs(index - dynamicSettings.EffectOrigin);
             float value = distance / this.maxDistance;
             return base.NonAudioValueToColor(value, audioValue, index, length, dynamicSettings);
         }
 
-        public override void PrecomputeValues(StaticSettings staticSettings, DynamicSettings dynamicSettings, LedStrip ledStrip)
+        public override void PrecomputeValues(StaticSettings staticSettings, DynamicEffectSettings dynamicSettings, LedStrip ledStrip)
         {
             this.maxDistance = Math.Max(dynamicSettings.EffectOrigin, (ledStrip.LedPixels.Length - 1) - dynamicSettings.EffectOrigin);
             if (maxDistance <= 0.0f)

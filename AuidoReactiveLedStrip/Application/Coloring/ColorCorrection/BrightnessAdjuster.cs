@@ -4,7 +4,7 @@ namespace Application.Coloring.ColorCorrection
 {
     public class BrightnessAdjuster : IColorCorrector
     {
-        public (float R, float G, float B) ColorCorrect((float R, float G, float B) colors, DynamicSettings dynamicSettings)
+        public (float R, float G, float B) ColorCorrect((float R, float G, float B) colors, DynamicEffectSettings dynamicSettings)
         {
             return (
                 R: colors.R * dynamicSettings.Brightness,

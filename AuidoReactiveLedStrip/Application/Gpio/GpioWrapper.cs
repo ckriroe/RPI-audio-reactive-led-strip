@@ -1,6 +1,5 @@
 ﻿using Application.RuntimeSettings;
 using System.Device.Gpio;
-using static OpenTK.Graphics.OpenGL.GL;
 
 namespace Application.Gpio
 {
@@ -26,7 +25,7 @@ namespace Application.Gpio
             this.CheckForGpioStateChange(staticSettings, wasEnabled, isEnabled);
         }
 
-        public void TemporarilChangeGpio(bool enabled, StaticSettings staticSettings)
+        public void TemporarilyChangeGpio(bool enabled, StaticSettings staticSettings)
         {
             bool wasEnabled = this.IsCurrentlyEnabled();
             this.isTemporarilyEnabled = enabled;

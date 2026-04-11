@@ -5,22 +5,41 @@ namespace Application.RuntimeSettings
 {
     public static class SettingsCorrector
     {
-        public static void CorrectDynamicSettings(DynamicSettings dynamicSettings)
+        public static void CorrectDynamicPresetSettings(DynamicPresetSettings dynamicPresetSettings, StaticSettings staticSettings)
         {
-            dynamicSettings.PhysicalLedCount = dynamicSettings.LedCount;
-            dynamicSettings.LedCount = Math.Max(2, dynamicSettings.PhysicalLedCount / dynamicSettings.EffectRepeats);
-            dynamicSettings.EffectOrigin = Math.Min(dynamicSettings.LedCount, dynamicSettings.EffectOrigin / dynamicSettings.EffectRepeats);
-            dynamicSettings.ColorWaveOrigin = Math.Min(dynamicSettings.LedCount, dynamicSettings.ColorWaveOrigin / dynamicSettings.EffectRepeats);
-            dynamicSettings.PatternCenter = Math.Min(dynamicSettings.LedCount, dynamicSettings.PatternCenter / dynamicSettings.EffectRepeats);
+            if (dynamicPresetSettings.Presets.Count == 0)
+                dynamicPresetSettings.SelectedPresetIndex = -1;
+
+            if (dynamicPresetSettings.SelectedPresetIndex >= dynamicPresetSettings.Presets.Count)
+                dynamicPresetSettings.SelectedPresetIndex = dynamicPresetSettings.Presets.Count - 1;
+
+            foreach (Preset preset in dynamicPresetSettings.Presets)
+            {
+                CorrectDynamicEffectSettings(preset.EffectSettings, staticSettings);
+            }
+        }
+
+        public static void CorrectStaticSettings(StaticSettings staticSettings)
+        {
+            staticSettings.Fps = Math.Max(staticSettings.Fps, 1);
+            staticSettings.LedCount = Math.Max(staticSettings.LedCount, 2);
+        }
+
+        private static void CorrectDynamicEffectSettings(DynamicEffectSettings dynamicSettings, StaticSettings staticSettings)
+        {
+            dynamicSettings.CalculatedLedCount = Math.Max(2, staticSettings.LedCount / dynamicSettings.EffectRepeats);
+            dynamicSettings.EffectOrigin = Math.Min(dynamicSettings.CalculatedLedCount, dynamicSettings.EffectOrigin / dynamicSettings.EffectRepeats);
+            dynamicSettings.ColorWaveOrigin = Math.Min(dynamicSettings.CalculatedLedCount, dynamicSettings.ColorWaveOrigin / dynamicSettings.EffectRepeats);
+            dynamicSettings.PatternCenter = Math.Min(dynamicSettings.CalculatedLedCount, dynamicSettings.PatternCenter / dynamicSettings.EffectRepeats);
             dynamicSettings.MinFreq = Math.Clamp(dynamicSettings.MinFreq, 0, 20000);
             dynamicSettings.MaxFreq = Math.Clamp(dynamicSettings.MaxFreq, 0, 20000);
-            dynamicSettings.Fps = Math.Max(dynamicSettings.Fps, 1);
+            
             dynamicSettings.FftSize = Math.Max(dynamicSettings.FftSize, 1);
 
             if (dynamicSettings.MaxFreq < dynamicSettings.MinFreq)
                 dynamicSettings.MaxFreq = dynamicSettings.MinFreq;
 
-            dynamicSettings.SpectrumSections = Math.Min(dynamicSettings.LedCount, dynamicSettings.SpectrumSections);
+            dynamicSettings.SpectrumSections = Math.Min(dynamicSettings.CalculatedLedCount, dynamicSettings.SpectrumSections);
 
             List<ColorSetting> correctedColorSettings = [];
             float lastThreshold = 0.0f;

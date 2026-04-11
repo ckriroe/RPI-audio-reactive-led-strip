@@ -7,7 +7,7 @@ namespace Application.Looper
     {
         private readonly ILooper looper;
 
-        public StaticLooperFactory(IOptionsMonitor<StaticSettings> staticSettings, IOptionsMonitor<DynamicSettings> dynamicSettings)
+        public StaticLooperFactory(IOptionsMonitor<StaticSettings> staticSettings, IOptionsMonitor<DynamicPresetSettings> dynamicSettings)
         {
             if (staticSettings.CurrentValue.AccurateSleeping)
             {

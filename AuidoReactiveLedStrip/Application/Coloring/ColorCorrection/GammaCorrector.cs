@@ -4,7 +4,7 @@ namespace Application.Coloring.ColorCorrection
 {
     public class GammaCorrector : IColorCorrector
     {
-        public (float R, float G, float B) ColorCorrect((float R, float G, float B) colors, DynamicSettings dynamicSettings)
+        public (float R, float G, float B) ColorCorrect((float R, float G, float B) colors, DynamicEffectSettings dynamicSettings)
         {
             return (
                 R: this.GammaCorrect(colors.R, dynamicSettings),
@@ -13,7 +13,7 @@ namespace Application.Coloring.ColorCorrection
             );
         }
 
-        private float GammaCorrect(float value, DynamicSettings dynamicSettings)
+        private float GammaCorrect(float value, DynamicEffectSettings dynamicSettings)
         {
             return (float)Math.Pow(value / 255.0f, dynamicSettings.Gamma) * 255.0f + 0.5f;
         }

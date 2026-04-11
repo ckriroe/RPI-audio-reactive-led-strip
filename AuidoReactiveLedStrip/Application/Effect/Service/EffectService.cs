@@ -1,12 +1,11 @@
-﻿using Application.Domain;
+﻿using Application.Audio.Service;
+using Application.Domain;
 using Application.RuntimeSettings;
-using Microsoft.Extensions.Options;
 
 namespace Application.Effect.Service
 {
     public class EffectService : IEffectService
     {
-        private readonly IOptionsMonitor<DynamicSettings> dyamicSettings;
         private readonly AudioLineEffect audioLineEffect;
         private readonly AudioPulseEffect audioPulseEffect;
         private readonly AudioRandomBurstEffect audioRandomBurstEffect;
@@ -20,9 +19,9 @@ namespace Application.Effect.Service
         private EffectMode? currentEffectMode = null;
         private IEffect? currentEffect = null;
         private LedStrip? prevLedStrip = null;
+        private DynamicEffectSettings? dynamicSettings = null;
 
         public EffectService(
-            IOptionsMonitor<DynamicSettings> dyamicSettings,
             AudioLineEffect audioLineEffect,
             AudioPulseEffect audioPulseEffect,
             AudioRandomBurstEffect audioRandomBurstEffect,
@@ -34,7 +33,6 @@ namespace Application.Effect.Service
             AudioLineDescendingEffect audioLineDescendingEffect
         )
         {
-            this.dyamicSettings = dyamicSettings;
             this.audioLineEffect = audioLineEffect;
             this.audioPulseEffect = audioPulseEffect;
             this.audioRandomBurstEffect = audioRandomBurstEffect;
@@ -46,9 +44,66 @@ namespace Application.Effect.Service
             this.audioLineDescendingEffect = audioLineDescendingEffect;
         }
 
-        public void SetEffectMode(EffectMode effectMode)
+        public void ApplySettings(IAudioService affectedAudioService, StaticSettings staticSettings, DynamicEffectSettings dynamicSettings)
         {
-            if (this.currentEffectMode == effectMode)
+            this.dynamicSettings = dynamicSettings;
+            this.audioLineEffect.ApplySettings(affectedAudioService, staticSettings, dynamicSettings);
+            this.audioPulseEffect.ApplySettings(affectedAudioService, staticSettings, dynamicSettings);
+            this.audioRandomBurstEffect.ApplySettings(affectedAudioService, staticSettings, dynamicSettings);
+            this.audioSepctrumEffect.ApplySettings(affectedAudioService, staticSettings, dynamicSettings);
+            this.audioWaveEffect.ApplySettings(affectedAudioService, staticSettings, dynamicSettings);
+            this.externalEffect.ApplySettings(affectedAudioService, staticSettings, dynamicSettings);
+            this.staticAscendingValueEffect.ApplySettings(affectedAudioService, staticSettings, dynamicSettings);
+            this.staticValueOneEffect.ApplySettings(affectedAudioService, staticSettings, dynamicSettings);
+            this.audioLineDescendingEffect.ApplySettings(affectedAudioService, staticSettings, dynamicSettings);
+
+            this.SetEffectMode(dynamicSettings.EffectMode);
+            affectedAudioService.SetAudioMode(this.GetRequiredAudioMode());
+        }
+
+        public LedStrip? GetLedStrip()
+        {
+            DynamicEffectSettings? dynamicSettings = this.dynamicSettings;
+            if (dynamicSettings == null)
+                return null;
+
+            if (this.prevLedStrip != null && dynamicSettings.CalculatedLedCount != this.prevLedStrip.LedPixels.Length)
+                this.prevLedStrip = null;
+
+            if (this.currentEffect == null)
+                return null;
+
+            if (!this.currentEffect.IsStatic || this.prevLedStrip == null)
+                this.prevLedStrip = this.currentEffect.RenderEffekt(this.prevLedStrip, dynamicSettings.CalculatedLedCount);
+
+            return this.prevLedStrip;
+        }
+
+        private AudioServiceMode GetRequiredAudioMode()
+        {
+            DynamicEffectSettings? dynamicSettings = this.dynamicSettings;
+            if (this.currentEffect == null || dynamicSettings == null)
+                return AudioServiceMode.None;
+
+            if (this.currentEffect.UseAudioValue)
+            {
+                if (dynamicSettings.AudioMode == AudioMode.Dynamic)
+                    return AudioServiceMode.MovingMax;
+
+                if (dynamicSettings.AudioMode == AudioMode.Static)
+                    return AudioServiceMode.Simple;
+            }
+
+            if (this.currentEffect.UseAudioFft)
+                return AudioServiceMode.Fft;
+
+            return AudioServiceMode.None;
+        }
+
+        private void SetEffectMode(EffectMode effectMode)
+        {
+            DynamicEffectSettings? dynamicSettings = this.dynamicSettings;
+            if (this.currentEffectMode == effectMode || dynamicSettings == null)
                 return;
 
             if (this.currentEffect is IStatefulEffect prevStatefulEffect)
@@ -92,48 +147,11 @@ namespace Application.Effect.Service
 
                 if (this.currentEffect.IsStatic)
                 {
-                    DynamicSettings dynamicSettings = this.dyamicSettings.CurrentValue;
-                    this.prevLedStrip = this.currentEffect.RenderEffekt(this.prevLedStrip, dynamicSettings.LedCount);
+                    this.prevLedStrip = this.currentEffect.RenderEffekt(this.prevLedStrip, dynamicSettings.CalculatedLedCount);
                 }
             }
 
-            currentEffectMode = effectMode;
-        }
-
-        public LedStrip? GetRenderedLedStrip()
-        {
-            DynamicSettings dynamicSettings = this.dyamicSettings.CurrentValue;
-            if (this.prevLedStrip != null && dynamicSettings.LedCount != this.prevLedStrip.LedPixels.Length)
-                this.prevLedStrip = null;
-
-            if (this.currentEffect == null)
-                return null;
-
-            if (!this.currentEffect.IsStatic || this.prevLedStrip == null)
-                this.prevLedStrip = this.currentEffect.RenderEffekt(this.prevLedStrip, dynamicSettings.LedCount);
-
-            return this.prevLedStrip;
-        }
-
-        public AudioServiceMode GetRequiredAudioMode()
-        {
-            if (this.currentEffect == null)
-                return AudioServiceMode.None;
-
-            if (this.currentEffect.UseAudioValue)
-            {
-                DynamicSettings dynamicSettings = this.dyamicSettings.CurrentValue;
-                if (dynamicSettings.AudioMode == AudioMode.Dynamic)
-                    return AudioServiceMode.MovingMax;
-
-                if (dynamicSettings.AudioMode == AudioMode.Static)
-                    return AudioServiceMode.Simple;
-            }
-
-            if (this.currentEffect.UseAudioFft)
-                return AudioServiceMode.Fft;
-
-            return AudioServiceMode.None;
+            this.currentEffectMode = effectMode;
         }
     }
 }

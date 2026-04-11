@@ -9,8 +9,7 @@ namespace Application.Audio.Service
 {
     public class AudioService : IAudioService
     {
-        private readonly IOptionsMonitor<StaticSettings> staticSettingsMonitor;
-        private readonly IOptionsMonitor<DynamicSettings> dynamicSettingsMonitor;
+        private readonly Guid audioServiceIdentifier = Guid.NewGuid();
         private readonly IAudioReceiver audioReceiver;
         private readonly IAudioFftTransformer audioFftTransformer;
         private readonly AudioFftDataProvider audioFftDataProvider;
@@ -20,11 +19,10 @@ namespace Application.Audio.Service
         private AudioServiceMode currentAudioMode = AudioServiceMode.None;
         private IAudioDataProvider? currentDataProvider = null;
         private bool isRunning = false;
+        private int? currentBufferSize = null;
 
         public AudioService
         (
-            IOptionsMonitor<StaticSettings> staticSettingsMonitor,
-            IOptionsMonitor<DynamicSettings> dynamicSettingsMonitor,
             IAudioReceiver audioReceiver,
             IAudioFftTransformer audioFftTransformer,
             AudioFftDataProvider audioFftDataProvider,
@@ -32,18 +30,38 @@ namespace Application.Audio.Service
             MovingMaxAudioValueProvider movingMaxAudioValueProvider
         )
         {
-            this.staticSettingsMonitor = staticSettingsMonitor;
-            this.dynamicSettingsMonitor = dynamicSettingsMonitor;
             this.audioReceiver = audioReceiver;
             this.audioFftTransformer = audioFftTransformer;
             this.audioFftDataProvider = audioFftDataProvider;
             this.simpleAudioValueProvider = simpleAudioValueProvider;
             this.movingMaxAudioValueProvider = movingMaxAudioValueProvider;
+        }
 
-            this.staticSettingsMonitor.OnChange(_ => this.ApplySettings());
-            this.dynamicSettingsMonitor.OnChange(_ => this.ApplySettings());
+        public float[]? GetCurrentFftData()
+        {
+            return this.currentDataProvider?.GetCurrentFftData();
+        }
 
-            this.ApplySettings();
+        public float? GetCurrentAudioValue()
+        {
+            if (this.currentDataProvider is BaseAudioValueProvider bavp)
+                return bavp.GetAudioValue();
+
+            return null;
+        }
+
+        public void ApplySettings(StaticSettings staticSettings, DynamicEffectSettings dynamicSettings)
+        {
+            this.audioReceiver.ApplyStaticSettings(staticSettings);
+            if (this.currentBufferSize != dynamicSettings.FftSize)
+            {
+                this.currentBufferSize = dynamicSettings.FftSize;
+                this.TryEnableAudioProcessing();
+            }
+
+            this.audioFftDataProvider.ApplySettings(staticSettings, dynamicSettings);
+            this.simpleAudioValueProvider.ApplySettings(staticSettings, dynamicSettings);
+            this.movingMaxAudioValueProvider.ApplySettings(staticSettings, dynamicSettings);
         }
 
         public void SetAudioMode(AudioServiceMode audioMode)
@@ -68,40 +86,31 @@ namespace Application.Audio.Service
                     this.currentDataProvider = this.simpleAudioValueProvider;
                 else if (audioMode == AudioServiceMode.MovingMax)
                     this.currentDataProvider = this.movingMaxAudioValueProvider;
-
-                if (this.currentDataProvider != null)
-                {
-                    this.currentDataProvider.SetActive(true);
-                    this.StartAudioProcessing();
-                }                    
+                
+                this.TryEnableAudioProcessing();
             }
         }
 
-        public float[]? GetCurrentFftData()
+        private void TryEnableAudioProcessing()
         {
-            return this.currentDataProvider?.GetCurrentFftData();
-        }
-
-        public float? GetCurrentAudioValue()
-        {
-            if (this.currentDataProvider is BaseAudioValueProvider bavp)
-                return bavp.GetAudioValue();
-
-            return null;
+            if (this.currentDataProvider != null)
+            {
+                this.currentDataProvider.SetActive(true);
+                this.StartAudioProcessing();
+            }
         }
 
         private void StartAudioProcessing()
         {
-            if (this.isRunning)
+            if (this.currentBufferSize == null)
                 return;
 
             try
             {
-                this.audioReceiver.StartAudioStream(data =>
+                this.audioReceiver.RegisterAudioConsumer(this.audioServiceIdentifier, this.currentBufferSize.Value, (data, channels) =>
                 {
-                    float[]? fftData = this.audioFftTransformer.ProcessAudioSamples(data);
-                    if (fftData != null)
-                        this.currentDataProvider?.SetNewFftData(fftData);
+                    float[] fftData = this.audioFftTransformer.ProcessAudioSamples(data, channels);
+                    this.currentDataProvider?.SetNewFftData(fftData);
                 });
 
                 this.isRunning = true;
@@ -109,6 +118,7 @@ namespace Application.Audio.Service
             catch (Exception ex)
             {
                 Console.WriteLine("Failed to start audio processing: " + ex);
+                this.isRunning = false;
             }
         }
 
@@ -119,35 +129,13 @@ namespace Application.Audio.Service
 
             try
             {
-                this.audioReceiver.StopAudioStream();
+                this.audioReceiver.UnregisterAudioConsumer(this.audioServiceIdentifier);
                 this.isRunning = false;
             }
             catch (Exception ex)
             {
                 Console.WriteLine("Failed to stop audio processing: " + ex);
             }
-        }
-
-        private void ApplySettings()
-        {
-            StaticSettings staticSettings = this.staticSettingsMonitor.CurrentValue;
-            DynamicSettings dynamicSettings = this.dynamicSettingsMonitor.CurrentValue;
-
-            this.audioReceiver.Initialize
-            (
-                staticSettings.AudioDeviceId,
-                staticSettings.Channels,
-                dynamicSettings.FftSize,
-                staticSettings.SampleRate,
-                () =>
-                {
-                    this.audioFftTransformer.Initialize(staticSettings.Channels);
-                }
-            );
-
-            this.audioFftDataProvider.Initialize(staticSettings, dynamicSettings);
-            this.simpleAudioValueProvider.Initialize(staticSettings, dynamicSettings);
-            this.movingMaxAudioValueProvider.Initialize(staticSettings, dynamicSettings);
         }
     }
 }

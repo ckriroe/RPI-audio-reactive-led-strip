@@ -2,8 +2,6 @@
 {
     public interface IAudioFftTransformer
     {
-        void Initialize(int channelCount);
-
-        float[]? ProcessAudioSamples(float[] samples);
+        float[] ProcessAudioSamples(float[] samples, int channels);
     }
 }

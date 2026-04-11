@@ -1,6 +1,5 @@
 ﻿using Application.Coloring.Noise;
 using Application.RuntimeSettings;
-using Application.Util;
 using System.Drawing;
 
 namespace Application.Coloring.Mode
@@ -11,7 +10,7 @@ namespace Application.Coloring.Mode
         {
         }
 
-        public override Color GetColorForValue(DynamicSettings dynamicSettings, float audioValue, int index, int length)
+        public override Color GetColorForValue(DynamicEffectSettings dynamicSettings, float audioValue, int index, int length)
         {
             float value = index / (float)(length - 1);
             return base.NonAudioValueToColor(value, audioValue, index, length, dynamicSettings);
