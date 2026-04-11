@@ -61,6 +61,12 @@ namespace Application.Effect
                 return CreateBouncedWaveStrip(length, bounceLayers, newStrip);
         }
 
+        public void Reset()
+        {
+            this.waveDistanceAccumulator = 0.0f;
+            this.prevWaveStrip = [];
+        }
+
         private static LedStrip CreateBouncedWaveStrip(int length, int bounceLayers, LedPixel[] newStrip)
         {
             int bounceLayerLength = length;
