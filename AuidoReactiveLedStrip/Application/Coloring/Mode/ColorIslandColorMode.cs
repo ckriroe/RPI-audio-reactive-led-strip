@@ -14,7 +14,7 @@ namespace Application.Coloring.Mode
         {
         }
 
-        public override Color GetColorForValue(DynamicSettings dynamicSettings, float audioValue, int index, int length)
+        public override Color GetColorForValue(DynamicEffectSettings dynamicSettings, float audioValue, int index, int length)
         {
             return base.NonAudioValueToColor(
                 this.preComutedValues[index],
@@ -25,7 +25,7 @@ namespace Application.Coloring.Mode
             );
         }
 
-        public override void PrecomputeValues(StaticSettings staticSettings, DynamicSettings dynamicSettings, LedStrip ledStrip)
+        public override void PrecomputeValues(StaticSettings staticSettings, DynamicEffectSettings dynamicSettings, LedStrip ledStrip)
         {
             int n = ledStrip.LedPixels.Length;
             if (this.preComutedValues.Length != n)

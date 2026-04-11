@@ -1,5 +1,4 @@
 ﻿using Application.Coloring.Noise;
-using Application.Domain;
 using Application.RuntimeSettings;
 using Application.Util;
 using System.Drawing;
@@ -12,7 +11,7 @@ namespace Application.Coloring.Mode
         {
         }
 
-        public override Color GetColorForValue(DynamicSettings dynamicSettings, float pixelValue, int index, int length)
+        public override Color GetColorForValue(DynamicEffectSettings dynamicSettings, float pixelValue, int index, int length)
         {
             return ColorHelper.ValueToColor(
                 LedHelper.ApplyNoise(pixelValue, base.noiseGenerator.GetSmoothNoise(index, length, dynamicSettings)),

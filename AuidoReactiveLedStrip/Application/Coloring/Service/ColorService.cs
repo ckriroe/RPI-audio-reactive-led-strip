@@ -3,15 +3,12 @@ using Application.Coloring.Mode;
 using Application.Coloring.Sanitizing;
 using Application.Domain;
 using Application.RuntimeSettings;
-using Microsoft.Extensions.Options;
 using System.Drawing;
 
 namespace Application.Coloring.Service
 {
     public class ColorService : IColorService
     {
-        private readonly IOptionsMonitor<DynamicSettings> dyamicSettings;
-        private readonly IOptionsMonitor<StaticSettings> staticSettings;
         private readonly IValueSanitizer valueSanitizer;
         private readonly ValueColorMode valueColorMode;
         private readonly IndexColorMode indexColorMode;
@@ -26,9 +23,10 @@ namespace Application.Coloring.Service
         private ColorMode? currentColorModeType = null;
         private IColorMode? currentColorMode = null;
 
+        private StaticSettings? staticSettings = null;
+        private DynamicEffectSettings? dynamicSettings = null;
+
         public ColorService(
-            IOptionsMonitor<DynamicSettings> dyamicSettings,
-            IOptionsMonitor<StaticSettings> staticSettings,
             IValueSanitizer valueSanitizer,
             ValueColorMode valueColorMode,
             IndexColorMode indexColorMode,
@@ -40,8 +38,6 @@ namespace Application.Coloring.Service
             BrightnessAdjuster brightnessAdjuster
         )
         {
-            this.dyamicSettings = dyamicSettings;
-            this.staticSettings = staticSettings;
             this.valueSanitizer = valueSanitizer;
             this.valueColorMode = valueColorMode;
             this.indexColorMode = indexColorMode;
@@ -56,10 +52,14 @@ namespace Application.Coloring.Service
         public void ColorizeLedStrip(LedStrip ledStrip)
         {
             LedPixel[] pixels = ledStrip.LedPixels;
-            DynamicSettings dynamicSettings = this.dyamicSettings.CurrentValue;
-            StaticSettings staticSettings = this.staticSettings.CurrentValue;
+            DynamicEffectSettings? dynamicSettings = this.dynamicSettings;
+            StaticSettings? staticSettings = this.staticSettings;
 
-            if (pixels.Length < 2 || dynamicSettings.Colors.Count < 2 || this.currentColorMode == null)
+            if (pixels.Length < 2 ||
+                dynamicSettings == null ||
+                staticSettings == null ||
+                dynamicSettings.Colors.Count < 2 ||
+                this.currentColorMode == null)
             {
                 return;
             }
@@ -85,7 +85,14 @@ namespace Application.Coloring.Service
             }
         }
 
-        private void ColorCorrect(LedPixel led, DynamicSettings dynamicSettings)
+        public void ApplySettings(StaticSettings staticSettings, DynamicEffectSettings dynamicSettings)
+        {
+            this.staticSettings = staticSettings;
+            this.dynamicSettings = dynamicSettings;
+            this.SetColorMode(dynamicSettings.ColorMode);
+        }
+
+        private void ColorCorrect(LedPixel led, DynamicEffectSettings dynamicSettings)
         {
             (float R, float G, float B) result = this.gammaCorrector.ColorCorrect(this.brightnessAdjuster.ColorCorrect(
                 (led.Color.R, led.Color.G, led.Color.B),
@@ -99,7 +106,7 @@ namespace Application.Coloring.Service
             );
         }
 
-        public void SetColorMode(ColorMode colorMode)
+        private void SetColorMode(ColorMode colorMode)
         {
             if (this.currentColorModeType == colorMode)
                 return;

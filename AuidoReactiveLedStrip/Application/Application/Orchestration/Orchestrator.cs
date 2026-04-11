@@ -1,8 +1,4 @@
-﻿using Application.Audio.Service;
-using Application.Coloring.Remapping.Service;
-using Application.Coloring.Service;
-using Application.Domain;
-using Application.Effect.Service;
+﻿using Application.LedStripRendering;
 using Application.Looper;
 using Application.RuntimeSettings;
 using Application.Visualization;
@@ -13,11 +9,8 @@ namespace Application.Application.Orchestration
 {
     public class Orchestrator : ILooperConsumer, IOrchestrator
     {
-        private readonly IAudioService audioService;
-        private readonly IEffectService effectService;
-        private readonly IColorService colorService;
-        private readonly IRemapService remapService;
         private readonly IVisualizer ledVisualizer;
+        private readonly ILedStripRenderer ledStripRenderer;
         private readonly ILooper looper;
 
         private IVisualizer? screenVisualizer;
@@ -29,21 +22,15 @@ namespace Application.Application.Orchestration
         private Color[]? currentColors = null;
 
         public Orchestrator(
-            IAudioService audioService,
-            IEffectService effectService,
-            IColorService colorService,
-            IRemapService remapService,
             Ws281xLedVisualizer ledVisualizer,
-            ILooperFactory looperFactory
+            ILooperFactory looperFactory,
+            ILedStripRenderer ledStripRenderer
         )
         {
-            this.audioService = audioService;
-            this.effectService = effectService;
-            this.colorService = colorService;
-            this.remapService = remapService;
             this.ledVisualizer = ledVisualizer;
             this.looper = looperFactory.GetLooper();
             this.looper.SetConsumer(this);
+            this.ledStripRenderer = ledStripRenderer;
         }
 
         public void SetCurrentScreen(IVisualizer screenVisualizer)
@@ -51,12 +38,10 @@ namespace Application.Application.Orchestration
             this.screenVisualizer = screenVisualizer;
         }
 
-        public void OnSettingsChanged(StaticSettings staticSettings, DynamicSettings dynamicSettings)
+        public void OnSettingsChanged(StaticSettings staticSettings, DynamicPresetSettings dynamicSettings)
         {
             this.invalidFrameSleepTime = staticSettings.InvalidFrameSleepTime;
-            this.effectService.SetEffectMode(dynamicSettings.EffectMode);
-            this.audioService.SetAudioMode(this.effectService.GetRequiredAudioMode());
-            this.colorService.SetColorMode(dynamicSettings.ColorMode);
+            this.ledStripRenderer.ApplySettings(staticSettings, dynamicSettings.Presets.First().EffectSettings);
             this.HandleLedVisualizer(staticSettings);
         }
 
@@ -82,18 +67,9 @@ namespace Application.Application.Orchestration
 
         public void OnTick()
         {
-            LedStrip? ledStrip = effectService.GetRenderedLedStrip();
-
-            if (ledStrip != null)
-            {
-                this.colorService.ColorizeLedStrip(ledStrip);
-                this.currentColors = this.remapService.RemapColors(ledStrip);
-            }
-            else
-            {
-                this.currentColors = null;
+            this.currentColors = this.ledStripRenderer.RenderLedStrip();
+            if (currentColors == null)
                 Thread.Sleep(this.invalidFrameSleepTime);
-            }
         }
 
         public void Start()
@@ -116,7 +92,7 @@ namespace Application.Application.Orchestration
             this.worker?.Join();
             this.ledVisualizer.Stop();
             this.ledVisualizer.Dispose();
-            this.audioService.SetAudioMode(AudioServiceMode.None);
+            this.ledStripRenderer.Dispose();
             this.isRunning = false;
         }
 

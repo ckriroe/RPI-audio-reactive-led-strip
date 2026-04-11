@@ -26,5 +26,7 @@
   "outputWhenGpioOff": false,
   "accurateSleeping": false,
   "guiVisualizationMode": 0,
-  "rectangleGuiVisualizationHeight": 50
+  "rectangleGuiVisualizationHeight": 50,
+  "fps": 60,
+  "ledCount": 30
 }

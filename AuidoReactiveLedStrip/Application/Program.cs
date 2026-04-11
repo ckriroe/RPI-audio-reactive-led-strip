@@ -15,6 +15,7 @@ using Application.Coloring.Service;
 using Application.Effect;
 using Application.Effect.Service;
 using Application.Gpio;
+using Application.LedStripRendering;
 using Application.Looper;
 using Application.RuntimeSettings;
 using Application.Visualization;
@@ -24,6 +25,7 @@ using AudioProcessing.AudioProcessor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Options;
 
 var builder = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((hostingContext, config) =>
@@ -35,7 +37,7 @@ var builder = Host.CreateDefaultBuilder(args)
         );
 
         config.AddJsonFile(
-            "dynamic_settings.json",
+            "presets.json",
             optional: false,
             reloadOnChange: true
         );
@@ -43,55 +45,57 @@ var builder = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
     {
         services.AddOptions<StaticSettings>()
-            .Bind(context.Configuration);
-
-        services.AddOptions<DynamicSettings>()
             .Bind(context.Configuration)
-            .PostConfigure(o => SettingsCorrector.CorrectDynamicSettings(o));
+            .PostConfigure(staticSetting => SettingsCorrector.CorrectStaticSettings(staticSetting));
+
+        services.AddOptions<DynamicPresetSettings>()
+            .Bind(context.Configuration)
+            .PostConfigure<IOptionsMonitor<StaticSettings>>((dynamicPresetSettings, staticSettings) => SettingsCorrector.CorrectDynamicPresetSettings(dynamicPresetSettings, staticSettings.CurrentValue));
 
         services.AddSingleton<Application.Application.Lifetime.IApplicationLifetime, ApplicationLifetime>();
         services.AddSingleton<IApplicationService, ApplicationService>();
         services.AddSingleton<IVisualizerFactory, OpenTkScreenVisualizerFactory>();
         services.AddSingleton<ILooperFactory, StaticLooperFactory>();
-
-        services.AddSingleton<Accelerator>();
-        services.AddSingleton<Patternizer>();
-        services.AddSingleton<Repeater>();
-        services.AddSingleton<IRemapService, RemapService>();
-
         services.AddSingleton<Ws281xLedVisualizer>();
-        services.AddSingleton<ValueColorMode>();
-        services.AddSingleton<IndexColorMode>();
-        services.AddSingleton<DistanceToCenterColorMode>();
-        services.AddSingleton<DistanceToBorderColorMode>();
-        services.AddSingleton<ColorWaveColorMode>();
-        services.AddSingleton<ColorIslandColorMode>();
-        services.AddSingleton<BrightnessAdjuster>();
-        services.AddSingleton<GammaCorrector>();
-        services.AddSingleton<INoiseGenerator, NoiseGenerator>();
-        services.AddSingleton<IValueSanitizer, ValueSanitizer>();
-        services.AddSingleton<IColorService, ColorService>();
-
         services.AddSingleton<IGpioControllerFactory, GpioControllerFactory>();
         services.AddSingleton<GpioWrapper>();
-        services.AddSingleton<AudioLineDescendingEffect>();
-        services.AddSingleton<AudioLineEffect>();
-        services.AddSingleton<AudioPulseEffect>();
-        services.AddSingleton<AudioRandomBurstEffect>();
-        services.AddSingleton<AudioSepctrumEffect>();
-        services.AddSingleton<AudioWaveEffect>();
-        services.AddSingleton<GpioExternalEffect>();
-        services.AddSingleton<StaticAscendingValueEffect>();
-        services.AddSingleton<StaticValueOneEffect>();
-        services.AddSingleton<IEffectService, EffectService>();
 
-        services.AddSingleton<AudioFftDataProvider>();
-        services.AddSingleton<SimpleAudioValueProvider>();
-        services.AddSingleton<MovingMaxAudioValueProvider>();
+        services.AddTransient<ILedStripRenderer, LedStripRenderer>();
+        services.AddTransient<Accelerator>();
+        services.AddTransient<Patternizer>();
+        services.AddTransient<Repeater>();
+        services.AddTransient<IRemapService, RemapService>();
+
+        services.AddTransient<ValueColorMode>();
+        services.AddTransient<IndexColorMode>();
+        services.AddTransient<DistanceToCenterColorMode>();
+        services.AddTransient<DistanceToBorderColorMode>();
+        services.AddTransient<ColorWaveColorMode>();
+        services.AddTransient<ColorIslandColorMode>();
+        services.AddTransient<BrightnessAdjuster>();
+        services.AddTransient<GammaCorrector>();
+        services.AddTransient<INoiseGenerator, NoiseGenerator>();
+        services.AddTransient<IValueSanitizer, ValueSanitizer>();
+        services.AddTransient<IColorService, ColorService>();
+
+        services.AddTransient<AudioLineDescendingEffect>();
+        services.AddTransient<AudioLineEffect>();
+        services.AddTransient<AudioPulseEffect>();
+        services.AddTransient<AudioRandomBurstEffect>();
+        services.AddTransient<AudioSepctrumEffect>();
+        services.AddTransient<AudioWaveEffect>();
+        services.AddTransient<GpioExternalEffect>();
+        services.AddTransient<StaticAscendingValueEffect>();
+        services.AddTransient<StaticValueOneEffect>();
+        services.AddTransient<IEffectService, EffectService>();
+
+        services.AddTransient<AudioFftDataProvider>();
+        services.AddTransient<SimpleAudioValueProvider>();
+        services.AddTransient<MovingMaxAudioValueProvider>();
         
+        services.AddTransient<IAudioFftTransformer, AudioFftTransformer>();
+        services.AddTransient<IAudioService, AudioService>();
         services.AddSingleton<IAudioReceiver, PortAudioReceiver>();
-        services.AddSingleton<IAudioFftTransformer, AudioFftTransformer>();
-        services.AddSingleton<IAudioService, AudioService>();
         services.AddSingleton<IOrchestrator, Orchestrator>();
     })
     .Build();

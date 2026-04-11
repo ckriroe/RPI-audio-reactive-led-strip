@@ -8,7 +8,7 @@ namespace Application.Visualization.Led
 {
     public class Ws281xLedVisualizer : IVisualizer
     {
-        private readonly IOptionsMonitor<DynamicSettings> dynamicSettings;
+        private readonly IOptionsMonitor<DynamicEffectSettings> dynamicSettings;
         private readonly IOptionsMonitor<StaticSettings> staticSettings;
         private readonly GpioWrapper gpioWrapper;
 
@@ -19,7 +19,7 @@ namespace Application.Visualization.Led
         private WS281x? ws281x = null;        
 
         public Ws281xLedVisualizer(
-            IOptionsMonitor<DynamicSettings> dynamicSettings,
+            IOptionsMonitor<DynamicEffectSettings> dynamicSettings,
             IOptionsMonitor<StaticSettings> staticSettings,
             GpioWrapper gpioWrapper
         )
@@ -34,7 +34,7 @@ namespace Application.Visualization.Led
             if (this.isActive)
                 return;
 
-            this.InitLedStrip(this.dynamicSettings.CurrentValue.LedCount);
+            this.InitLedStrip(this.dynamicSettings.CurrentValue.CalculatedLedCount);
         }
 
         private void InitLedStrip(int pixels) 

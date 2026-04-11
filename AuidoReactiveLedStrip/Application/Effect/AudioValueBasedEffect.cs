@@ -1,29 +1,29 @@
 ﻿using Application.Audio.Service;
 using Application.Domain;
 using Application.RuntimeSettings;
-using Application.Util;
-using Microsoft.Extensions.Options;
 
 namespace Application.Effect
 {
     public abstract class AudioValueBasedEffect : IEffect
     {
-        private readonly IAudioService audioService;
-        protected readonly IOptionsMonitor<DynamicSettings> dynamicSettings;
-
-        protected AudioValueBasedEffect(IAudioService audioService, IOptionsMonitor<DynamicSettings> dynamicSettings)
-        {
-            this.audioService = audioService;
-            this.dynamicSettings = dynamicSettings;
-        }
+        private IAudioService? audioService = null;
+        protected DynamicEffectSettings? dynamicEffectSettings = null;
+        protected StaticSettings? staticSettings = null;
 
         protected float GetCurrentAudioValue()
         {
-            DynamicSettings dynamicSettings = this.dynamicSettings.CurrentValue;
-            return (this.audioService.GetCurrentAudioValue() ?? 0.0f) * dynamicSettings.ValueIncreaseFactor;
+            float valueIncreaseFactor = this.dynamicEffectSettings?.ValueColorBias ?? 0.0f;
+            return (this.audioService?.GetCurrentAudioValue() ?? 0.0f) * valueIncreaseFactor;
         }
 
         public abstract LedStrip? RenderEffekt(LedStrip? prevStrip, int length);
+
+        public void ApplySettings(IAudioService audioService, StaticSettings staticSettings, DynamicEffectSettings dynamicEffectSettings)
+        {
+            this.audioService = audioService;
+            this.dynamicEffectSettings = dynamicEffectSettings;
+            this.staticSettings = staticSettings;
+        }
 
         public bool IsStatic => false;
 

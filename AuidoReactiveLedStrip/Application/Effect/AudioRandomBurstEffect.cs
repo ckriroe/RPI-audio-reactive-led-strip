@@ -1,26 +1,17 @@
-﻿using Application.Audio.Service;
-using Application.Domain;
+﻿using Application.Domain;
 using Application.RuntimeSettings;
 using Application.Util;
-using Microsoft.Extensions.Options;
-using System.Drawing;
 
 namespace Application.Effect
 {
     public class AudioRandomBurstEffect : AudioValueBasedEffect
     {
-        private readonly IOptionsMonitor<StaticSettings> staticSettings;
-
-        public AudioRandomBurstEffect(IAudioService audioService, IOptionsMonitor<DynamicSettings> dynamicSettings, IOptionsMonitor<StaticSettings> staticSettings)
-            : base(audioService, dynamicSettings)
-        {
-            this.staticSettings = staticSettings;
-        }
-
         public override LedStrip? RenderEffekt(LedStrip? prevStrip, int length)
         {
-            var dynamicSettings = base.dynamicSettings.CurrentValue;
-            var staticSettings = this.staticSettings.CurrentValue;
+            DynamicEffectSettings? dynamicSettings = base.dynamicEffectSettings;
+            StaticSettings? staticSettings = this.staticSettings;
+            if (dynamicSettings == null || staticSettings == null)
+                return null;
 
             float value = base.GetCurrentAudioValue();
 

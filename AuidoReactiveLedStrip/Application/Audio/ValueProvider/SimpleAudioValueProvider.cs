@@ -1,5 +1,4 @@
 ﻿using Application.Util;
-using System.Runtime.Intrinsics.X86;
 
 namespace Application.Audio.ValueProvider
 {

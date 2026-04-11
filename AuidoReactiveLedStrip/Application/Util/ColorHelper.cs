@@ -102,7 +102,7 @@ namespace Application.Util
             if (h < 0) h += 1.0f;
         }
 
-        public static Color ValueToColor(float value, DynamicSettings dynamicSettings, float? bgThresholdOverride = null)
+        public static Color ValueToColor(float value, DynamicEffectSettings dynamicSettings, float? bgThresholdOverride = null)
         {
             value *= dynamicSettings.ColorIncreaseFactor;
 
@@ -228,7 +228,7 @@ namespace Application.Util
             }
         }
 
-        private static Color ValueToRainbowColor(float value, DynamicSettings dynamicSettings, float? bgThresholdOverride)
+        private static Color ValueToRainbowColor(float value, DynamicEffectSettings dynamicSettings, float? bgThresholdOverride)
         {
             var colorTransition = dynamicSettings.ColorTransition;
             var backgroundEntry = dynamicSettings.Colors[0];
@@ -279,7 +279,7 @@ namespace Application.Util
             }
         }
 
-        public static Color NonAudioValueToColor(float value, float audioValue, DynamicSettings dynamicSettings)
+        public static Color NonAudioValueToColor(float value, float audioValue, DynamicEffectSettings dynamicSettings)
         {
             float valueToColorBias = dynamicSettings.ValueColorBias;
             var colors = dynamicSettings.Colors;

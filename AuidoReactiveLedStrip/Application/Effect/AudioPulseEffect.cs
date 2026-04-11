@@ -1,16 +1,10 @@
-﻿using Application.Audio.Service;
-using Application.Domain;
-using Application.RuntimeSettings;
+﻿using Application.Domain;
 using Application.Util;
-using Microsoft.Extensions.Options;
 
 namespace Application.Effect
 {
     public class AudioPulseEffect : AudioValueBasedEffect
     {
-        public AudioPulseEffect(IAudioService audioService, IOptionsMonitor<DynamicSettings> dynamicSettings) 
-            : base(audioService, dynamicSettings) {}
-
         public override LedStrip? RenderEffekt(LedStrip? prevStrip, int length)
         {
             float value = base.GetCurrentAudioValue();

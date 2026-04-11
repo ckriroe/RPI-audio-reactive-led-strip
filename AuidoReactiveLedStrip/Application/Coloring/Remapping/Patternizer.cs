@@ -1,12 +1,11 @@
-﻿using Application.Domain;
-using Application.RuntimeSettings;
+﻿using Application.RuntimeSettings;
 using System.Drawing;
 
 namespace Application.Coloring.Remapping
 {
     public class Patternizer : IRemapper
     {
-        public Color[] Remap(Color[] input, DynamicSettings dynamicSettings)
+        public Color[] Remap(Color[] input, DynamicEffectSettings dynamicSettings, StaticSettings staticSettings)
         {
             if (input == null || input.Length == 0)
             {

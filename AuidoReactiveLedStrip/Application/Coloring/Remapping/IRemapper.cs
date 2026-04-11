@@ -5,6 +5,6 @@ namespace Application.Coloring.Remapping
 {
     public interface IRemapper
     {
-        Color[] Remap(Color[] colors, DynamicSettings dynamicSettings);
+        Color[] Remap(Color[] colors, DynamicEffectSettings dynamicSettings, StaticSettings staticSettings);
     }
 }

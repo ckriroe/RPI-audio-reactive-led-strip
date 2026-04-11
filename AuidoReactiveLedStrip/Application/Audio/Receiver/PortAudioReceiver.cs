@@ -13,7 +13,7 @@ namespace AudioProcessing.AudioProcessor
 
         public required int RequestedBufferSize { get; set; }
 
-        public required Action<float[]> AudioCallback { get; set; }
+        public required Action<float[], int> AudioCallback { get; set; }
 
         public RingBuffer<float> Buffer { get; } = new RingBuffer<float>(1024);
     }
@@ -35,17 +35,17 @@ namespace AudioProcessing.AudioProcessor
 
         public void ApplyStaticSettings(StaticSettings staticSettings)
         {
+            if (this.audioDeviceId == staticSettings.AudioDeviceId &&
+                this.channelCount == staticSettings.Channels &&
+                this.sampleRate == staticSettings.SampleRate)
+                return;
+
+            bool wasRunning = this.isRunnging;
+            if (wasRunning)
+                this.StopAudioStream();
+
             lock (this.lck)
             {
-                if (this.audioDeviceId == staticSettings.AudioDeviceId &&
-                    this.channelCount == staticSettings.Channels &&
-                    this.sampleRate == staticSettings.SampleRate)
-                    return;
-
-                bool wasRunning = this.isRunnging;
-                if (wasRunning)
-                    this.StopAudioStream();
-
                 this.audioDeviceId = staticSettings.AudioDeviceId;
                 this.channelCount = staticSettings.Channels;
                 this.sampleRate = staticSettings.SampleRate;
@@ -55,7 +55,7 @@ namespace AudioProcessing.AudioProcessor
             }
         }
 
-        public void RegisterAudioConsumer(Guid identifier, int requestedBufferSize, Action<float[]> audioCallback)
+        public void RegisterAudioConsumer(Guid identifier, int requestedBufferSize, Action<float[], int> audioCallback)
         {
             lock (this.lck)
             {
@@ -83,18 +83,24 @@ namespace AudioProcessing.AudioProcessor
 
         public void UnregisterAudioConsumer(Guid identifier)
         {
+            bool shouldStopAudioStream = false;
             lock (this.lck)
             {
                 this.activeAudioRegistrations.Remove(identifier);
                 this.ReCalcMinBufferSize();
                 if (this.isRunnging && !this.ShouldAudioStreamBeRunning())
-                    this.StopAudioStream();
+                    shouldStopAudioStream = true;
             }
+
+            if (shouldStopAudioStream)
+                this.StopAudioStream();
         }
 
         private void ReCalcMinBufferSize()
         {
-            this.minBufferSize = this.activeAudioRegistrations.Values.Select(reg => reg.RequestedBufferSize).Min();
+            this.minBufferSize = this.activeAudioRegistrations.Any() ?
+                this.activeAudioRegistrations.Values.Select(reg => reg.RequestedBufferSize).Min() :
+                null;
         }
 
         private bool ShouldAudioStreamBeRunning()
@@ -197,7 +203,7 @@ namespace AudioProcessing.AudioProcessor
             int targetSamples = registration.RequestedBufferSize * channels;
             if (registration.RequestedBufferSize == minBufferSize)
             {
-                registration.AudioCallback(readSamples);
+                registration.AudioCallback(readSamples, channels);
                 return;
             }
 
@@ -213,7 +219,7 @@ namespace AudioProcessing.AudioProcessor
                 try
                 {
                     ring.Read(output, targetSamples);
-                    registration.AudioCallback(output);
+                    registration.AudioCallback(output, channels);
                 }
                 finally
                 {

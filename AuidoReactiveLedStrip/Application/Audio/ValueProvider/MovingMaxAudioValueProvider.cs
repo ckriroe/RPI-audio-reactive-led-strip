@@ -1,6 +1,4 @@
-﻿using Application.RuntimeSettings;
-using Application.Util;
-using System.Transactions;
+﻿using Application.Util;
 
 namespace Application.Audio.ValueProvider
 {

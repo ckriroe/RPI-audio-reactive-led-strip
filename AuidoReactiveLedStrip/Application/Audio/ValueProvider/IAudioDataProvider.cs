@@ -4,7 +4,7 @@ namespace Application.Audio.ValueProvider
 {
     public interface IAudioDataProvider
     {
-        void Initialize(StaticSettings staticSettings, DynamicSettings dynamicSettings);
+        void ApplySettings(StaticSettings staticSettings, DynamicEffectSettings dynamicSettings);
 
         void SetNewFftData(float[] fftData);
 

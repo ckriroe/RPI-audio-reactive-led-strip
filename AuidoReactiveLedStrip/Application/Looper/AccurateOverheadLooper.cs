@@ -10,7 +10,7 @@ namespace Application.Looper
 
         public AccurateOverheadLooper(
             IOptionsMonitor<StaticSettings> staticSettings,
-            IOptionsMonitor<DynamicSettings> dynamicSettings
+            IOptionsMonitor<DynamicPresetSettings> dynamicSettings
         ) : base(staticSettings, dynamicSettings)
         { }
 

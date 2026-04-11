@@ -2,19 +2,17 @@
 using Application.Domain;
 using Application.RuntimeSettings;
 using Application.Util;
-using Microsoft.Extensions.Options;
 
 namespace Application.Effect
 {
     public class AudioSepctrumEffect : IEffect
     {
-        private readonly IAudioService audioService;
-        private readonly IOptionsMonitor<DynamicSettings> dynamicSettings;
+        private IAudioService? audioService;
+        private DynamicEffectSettings? dynamicEffectSettings;
 
-        public AudioSepctrumEffect(IAudioService audioService, IOptionsMonitor<DynamicSettings> dynamicSettings)
+        public AudioSepctrumEffect(IAudioService audioService)
         {
             this.audioService = audioService;
-            this.dynamicSettings = dynamicSettings;
         }
 
         public bool IsStatic => false;
@@ -23,11 +21,20 @@ namespace Application.Effect
 
         public bool UseAudioValue => false;
 
+        public void ApplySettings(IAudioService audioService, StaticSettings staticSettings, DynamicEffectSettings dynamicEffectSettings)
+        {
+            this.audioService = audioService;
+            this.dynamicEffectSettings = dynamicEffectSettings;
+        }
+
         public LedStrip? RenderEffekt(LedStrip? prevStrip, int length)
         {
-            var settings = this.dynamicSettings.CurrentValue;
+            DynamicEffectSettings? settings = this.dynamicEffectSettings;
+            if (settings == null)
+                return null;
+
             int center = settings.EffectOrigin;
-            float[]? bins = this.audioService.GetCurrentFftData();
+            float[]? bins = this.audioService?.GetCurrentFftData();
             int binCount = bins?.Length ?? 0;
             if (bins == null || binCount == 0)
                 return prevStrip ?? LedHelper.CreateEmptyStrip(length);

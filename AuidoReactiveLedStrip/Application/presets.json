@@ -1,0 +1,133 @@
+{
+  "selected_index": 1,
+  "presets": [
+    {
+      "name": "Standard",
+      "values": {
+        "colors": [
+          {
+            "color": "#000000",
+            "threshold": 0.17
+          },
+          {
+            "color": "#ff0000",
+            "threshold": 0.7
+          },
+          {
+            "color": "#ff5353",
+            "threshold": 1.0
+          }
+        ],
+        "useRainbow": true,
+        "effectOrigin": 600,
+        "speed": 546,
+        "minFreq": 200,
+        "maxFreq": 5000,
+        "fade": 0.727,
+        "fadeOverTime": 0.003,
+        "staticSpectrum": false,
+        "spectrumSections": 1,
+        "bouncyWave": false,
+        "saturate": 1.0,
+        "saturateThreshold": 0.13,
+        "meanValueBufferSize": 35,
+        "meanValueThreshold": 0.75,
+        "audioMode": 0,
+        "effectMode": 6,
+        "colorMode": 4,
+        "minFreqAmplitude": 1.42,
+        "maxFreqAmplitude": 500.0,
+        "colorIncreaseFactor": 1.0,
+        "valueIncreaseFactor": 1.01,
+        "colorTransition": 0.5,
+        "valueColorBias": 0.0,
+        "colorWaveOrigin": 150,
+        "colorWaveSpeed": 18,
+        "colorWaveSize": 100,
+        "colorWaveInwards": false,
+        "noiseAmount": 0.0,
+        "noiseSmoothing": 1.0,
+        "getAlphaFromValue": false,
+        "colorOverflow": false,
+        "brightness": 1.0,
+        "gamma": 1.01,
+        "effectRepeats": 1,
+        "acceleration": 1.0,
+        "particleSize": 20,
+        "patternSplits": 0,
+        "patternSpread": 0,
+        "patternFlip": -1,
+        "patternCenter": 0,
+        "patternSectionSizeMod": 0.0,
+        "fftSize": 512,
+        "bpmLimit": -1,
+        "audioResponseCurve": 1.21,
+        "audioPeakHoldTimeMs": 0
+      }
+    },
+    {
+      "name": "Statisch",
+      "values": {
+        "colors": [
+          {
+            "color": "#000000",
+            "threshold": 0.17
+          },
+          {
+            "color": "#ff0000",
+            "threshold": 0.7
+          },
+          {
+            "color": "#ff5353",
+            "threshold": 1.0
+          }
+        ],
+        "useRainbow": true,
+        "effectOrigin": 300,
+        "speed": 488,
+        "minFreq": 110,
+        "maxFreq": 160,
+        "fade": 0.825,
+        "fadeOverTime": 0.003,
+        "staticSpectrum": false,
+        "spectrumSections": 1,
+        "bouncyWave": false,
+        "saturate": 1.0,
+        "saturateThreshold": 0.46,
+        "meanValueBufferSize": 35,
+        "meanValueThreshold": 0.75,
+        "audioMode": 0,
+        "effectMode": 6,
+        "colorMode": 4,
+        "minFreqAmplitude": 9.23,
+        "maxFreqAmplitude": 500.0,
+        "colorIncreaseFactor": 1.0,
+        "valueIncreaseFactor": 1.0,
+        "colorTransition": 0.5,
+        "valueColorBias": 0.0,
+        "colorWaveOrigin": 150,
+        "colorWaveSpeed": 50,
+        "colorWaveSize": 100,
+        "colorWaveInwards": false,
+        "noiseAmount": 0.0,
+        "noiseSmoothing": 1.0,
+        "getAlphaFromValue": false,
+        "colorOverflow": false,
+        "brightness": 1.0,
+        "gamma": 0.99,
+        "effectRepeats": 1,
+        "acceleration": 1.0,
+        "particleSize": 20,
+        "patternSplits": 0,
+        "patternSpread": 0,
+        "patternFlip": -1,
+        "patternCenter": 0,
+        "patternSectionSizeMod": 0.0,
+        "fftSize": 512,
+        "bpmLimit": -1,
+        "audioResponseCurve": 1.21,
+        "audioPeakHoldTimeMs": 0
+      }
+    }
+  ]
+}

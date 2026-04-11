@@ -1,4 +1,6 @@
-﻿using Application.Domain;
+﻿using Application.Audio.Service;
+using Application.Domain;
+using Application.RuntimeSettings;
 using Application.Util;
 
 namespace Application.Effect
@@ -10,6 +12,11 @@ namespace Application.Effect
         public bool UseAudioFft => false;
 
         public bool UseAudioValue => false;
+
+        public void ApplySettings(IAudioService audioService, StaticSettings staticSettings, DynamicEffectSettings dynamicEffectSettings)
+        {
+            // Do nothing
+        }
 
         public LedStrip? RenderEffekt(LedStrip? prevStrip, int length)
         {

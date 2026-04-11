@@ -32,5 +32,7 @@ namespace Application.RuntimeSettings
         public bool AccurateSleeping { get; set; }
         public GuiVisualizationMode GuiVisualizationMode { get; set; }
         public int RectangleGuiVisualizationHeight { get; set; }
+        public int Fps { get; set; }
+        public int LedCount { get; set; }
     }
 }

@@ -5,12 +5,12 @@ namespace Application.Coloring.Remapping
 {
     public class Repeater : IRemapper
     {
-        public Color[] Remap(Color[] colors, DynamicSettings dynamicSettings)
+        public Color[] Remap(Color[] colors, DynamicEffectSettings dynamicSettings, StaticSettings staticSettings)
         {
             if (dynamicSettings.EffectRepeats == 1)
                 return colors;
 
-            return this.RepeatArray(colors, dynamicSettings.EffectRepeats, dynamicSettings.PhysicalLedCount);
+            return this.RepeatArray(colors, dynamicSettings.EffectRepeats, staticSettings.LedCount);
         }
 
         public Color[] RepeatArray(Color[] source, int times, int minLength)

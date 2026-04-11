@@ -1,31 +1,21 @@
-﻿using Application.Audio.Service;
-using Application.Domain;
+﻿using Application.Domain;
 using Application.RuntimeSettings;
 using Application.Util;
-using Microsoft.Extensions.Options;
 
 namespace Application.Effect
 {
     public class AudioWaveEffect : AudioValueBasedEffect
     {
-        private readonly IOptionsMonitor<StaticSettings> staticSettings;
-
         private float waveDistanceAccumulator = 0f;
         private LedPixel[] prevWaveStrip = [];
 
-        public AudioWaveEffect(
-            IAudioService audioService, 
-            IOptionsMonitor<DynamicSettings> dynamicSettings,
-            IOptionsMonitor<StaticSettings> staticSettings) 
-            : base(audioService, dynamicSettings)
-        {
-            this.staticSettings = staticSettings;
-        }
-
         public override LedStrip? RenderEffekt(LedStrip? prevStrip, int length)
         {
-            var dynamicSettings = base.dynamicSettings.CurrentValue;
-            var staticSettings = this.staticSettings.CurrentValue;
+            DynamicEffectSettings? dynamicSettings = base.dynamicEffectSettings;
+            StaticSettings? staticSettings = this.staticSettings;
+            if (dynamicSettings == null || staticSettings == null)
+                return null;
+
             float newValue = base.GetCurrentAudioValue();
 
             int bounceLayers = dynamicSettings.BouncyWave ? staticSettings.BounceLayers : 0;
@@ -33,7 +23,7 @@ namespace Application.Effect
             int n = length * (1 + bounceLayers * 2);
             int center = dynamicSettings.EffectOrigin + length * bounceLayers;
 
-            this.waveDistanceAccumulator += dynamicSettings.Speed / (float)dynamicSettings.Fps;
+            this.waveDistanceAccumulator += dynamicSettings.Speed / (float)staticSettings.Fps;
             int steps = (int)this.waveDistanceAccumulator;
             this.waveDistanceAccumulator -= steps;
 
@@ -112,7 +102,7 @@ namespace Application.Effect
             return bounced;
         }
 
-        private void FadeWaveStrip(IList<LedPixel> stripToFade, int center, DynamicSettings settings)
+        private void FadeWaveStrip(IList<LedPixel> stripToFade, int center, DynamicEffectSettings settings)
         {
             for (int i = 0; i < stripToFade.Count; i++)
             {

@@ -7,7 +7,7 @@ namespace Application.Looper
     {
         public SleepLooper(
             IOptionsMonitor<StaticSettings> staticSettings,
-            IOptionsMonitor<DynamicSettings> dynamicSettings
+            IOptionsMonitor<DynamicPresetSettings> dynamicSettings
         ) : base(staticSettings, dynamicSettings)
         { }
 

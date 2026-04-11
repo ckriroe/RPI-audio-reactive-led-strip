@@ -3,13 +3,9 @@ using System.Drawing;
 
 namespace Application.RuntimeSettings
 {
-    public class DynamicSettings
+    public class DynamicEffectSettings
     {
-        public int PhysicalLedCount { get; set; }
-
         public List<ColorSetting> Colors { get; set; } = [];
-
-        public int LedCount { get; set; }
 
         public bool UseRainbow { get; set; }
 
@@ -92,11 +88,11 @@ namespace Application.RuntimeSettings
         public int PatternCenter { get; set; }
         
         public float PatternSectionSizeMod { get; set; }
-        public int Fps { get; set; }
         public int FftSize { get; set; }
         public int BpmLimit { get; set; } = -1;
         public float AudioResponseCurve { get; set; } = 1.0f;
         public int AudioPeakHoldTimeMs { get; set; } = 0;
+        public int CalculatedLedCount { get; set; }
     }
 
     public class ColorSetting

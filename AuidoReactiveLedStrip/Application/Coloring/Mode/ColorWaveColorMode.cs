@@ -14,7 +14,7 @@ namespace Application.Coloring.Mode
         {
         }
 
-        public override Color GetColorForValue(DynamicSettings dynamicSettings, float audioValue, int index, int length)
+        public override Color GetColorForValue(DynamicEffectSettings dynamicSettings, float audioValue, int index, int length)
         {
             float distance = Math.Abs(index - dynamicSettings.ColorWaveOrigin);
             float wavePosition = MathHelper.PyMod(distance + this.colorWavePhase, dynamicSettings.ColorWaveSize);
@@ -22,10 +22,10 @@ namespace Application.Coloring.Mode
             return base.NonAudioValueToColor(value, audioValue, index, length, dynamicSettings);
         }
 
-        public override void PrecomputeValues(StaticSettings staticSettings, DynamicSettings dynamicSettings, LedStrip ledStrip)
+        public override void PrecomputeValues(StaticSettings staticSettings, DynamicEffectSettings dynamicSettings, LedStrip ledStrip)
         {
             int direction = dynamicSettings.ColorWaveInwards ? 1 : -1;
-            this.colorWavePhase += direction * dynamicSettings.ColorWaveSpeed / (float)dynamicSettings.Fps;
+            this.colorWavePhase += direction * dynamicSettings.ColorWaveSpeed / (float)staticSettings.Fps;
             if (Math.Abs(colorWavePhase) >= dynamicSettings.ColorWaveSize)
                 this.colorWavePhase -= dynamicSettings.ColorWaveSize * direction;
         }
