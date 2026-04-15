@@ -183,6 +183,13 @@ namespace Application.Sequencing
         private void RestartSequence(DynamicPresetSettings dynamicPresetSettings, long timestamp)
         {
             this.SetPresets(dynamicPresetSettings, null);
+
+            StaticSettings? staticSettings = this.staticSettings;
+            Preset? currentPrest = this.currentPreset;
+
+            if (staticSettings != null && currentPrest != null)
+                this.mainRenderer.ApplySettings(staticSettings, currentPrest.EffectSettings);
+
             this.referenceTimestamp = timestamp;
             this.isTransitioning = false;
         }
