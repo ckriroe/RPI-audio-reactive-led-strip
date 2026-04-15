@@ -53,6 +53,9 @@ namespace Application.Sequencing
             long deltaTime = timestamp - this.referenceTimestamp;
             if (deltaTime < currentSetting.EffectSettings.EffectDurationMs || nextSettings == null)
             {
+                if (nextSettings == null)
+                    this.referenceTimestamp = timestamp;
+
                 return this.GetCurrentEffect(staticSettings, currentSetting, nextSettings, deltaTime);
             }
             else if (deltaTime < currentSetting.EffectSettings.EffectDurationMs + currentSetting.EffectSettings.EffectTransitionDurationMs)
@@ -79,6 +82,8 @@ namespace Application.Sequencing
                 Preset? nextPreset = this.nextPreset;
                 if (nextPreset != null && this.isTransitioning)
                     this.transitionRenderer.ApplySettings(staticSettings, nextPreset.EffectSettings);
+                else
+                    this.transitionRenderer.Disable();
             }
         }
 
