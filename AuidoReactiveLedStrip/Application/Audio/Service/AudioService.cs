@@ -3,7 +3,6 @@ using Application.Audio.ValueProvider;
 using Application.Audio.FftTransformer;
 using Application.Domain;
 using Application.RuntimeSettings;
-using Microsoft.Extensions.Options;
 
 namespace Application.Audio.Service
 {
