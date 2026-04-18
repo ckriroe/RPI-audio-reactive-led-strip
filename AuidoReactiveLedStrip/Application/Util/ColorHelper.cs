@@ -1,12 +1,14 @@
-﻿using Application.RuntimeSettings;
+﻿using Application.Domain;
+using Application.RuntimeSettings;
 using System.Drawing;
 
 namespace Application.Util
 {
     public static class ColorHelper
     {
-        public static Color LerpColor(Color a, Color b, float t)
+        public static Color LerpColor(Color a, Color b, float t, EasingFunctionType easing = EasingFunctionType.Linear)
         {
+            t = MathHelper.Easing.ApplyEasing(easing, t);
             int r = Math.Max(0, (int)(a.R + (b.R - a.R) * t));
             int g = Math.Max(0, (int)(a.G + (b.G - a.G) * t));
             int bVal = Math.Max(0, (int)(a.B + (b.B - a.B) * t));
@@ -14,7 +16,7 @@ namespace Application.Util
             return Color.FromArgb(r, g, bVal);
         }
 
-        public static Color[]? LerpColors(Color[]? colorsA, Color[]? colorsB, float t)
+        public static Color[]? LerpColors(Color[]? colorsA, Color[]? colorsB, float t, EasingFunctionType easing = EasingFunctionType.Linear)
         {
             if (colorsA == null && colorsB == null)
                 return null;
@@ -33,7 +35,7 @@ namespace Application.Util
                 Color a = i < colorsA.Length ? colorsA[i] : colorsA[^1];
                 Color b = i < colorsB.Length ? colorsB[i] : colorsB[^1];
 
-                target[i] = LerpColor(a, b, t);
+                target[i] = LerpColor(a, b, t, easing);
             }
 
             return target;
