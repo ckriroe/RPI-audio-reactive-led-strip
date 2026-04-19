@@ -337,6 +337,27 @@ def cb_create_preset():
     
     write_presets_to_disk()
 
+
+def cb_move_preset_back(): 
+    curr_index = st.session_state.preset_index
+    new_index = curr_index - 1
+    tmp = st.session_state.presets[new_index]
+    st.session_state.presets[new_index] = st.session_state.presets[curr_index]
+    st.session_state.presets[curr_index] = tmp
+    st.session_state.preset_index = new_index
+    update_session_state_from_preset(st.session_state.presets[new_index])
+    write_presets_to_disk()
+
+def cb_move_preset_forward(): 
+    curr_index = st.session_state.preset_index
+    new_index = curr_index + 1
+    tmp = st.session_state.presets[new_index]
+    st.session_state.presets[new_index] = st.session_state.presets[curr_index]
+    st.session_state.presets[curr_index] = tmp
+    st.session_state.preset_index = new_index
+    update_session_state_from_preset(st.session_state.presets[new_index])
+    write_presets_to_disk()
+
 def cb_delete_preset():
     if len(st.session_state.presets) > 1 and st.session_state.preset_index != 0:
         st.session_state.presets.pop(st.session_state.preset_index)
@@ -414,28 +435,28 @@ with st.expander("📂 Voreinstellungs Verwaltung", expanded=True):
         on_change=on_preset_change
     )
 
-    col_name, col_actions = st.columns([2, 1])
+    def on_rename():
+        new_name = st.session_state.rename_input
+        if new_name:
+            st.session_state.presets[st.session_state.preset_index]["name"] = new_name
+            write_presets_to_disk()
 
-    with col_name:
-        def on_rename():
-            new_name = st.session_state.rename_input
-            if new_name:
-                st.session_state.presets[st.session_state.preset_index]["name"] = new_name
-                write_presets_to_disk()
+    st.text_input(
+        "Voreinstellung umbenennen",
+        key="rename_input",
+        disabled=(st.session_state.preset_index == 0),
+        on_change=on_rename
+    )
 
-        st.text_input(
-            "Voreinstellung umbenennen",
-            key="rename_input",
-            disabled=(st.session_state.preset_index == 0),
-            on_change=on_rename
-        )
+    col_move_up, col_move_down = st.columns([1, 1])
 
-    with col_actions:
-        st.write("") 
-        st.write("") 
-        
-        st.button("➕ Neu (Kopieren)", on_click=cb_create_preset)
-        st.button("🗑️ Löschen", disabled=(st.session_state.preset_index == 0), on_click=cb_delete_preset)
+    with col_move_up:
+        st.button("▲ Nach oben", disabled=(st.session_state.preset_index == 0 or st.session_state.preset_index == 1), on_click=cb_move_preset_back, width="stretch")
+        st.button("▼ Nach unten", disabled=(st.session_state.preset_index == 0 or st.session_state.preset_index == len(st.session_state.presets) - 1), on_click=cb_move_preset_forward, width="stretch")
+
+    with col_move_down:
+        st.button("➕ Neu (Kopieren)", on_click=cb_create_preset, width="stretch")
+        st.button("🗑️ Löschen", disabled=(st.session_state.preset_index == 0), on_click=cb_delete_preset, width="stretch")       
 
 curr_preset = st.session_state.presets[st.session_state.preset_index]["values"]
 
