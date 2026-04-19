@@ -416,7 +416,7 @@ st.markdown("""
 <style>
 @media (max-width: 768px) {
     div[data-testid="stSlider"] {
-        width: 75% !important;
+        width: 80% !important;
     }
 }
 </style>
