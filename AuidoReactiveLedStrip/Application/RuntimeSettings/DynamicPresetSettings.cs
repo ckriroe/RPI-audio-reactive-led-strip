@@ -4,9 +4,6 @@ namespace Application.RuntimeSettings
 {
     public class DynamicPresetSettings
     {
-        [ConfigurationKeyName("selected_index")]
-        public required int SelectedPresetIndex { get; set; }
-
         public required Guid SelectedPresetId { get; set; }
 
         public List<Preset> Presets { get; set; } = [];

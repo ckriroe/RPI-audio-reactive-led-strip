@@ -7,12 +7,6 @@ namespace Application.RuntimeSettings
     {
         public static void CorrectDynamicPresetSettings(DynamicPresetSettings dynamicPresetSettings, StaticSettings staticSettings)
         {
-            if (dynamicPresetSettings.Presets.Count == 0)
-                dynamicPresetSettings.SelectedPresetIndex = -1;
-
-            if (dynamicPresetSettings.SelectedPresetIndex >= dynamicPresetSettings.Presets.Count)
-                dynamicPresetSettings.SelectedPresetIndex = dynamicPresetSettings.Presets.Count - 1;
-
             foreach (Preset preset in dynamicPresetSettings.Presets)
             {
                 CorrectDynamicEffectSettings(preset.EffectSettings, staticSettings);
