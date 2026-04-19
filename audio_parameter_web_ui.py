@@ -337,7 +337,6 @@ def cb_create_preset():
     
     write_presets_to_disk()
 
-
 def cb_move_preset_back(): 
     curr_index = st.session_state.preset_index
     new_index = curr_index - 1
@@ -413,11 +412,20 @@ if "static_settings" not in st.session_state:
      st.session_state.static_settings = load_static_settings()
      update_session_state_from_static_settings(st.session_state.static_settings)
 
+st.markdown("""
+<style>
+@media (max-width: 768px) {
+    div[data-testid="stSlider"] {
+        width: 75% !important;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
+
 st.title("RPISC Einstellungen")
 st.info(f"Aktive Voreinstellung: **{st.session_state.presets[st.session_state.preset_index]['name']}**")
 
-with st.expander("📂 Voreinstellungs Verwaltung", expanded=True):
-    
+with st.expander("📂 Voreinstellungs Verwaltung", expanded=False):
     preset_names = [p["name"] for p in st.session_state.presets]
     
     def on_preset_change():
@@ -467,147 +475,131 @@ def get_effect_mode_id():
 def get_color_mode_id():
     return next(k for k, v in COLOR_MODES.items() if v == st.session_state.colorMode)
 
-st.markdown("""
-<style>
-@media (max-width: 768px) {
-    div[data-testid="stSlider"] {
-        width: 75% !important;
-    }
-}
-</style>
-""", unsafe_allow_html=True)
+with st.expander("Audio", expanded=False):
+    st.selectbox("Audiomodus", list(AUDIO_MODES.values()), key="audioMode", on_change=save_presets)
+    st.slider("Min. Lautstärke", 0.0, 50.0, step=0.01, key="minFreqAmplitude", on_change=save_presets)
+    st.slider("Max. Lautstärke", 0.0, 50.0, step=0.01, key="maxFreqAmplitude", on_change=save_presets)
 
-st.divider()
-st.subheader("Audio")
+    st.session_state.meanValueBufferSize = curr_preset.get("meanValueBufferSize")
+    st.session_state.meanValueThreshold = curr_preset.get("meanValueThreshold")
 
-st.selectbox("Audiomodus", list(AUDIO_MODES.values()), key="audioMode", on_change=save_presets)
-st.slider("Min. Lautstärke", 0.0, 50.0, step=0.01, key="minFreqAmplitude", on_change=save_presets)
-st.slider("Max. Lautstärke", 0.0, 50.0, step=0.01, key="maxFreqAmplitude", on_change=save_presets)
+    if get_audio_mode_id() == 0:
+        st.slider("Vergleichswert Puffergröße", 1, 100, step=1, key="meanValueBufferSize", on_change=save_presets)
+        st.slider("Vergleichswert Grenzwert", 0.01, 1.0, step=0.01, key="meanValueThreshold", on_change=save_presets)
 
-st.session_state.meanValueBufferSize = curr_preset.get("meanValueBufferSize")
-st.session_state.meanValueThreshold = curr_preset.get("meanValueThreshold")
+    st.slider("BPM Limit", -1, 999, step=1, key="bpmLimit", on_change=save_presets)
+    st.slider("Audiowert Skalierung", 0.01, 5.00, step=0.01, key="audioResponseCurve", on_change=save_presets)
+    st.slider("Min. Peakdauer in ms", 0, 999, step=1, key="audioPeakHoldTimeMs", on_change=save_presets)
+    st.number_input("Min. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="minFreq", on_change=save_presets)
+    st.number_input("Max. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="maxFreq", on_change=save_presets)
+    st.number_input("Audio Puffer Größe", min_value=2, max_value=50000, step=1, format="%d", key="fftSize", on_change=save_presets)
 
-if get_audio_mode_id() == 0:
-    st.slider("Vergleichswert Puffergröße", 1, 100, step=1, key="meanValueBufferSize", on_change=save_presets)
-    st.slider("Vergleichswert Grenzwert", 0.01, 1.0, step=0.01, key="meanValueThreshold", on_change=save_presets)
+with st.expander("Effekt", expanded=False):
+    st.selectbox("Effektmodus", list(EFFECT_MODES.values()), key="effectMode", on_change=save_presets)
+    st.number_input("Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="effectOrigin", on_change=save_presets)
+    st.slider("Effekt Beschleunigung", 0.0, 5.0, step=0.01, key="acceleration", on_change=save_presets)
 
-st.slider("BPM Limit", -1, 999, step=1, key="bpmLimit", on_change=save_presets)
-st.slider("Audiowert Skalierung", 0.01, 5.00, step=0.01, key="audioResponseCurve", on_change=save_presets)
-st.slider("Min. Peakdauer in ms", 0, 999, step=1, key="audioPeakHoldTimeMs", on_change=save_presets)
-st.number_input("Min. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="minFreq", on_change=save_presets)
-st.number_input("Max. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="maxFreq", on_change=save_presets)
-st.number_input("Audio Puffer Größe", min_value=2, max_value=50000, step=1, format="%d", key="fftSize", on_change=save_presets)
+    st.session_state.speed = curr_preset.get("speed")
+    if get_effect_mode_id() in (2, 4):
+        st.slider("Effekt Geschwindigkeit", 1, 600, key="speed", on_change=save_presets)
 
-st.divider()
-st.subheader("Effekt")
+    st.slider("Effekt Verstärkung", 0.1, 10.0, key="valueIncreaseFactor", on_change=save_presets)
 
-st.selectbox("Effektmodus", list(EFFECT_MODES.values()), key="effectMode", on_change=save_presets)
-st.number_input("Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="effectOrigin", on_change=save_presets)
-st.slider("Effekt Beschleunigung", 0.0, 5.0, step=0.01, key="acceleration", on_change=save_presets)
+    st.session_state.staticSpectrum = curr_preset.get("staticSpectrum")
+    st.session_state.spectrumSections = curr_preset.get("spectrumSections")
+    if get_effect_mode_id() == 3:
+        st.toggle("Statisches Spektrum", key="staticSpectrum", on_change=save_presets)
+        st.slider("Spektrum Sektionen", 1, 50, step=1, key="spectrumSections", on_change=save_presets)
 
-st.session_state.speed = curr_preset.get("speed")
-if get_effect_mode_id() in (2, 4):
-    st.slider("Effekt Geschwindigkeit", 1, 600, key="speed", on_change=save_presets)
+    st.session_state.particleSize = curr_preset.get("particleSize")
+    if get_effect_mode_id() == 4:
+        st.slider("Partikel Größe", 1, 1000, step=1, key="particleSize", on_change=save_presets)
 
-st.slider("Effekt Verstärkung", 0.1, 10.0, key="valueIncreaseFactor", on_change=save_presets)
+    st.session_state.bouncyWave = curr_preset.get("bouncyWave")
+    if get_effect_mode_id() == 2:
+        st.toggle("Abprallen", key="bouncyWave", on_change=save_presets)
 
-st.session_state.staticSpectrum = curr_preset.get("staticSpectrum")
-st.session_state.spectrumSections = curr_preset.get("spectrumSections")
-if get_effect_mode_id() == 3:
-    st.toggle("Statisches Spektrum", key="staticSpectrum", on_change=save_presets)
-    st.slider("Spektrum Sektionen", 1, 50, step=1, key="spectrumSections", on_change=save_presets)
+    st.session_state.fadeOverTime = curr_preset.get("fadeOverTime")
+    if get_effect_mode_id() == 2 or get_effect_mode_id() == 8:
+        st.slider("Verblassung nach Zeit", -0.999, 0.999, step=0.001, key="fadeOverTime", on_change=save_presets)
 
-st.session_state.particleSize = curr_preset.get("particleSize")
-if get_effect_mode_id() == 4:
-    st.slider("Partikel Größe", 1, 1000, step=1, key="particleSize", on_change=save_presets)
+    st.slider("Verblassung", 0.001, 0.999, step=0.001, key="fade", on_change=save_presets)
+    st.slider("Sättigung", 0.01, 1.0, step=0.01, key="saturate", on_change=save_presets)
+    st.slider("Sättigungs Grenzwert", 0.0, 1.0, step=0.01, key="saturateThreshold", on_change=save_presets)
 
-st.session_state.bouncyWave = curr_preset.get("bouncyWave")
-if get_effect_mode_id() == 2:
-    st.toggle("Abprallen", key="bouncyWave", on_change=save_presets)
-
-st.session_state.fadeOverTime = curr_preset.get("fadeOverTime")
-if get_effect_mode_id() == 2 or get_effect_mode_id() == 8:
-    st.slider("Verblassung nach Zeit", -0.999, 0.999, step=0.001, key="fadeOverTime", on_change=save_presets)
-
-st.slider("Verblassung", 0.001, 0.999, step=0.001, key="fade", on_change=save_presets)
-st.slider("Sättigung", 0.01, 1.0, step=0.01, key="saturate", on_change=save_presets)
-st.slider("Sättigungs Grenzwert", 0.0, 1.0, step=0.01, key="saturateThreshold", on_change=save_presets)
-
-st.divider()
-st.subheader("Muster")
-st.slider("Effekt Wiederholungen", 1, 50, step=1, key="effectRepeats", on_change=save_presets)
-st.slider("Muster Teilungen", 0, 50, step=1, key="patternSplits", on_change=save_presets)
-st.slider("Jedes N'te Muster verdrehen", -1, 50, step=1, key="patternFlip", on_change=save_presets)
-st.number_input("Muster Verteilung", min_value=0, max_value=999999, step=1, format="%d", key="patternSpread", on_change=save_presets)
-st.number_input("Muster Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="patternCenter", on_change=save_presets)
-st.slider("Muster Größenveränderung", -5.00, 5.00, step=0.01, key="patternSectionSizeMod", on_change=save_presets)   
+with st.expander("Muster", expanded=False):
+    st.slider("Effekt Wiederholungen", 1, 50, step=1, key="effectRepeats", on_change=save_presets)
+    st.slider("Muster Teilungen", 0, 50, step=1, key="patternSplits", on_change=save_presets)
+    st.slider("Jedes N'te Muster verdrehen", -1, 50, step=1, key="patternFlip", on_change=save_presets)
+    st.number_input("Muster Verteilung", min_value=0, max_value=999999, step=1, format="%d", key="patternSpread", on_change=save_presets)
+    st.number_input("Muster Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="patternCenter", on_change=save_presets)
+    st.slider("Muster Größenveränderung", -5.00, 5.00, step=0.01, key="patternSectionSizeMod", on_change=save_presets)   
     
-st.divider()
-st.subheader("Farben")
-st.selectbox("Farbmodus", list(COLOR_MODES.values()), key="colorMode", on_change=save_presets)
-st.slider("Helligkeit", 0.0, 5.0, step=0.01, key="brightness", on_change=save_presets)
-st.slider("Gamma", 0.0, 5.0, step=0.01, key="gamma", on_change=save_presets)
-st.slider("Farbverstärkung", 0.1, 20.0, key="colorIncreaseFactor", on_change=save_presets)
-st.slider("Farbverlauf", 0.00, 0.50, key="colorTransition", on_change=save_presets)
 
-st.session_state.valueColorBias = curr_preset.get("valueColorBias")
-st.session_state.getAlphaFromValue = curr_preset.get("getAlphaFromValue")
-if get_color_mode_id() != 0:
-    st.slider("Wert / Farb Verschmierung", 0.00, 1.00, step=0.01, key="valueColorBias", on_change=save_presets)
-    st.toggle("Transparenz aus Wert", key="getAlphaFromValue", on_change=save_presets)
+with st.expander("Farben", expanded=False):
+    st.selectbox("Farbmodus", list(COLOR_MODES.values()), key="colorMode", on_change=save_presets)
+    st.slider("Helligkeit", 0.0, 5.0, step=0.01, key="brightness", on_change=save_presets)
+    st.slider("Gamma", 0.0, 5.0, step=0.01, key="gamma", on_change=save_presets)
+    st.slider("Farbverstärkung", 0.1, 20.0, key="colorIncreaseFactor", on_change=save_presets)
+    st.slider("Farbverlauf", 0.00, 0.50, key="colorTransition", on_change=save_presets)
 
-st.session_state.colorWaveOrigin = curr_preset.get("colorWaveOrigin")
-st.session_state.colorWaveSpeed = curr_preset.get("colorWaveSpeed")
-st.session_state.colorWaveSize = curr_preset.get("colorWaveSize")
-st.session_state.colorWaveInwards = curr_preset.get("colorWaveInwards")
+    st.session_state.valueColorBias = curr_preset.get("valueColorBias")
+    st.session_state.getAlphaFromValue = curr_preset.get("getAlphaFromValue")
+    if get_color_mode_id() != 0:
+        st.slider("Wert / Farb Verschmierung", 0.00, 1.00, step=0.01, key="valueColorBias", on_change=save_presets)
+        st.toggle("Transparenz aus Wert", key="getAlphaFromValue", on_change=save_presets)
 
-if get_color_mode_id() == 4:
-    st.number_input("Farbwellen Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="colorWaveOrigin", on_change=save_presets)
-    st.number_input("Farbwellen Größe", min_value=1, max_value=999999, step=1, format="%d", key="colorWaveSize", on_change=save_presets)
-    st.slider("Farbwellen Geschwindigkeit", 1, 600, key="colorWaveSpeed", on_change=save_presets)
-    st.toggle("Farbwellen Richtung (nach Außen / Innen)", key="colorWaveInwards", on_change=save_presets)
+    st.session_state.colorWaveOrigin = curr_preset.get("colorWaveOrigin")
+    st.session_state.colorWaveSpeed = curr_preset.get("colorWaveSpeed")
+    st.session_state.colorWaveSize = curr_preset.get("colorWaveSize")
+    st.session_state.colorWaveInwards = curr_preset.get("colorWaveInwards")
+
+    if get_color_mode_id() == 4:
+        st.number_input("Farbwellen Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="colorWaveOrigin", on_change=save_presets)
+        st.number_input("Farbwellen Größe", min_value=1, max_value=999999, step=1, format="%d", key="colorWaveSize", on_change=save_presets)
+        st.slider("Farbwellen Geschwindigkeit", 1, 600, key="colorWaveSpeed", on_change=save_presets)
+        st.toggle("Farbwellen Richtung (nach Außen / Innen)", key="colorWaveInwards", on_change=save_presets)
     
-st.slider("Zufallsfarben Faktor", 0.00, 1.00, step=0.01, key="noiseAmount", on_change=save_presets)
-st.slider("Zufallsfarben Glättung", 0.00, 1.00, step=0.01, key="noiseSmoothing", on_change=save_presets)
+    st.slider("Zufallsfarben Faktor", 0.00, 1.00, step=0.01, key="noiseAmount", on_change=save_presets)
+    st.slider("Zufallsfarben Glättung", 0.00, 1.00, step=0.01, key="noiseSmoothing", on_change=save_presets)
 
-st.toggle("Farbüberfluss", key="colorOverflow", on_change=save_presets)
-st.toggle("Regenbogen Farben", key="useRainbow", on_change=save_presets)
+    st.toggle("Farbüberfluss", key="colorOverflow", on_change=save_presets)
+    st.toggle("Regenbogen Farben", key="useRainbow", on_change=save_presets)
 
-col_add, col_remove = st.columns(2)
+    col_add, col_remove = st.columns(2)
 
-with col_add:
-    st.button("➕ Farbe hinzufügen", on_click=cb_add_color)
+    with col_add:
+        st.button("➕ Farbe hinzufügen", on_click=cb_add_color)
 
-with col_remove:
-    st.button("➖ Letzte Farbe entfernen", disabled=(len(st.session_state.colors) <= 2), on_click=cb_remove_color)
+    with col_remove:
+        st.button("➖ Letzte Farbe entfernen", disabled=(len(st.session_state.colors) <= 2), on_click=cb_remove_color)
 
-for i, c in enumerate(st.session_state.colors):
-    label = "Hintergrund Farbe" if i == 0 else f"Farbe {i}"
+    for i, c in enumerate(st.session_state.colors):
+        label = "Hintergrund Farbe" if i == 0 else f"Farbe {i}"
     
-    if f"color_{i}" not in st.session_state:
-        st.session_state[f"color_{i}"] = c["color"]
-    if f"threshold_{i}" not in st.session_state:
-        st.session_state[f"threshold_{i}"] = c["threshold"]
+        if f"color_{i}" not in st.session_state:
+            st.session_state[f"color_{i}"] = c["color"]
+        if f"threshold_{i}" not in st.session_state:
+            st.session_state[f"threshold_{i}"] = c["threshold"]
         
-    col_c, col_t = st.columns([1, 2])
-    with col_c:
-        st.color_picker(
-            label,
-            key=f"color_{i}",
-            on_change=save_presets
-        )
-    with col_t:
-        st.slider(
-            "Grenzwert",
-            min_value=0.00,
-            max_value=1.00,
-            step=0.01,
-            key=f"threshold_{i}",
-            label_visibility="visible",
-            on_change=save_presets
-        )
+        col_c, col_t = st.columns([1, 2])
+        with col_c:
+            st.color_picker(
+                label,
+                key=f"color_{i}",
+                on_change=save_presets
+            )
+        with col_t:
+            st.slider(
+                "Grenzwert",
+                min_value=0.00,
+                max_value=1.00,
+                step=0.01,
+                key=f"threshold_{i}",
+                label_visibility="visible",
+                on_change=save_presets
+            )
 
-st.divider()
-st.subheader("Globale Einstellungen")
-st.number_input("FPS", min_value=1, max_value=400, step=1, format="%d", key="fps", on_change=save_static_config)
-st.number_input("LED Anzahl", min_value=2, max_value=99999, step=1, format="%d", key="ledCount", on_change=save_static_config)
+with st.expander("Globale Einstellungen", expanded=False):
+    st.number_input("FPS", min_value=1, max_value=400, step=1, format="%d", key="fps", on_change=save_static_config)
+    st.number_input("LED Anzahl", min_value=2, max_value=99999, step=1, format="%d", key="ledCount", on_change=save_static_config)
