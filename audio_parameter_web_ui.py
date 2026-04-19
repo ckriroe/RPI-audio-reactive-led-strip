@@ -2,8 +2,9 @@ import streamlit as st
 import json
 import os
 import copy
+import uuid
 
-CONFIG_FILE = "dynamic_settings.json"
+STATIC_CONFIG_FILE = "static_settings.json"
 PRESETS_FILE = "presets.json"
 
 AUDIO_MODES = {
@@ -32,12 +33,11 @@ COLOR_MODES = {
     5: "Farbinseln"
 }
 
-DEFAULTS = {
+DYNAMIC_DEFAULTS = {
     "colors": [
         { "color": "#000000", "threshold": 0.25 },
         { "color": "#FFFFFF", "threshold": 1.0 }
     ],
-    "ledCount": 300,
     "useRainbow": False,
     "effectOrigin": 150,
     "speed": 100,
@@ -79,11 +79,43 @@ DEFAULTS = {
     "patternFlip": -1,
     "patternCenter": 0,
     "patternSectionSizeMod": 0.0,
-    "fps": 60,
     "fftSize": 512,
     "bpmLimit": -1,
     "audioResponseCurve": 1.0,
     "audioPeakHoldTimeMs": 0
+}
+
+STATIC_DEFAULTS = {
+    "sampleRate": 48000,
+    "channels": 2,
+    "audioDeviceId": 0,
+    "belowMinFreqAmplitudeFunctionFactor": -0.03,
+    "maxFreqAmplitudeIncreaseRatio": 0.22, # Higher = rise faster
+    "maxFreqAmplitudeDecreaseRatio": 0.5, # Higher = fall faster
+    "maxFreqAmplitudeTTL": 4000,
+    "maxFreqAmplitudeProlongerThreshholdPercent": 0.03,
+    "maxFreqAmplitudeDecayRate": 0.002,
+    "ledUpdateFrequency": 800000,
+    "bounceLayers": 1,
+    "maxEffectSpeed": 600,
+    "externalModeRelayGpio": 5,
+    "invalidFrameSleepTime": 2000,
+    "printFrameTimes": False,
+    "printFrequencyInfos": False,
+    "printSequenceInfos": False,
+    "minSanitizedValue": 0.01,
+    "useGuiVisualization": True,
+    "useLedVisualization": True,
+    "guiWidth": 800,
+    "guiHeight": 200,
+    "mainThreadSettingsCheckIntervalMs": 2000,
+    "runIndefinitely": True,
+    "outputWhenGpioOff": False,
+    "accurateSleeping": False,
+    "guiVisualizationMode": 0,
+    "rectangleGuiVisualizationHeight": 50,
+    "fps": 60,
+    "ledCount": 300
 }
 
 def load_presets():
@@ -99,30 +131,48 @@ def load_presets():
     else:
         return create_default_presets_file()
 
+def load_static_settings():
+    if os.path.exists(STATIC_CONFIG_FILE):
+        try:
+            with open(STATIC_CONFIG_FILE, "r") as f:
+                return json.load(f)
+        except:
+            return create_default_static_settings_file()
+    else:
+        return create_default_static_settings_file()
+
 def create_default_presets_file():
+    preset_id = str(uuid.uuid4())
     initial_data = {
-        "selected_index": 0,
+        "selectedPresetId": preset_id,
         "presets": [
             {
                 "name": "Standard",
-                "values": copy.deepcopy(DEFAULTS)
+                "id": preset_id,
+                "values": copy.deepcopy(DYNAMIC_DEFAULTS)
             }
         ]
     }
     with open(PRESETS_FILE, "w") as f:
         json.dump(initial_data, f, indent=2)
+
     return initial_data
 
-def save_presets_to_disk():
+def create_default_static_settings_file():
+    initial_data = copy.deepcopy(STATIC_DEFAULTS)
+    write_static_config_to_disk(initial_data)
+    return initial_data
+
+def write_presets_to_disk():
     data = {
-        "selected_index": st.session_state.preset_index,
+        "selectedPresetId": st.session_state.preset_guid,
         "presets": st.session_state.presets
     }
     with open(PRESETS_FILE, "w") as f:
         json.dump(data, f, indent=2)
 
-def save_config(values):
-    with open(CONFIG_FILE, "w") as f:
+def write_static_config_to_disk(values):
+    with open(STATIC_CONFIG_FILE, "w") as f:
         json.dump(values, f, indent=2)
 
 def sync_widgets_to_colors_list():
@@ -137,7 +187,7 @@ def sync_widgets_to_colors_list():
             if t_key in st.session_state:
                 st.session_state.colors[i]["threshold"] = st.session_state[t_key]
 
-def get_current_values_from_state():
+def get_current_preset_values_from_state():
     sync_widgets_to_colors_list()
    
     aud_mode_id = next(k for k, v in AUDIO_MODES.items() if v == st.session_state.audioMode) 
@@ -146,7 +196,6 @@ def get_current_values_from_state():
 
     return {
         "colors": st.session_state.colors,
-        "ledCount": st.session_state.ledCount,
         "useRainbow": st.session_state.useRainbow,
         "effectOrigin": st.session_state.effectOrigin,
         "speed": st.session_state.speed,
@@ -188,7 +237,6 @@ def get_current_values_from_state():
         "patternFlip": st.session_state.patternFlip,
         "patternCenter": st.session_state.patternCenter,
         "patternSectionSizeMod": st.session_state.patternSectionSizeMod,
-        "fps": st.session_state.fps,
         "fftSize": st.session_state.fftSize,
         "bpmLimit": st.session_state.bpmLimit,
         "audioResponseCurve": st.session_state.audioResponseCurve,
@@ -196,94 +244,105 @@ def get_current_values_from_state():
     }
 
 def update_session_state_from_preset(preset_data):
+    st.session_state.preset_guid = preset_data["id"]
     vals = preset_data["values"]
-    st.session_state.colors = copy.deepcopy(vals.get("colors", DEFAULTS["colors"]))
+    st.session_state.colors = copy.deepcopy(vals.get("colors", DYNAMIC_DEFAULTS["colors"]))
     for i, c in enumerate(st.session_state.colors):
         st.session_state[f"color_{i}"] = c["color"]
         st.session_state[f"threshold_{i}"] = c["threshold"]
-    
-    st.session_state.ledCount = vals.get("ledCount", DEFAULTS["ledCount"])
-    st.session_state.useRainbow = vals.get("useRainbow", DEFAULTS["useRainbow"])
-    st.session_state.effectOrigin = vals.get("effectOrigin", DEFAULTS["effectOrigin"])
-    st.session_state.speed = vals.get("speed", DEFAULTS["speed"])
-    st.session_state.minFreq = vals.get("minFreq", DEFAULTS["minFreq"])
-    st.session_state.maxFreq = vals.get("maxFreq", DEFAULTS["maxFreq"])
-    st.session_state.fade = vals.get("fade", DEFAULTS["fade"])
-    st.session_state.fadeOverTime = vals.get("fadeOverTime", DEFAULTS["fadeOverTime"])
-    st.session_state.bouncyWave = vals.get("bouncyWave", DEFAULTS["bouncyWave"])
-    st.session_state.staticSpectrum = vals.get("staticSpectrum", DEFAULTS["staticSpectrum"])
-    st.session_state.spectrumSections = vals.get("spectrumSections", DEFAULTS["spectrumSections"])
-    st.session_state.saturate = vals.get("saturate", DEFAULTS["saturate"])
-    st.session_state.saturateThreshold = vals.get("saturateThreshold", DEFAULTS["saturateThreshold"])
-    st.session_state.meanValueBufferSize = vals.get("meanValueBufferSize", DEFAULTS["meanValueBufferSize"])
-    st.session_state.meanValueThreshold = vals.get("meanValueThreshold", DEFAULTS["meanValueThreshold"])
-    st.session_state.minFreqAmplitude = vals.get("minFreqAmplitude", DEFAULTS["minFreqAmplitude"])
-    st.session_state.maxFreqAmplitude = vals.get("maxFreqAmplitude", DEFAULTS["maxFreqAmplitude"])
-    st.session_state.colorIncreaseFactor = vals.get("colorIncreaseFactor", DEFAULTS["colorIncreaseFactor"])
-    st.session_state.valueIncreaseFactor = vals.get("valueIncreaseFactor", DEFAULTS["valueIncreaseFactor"])
-    st.session_state.colorTransition = vals.get("colorTransition", DEFAULTS["colorTransition"])
-    st.session_state.valueColorBias = vals.get("valueColorBias", DEFAULTS["valueColorBias"])
-    st.session_state.getAlphaFromValue = vals.get("getAlphaFromValue", DEFAULTS["getAlphaFromValue"])
-    st.session_state.colorOverflow = vals.get("colorOverflow", DEFAULTS["colorOverflow"])
-    st.session_state.colorWaveOrigin = vals.get("colorWaveOrigin", DEFAULTS["colorWaveOrigin"])
-    st.session_state.colorWaveSpeed = vals.get("colorWaveSpeed", DEFAULTS["colorWaveSpeed"])
-    st.session_state.colorWaveSize = vals.get("colorWaveSize", DEFAULTS["colorWaveSize"])
-    st.session_state.colorWaveInwards = vals.get("colorWaveInwards", DEFAULTS["colorWaveInwards"])
-    st.session_state.noiseAmount = vals.get("noiseAmount", DEFAULTS["noiseAmount"])
-    st.session_state.noiseSmoothing = vals.get("noiseSmoothing", DEFAULTS["noiseSmoothing"])
-    st.session_state.brightness = vals.get("brightness", DEFAULTS["brightness"])
-    st.session_state.gamma = vals.get("gamma", DEFAULTS["gamma"])
-    st.session_state.effectRepeats = vals.get("effectRepeats", DEFAULTS["effectRepeats"])
-    st.session_state.acceleration = vals.get("acceleration", DEFAULTS["acceleration"])
-    st.session_state.particleSize = vals.get("particleSize", DEFAULTS["particleSize"])
-    st.session_state.patternSplits = vals.get("patternSplits", DEFAULTS["patternSplits"])
-    st.session_state.patternSpread = vals.get("patternSpread", DEFAULTS["patternSpread"])
-    st.session_state.patternFlip = vals.get("patternFlip", DEFAULTS["patternFlip"])
-    st.session_state.patternCenter = vals.get("patternCenter", DEFAULTS["patternCenter"])
-    st.session_state.patternSectionSizeMod = vals.get("patternSectionSizeMod", DEFAULTS["patternSectionSizeMod"])
-    st.session_state.fps = vals.get("fps", DEFAULTS["fps"])
-    st.session_state.fftSize = vals.get("fftSize", DEFAULTS["fftSize"])
-    st.session_state.bpmLimit = vals.get("bpmLimit", DEFAULTS["bpmLimit"])
-    st.session_state.audioResponseCurve = vals.get("audioResponseCurve", DEFAULTS["audioResponseCurve"])
-    st.session_state.audioPeakHoldTimeMs = vals.get("audioPeakHoldTimeMs", DEFAULTS["audioPeakHoldTimeMs"])
 
-    a_mode = vals.get("audioMode", DEFAULTS["audioMode"])
-    e_mode = vals.get("effectMode", DEFAULTS["effectMode"])
-    c_mode = vals.get("colorMode", DEFAULTS["colorMode"])
+    st.session_state.useRainbow = vals.get("useRainbow", DYNAMIC_DEFAULTS["useRainbow"])
+    st.session_state.effectOrigin = vals.get("effectOrigin", DYNAMIC_DEFAULTS["effectOrigin"])
+    st.session_state.speed = vals.get("speed", DYNAMIC_DEFAULTS["speed"])
+    st.session_state.minFreq = vals.get("minFreq", DYNAMIC_DEFAULTS["minFreq"])
+    st.session_state.maxFreq = vals.get("maxFreq", DYNAMIC_DEFAULTS["maxFreq"])
+    st.session_state.fade = vals.get("fade", DYNAMIC_DEFAULTS["fade"])
+    st.session_state.fadeOverTime = vals.get("fadeOverTime", DYNAMIC_DEFAULTS["fadeOverTime"])
+    st.session_state.bouncyWave = vals.get("bouncyWave", DYNAMIC_DEFAULTS["bouncyWave"])
+    st.session_state.staticSpectrum = vals.get("staticSpectrum", DYNAMIC_DEFAULTS["staticSpectrum"])
+    st.session_state.spectrumSections = vals.get("spectrumSections", DYNAMIC_DEFAULTS["spectrumSections"])
+    st.session_state.saturate = vals.get("saturate", DYNAMIC_DEFAULTS["saturate"])
+    st.session_state.saturateThreshold = vals.get("saturateThreshold", DYNAMIC_DEFAULTS["saturateThreshold"])
+    st.session_state.meanValueBufferSize = vals.get("meanValueBufferSize", DYNAMIC_DEFAULTS["meanValueBufferSize"])
+    st.session_state.meanValueThreshold = vals.get("meanValueThreshold", DYNAMIC_DEFAULTS["meanValueThreshold"])
+    st.session_state.minFreqAmplitude = vals.get("minFreqAmplitude", DYNAMIC_DEFAULTS["minFreqAmplitude"])
+    st.session_state.maxFreqAmplitude = vals.get("maxFreqAmplitude", DYNAMIC_DEFAULTS["maxFreqAmplitude"])
+    st.session_state.colorIncreaseFactor = vals.get("colorIncreaseFactor", DYNAMIC_DEFAULTS["colorIncreaseFactor"])
+    st.session_state.valueIncreaseFactor = vals.get("valueIncreaseFactor", DYNAMIC_DEFAULTS["valueIncreaseFactor"])
+    st.session_state.colorTransition = vals.get("colorTransition", DYNAMIC_DEFAULTS["colorTransition"])
+    st.session_state.valueColorBias = vals.get("valueColorBias", DYNAMIC_DEFAULTS["valueColorBias"])
+    st.session_state.getAlphaFromValue = vals.get("getAlphaFromValue", DYNAMIC_DEFAULTS["getAlphaFromValue"])
+    st.session_state.colorOverflow = vals.get("colorOverflow", DYNAMIC_DEFAULTS["colorOverflow"])
+    st.session_state.colorWaveOrigin = vals.get("colorWaveOrigin", DYNAMIC_DEFAULTS["colorWaveOrigin"])
+    st.session_state.colorWaveSpeed = vals.get("colorWaveSpeed", DYNAMIC_DEFAULTS["colorWaveSpeed"])
+    st.session_state.colorWaveSize = vals.get("colorWaveSize", DYNAMIC_DEFAULTS["colorWaveSize"])
+    st.session_state.colorWaveInwards = vals.get("colorWaveInwards", DYNAMIC_DEFAULTS["colorWaveInwards"])
+    st.session_state.noiseAmount = vals.get("noiseAmount", DYNAMIC_DEFAULTS["noiseAmount"])
+    st.session_state.noiseSmoothing = vals.get("noiseSmoothing", DYNAMIC_DEFAULTS["noiseSmoothing"])
+    st.session_state.brightness = vals.get("brightness", DYNAMIC_DEFAULTS["brightness"])
+    st.session_state.gamma = vals.get("gamma", DYNAMIC_DEFAULTS["gamma"])
+    st.session_state.effectRepeats = vals.get("effectRepeats", DYNAMIC_DEFAULTS["effectRepeats"])
+    st.session_state.acceleration = vals.get("acceleration", DYNAMIC_DEFAULTS["acceleration"])
+    st.session_state.particleSize = vals.get("particleSize", DYNAMIC_DEFAULTS["particleSize"])
+    st.session_state.patternSplits = vals.get("patternSplits", DYNAMIC_DEFAULTS["patternSplits"])
+    st.session_state.patternSpread = vals.get("patternSpread", DYNAMIC_DEFAULTS["patternSpread"])
+    st.session_state.patternFlip = vals.get("patternFlip", DYNAMIC_DEFAULTS["patternFlip"])
+    st.session_state.patternCenter = vals.get("patternCenter", DYNAMIC_DEFAULTS["patternCenter"])
+    st.session_state.patternSectionSizeMod = vals.get("patternSectionSizeMod", DYNAMIC_DEFAULTS["patternSectionSizeMod"])
+    st.session_state.fftSize = vals.get("fftSize", DYNAMIC_DEFAULTS["fftSize"])
+    st.session_state.bpmLimit = vals.get("bpmLimit", DYNAMIC_DEFAULTS["bpmLimit"])
+    st.session_state.audioResponseCurve = vals.get("audioResponseCurve", DYNAMIC_DEFAULTS["audioResponseCurve"])
+    st.session_state.audioPeakHoldTimeMs = vals.get("audioPeakHoldTimeMs", DYNAMIC_DEFAULTS["audioPeakHoldTimeMs"])
+
+    a_mode = vals.get("audioMode", DYNAMIC_DEFAULTS["audioMode"])
+    e_mode = vals.get("effectMode", DYNAMIC_DEFAULTS["effectMode"])
+    c_mode = vals.get("colorMode", DYNAMIC_DEFAULTS["colorMode"])
     st.session_state.audioMode = AUDIO_MODES.get(a_mode, AUDIO_MODES[0])
     st.session_state.effectMode = EFFECT_MODES.get(e_mode, EFFECT_MODES[0])
     st.session_state.colorMode = COLOR_MODES.get(c_mode, COLOR_MODES[0])
     st.session_state.rename_input = preset_data["name"]
 
-def save_params():
-    current_values = get_current_values_from_state()
+def update_session_state_from_static_settings(static_settings_data):
+    st.session_state.fps = static_settings_data.get("fps", STATIC_DEFAULTS["fps"])
+    st.session_state.ledCount = static_settings_data.get("ledCount", STATIC_DEFAULTS["ledCount"])
+
+def save_presets():
+    current_values = get_current_preset_values_from_state()
     
     idx = st.session_state.preset_index
     st.session_state.presets[idx]["values"] = current_values
     
-    save_presets_to_disk()
-    save_config(current_values)
+    write_presets_to_disk()
+
+def save_static_config():
+    current_values = load_static_settings()
+    current_values["fps"] = st.session_state.fps
+    current_values["ledCount"] = st.session_state.ledCount
+    st.session_state.static_settings = current_values
+
+    write_static_config_to_disk(current_values)
 
 def cb_create_preset():
-    save_params()
-    
-    current_data = copy.deepcopy(st.session_state.presets[st.session_state.preset_index])
+    curr_index = st.session_state.preset_index
+    new_index = curr_index + 1
+    new_id = str(uuid.uuid4())
+    current_data = copy.deepcopy(st.session_state.presets[curr_index])
     current_data["name"] = f"{current_data['name']} (Kopieren)"
-    st.session_state.presets.append(current_data)
+    current_data["id"] = new_id
+    st.session_state.presets.insert(new_index, current_data)
  
-    st.session_state.preset_index = len(st.session_state.presets) - 1
-    update_session_state_from_preset(st.session_state.presets[st.session_state.preset_index])
+    st.session_state.preset_guid = new_id
+    st.session_state.preset_index = new_index
+    update_session_state_from_preset(st.session_state.presets[new_index])
     
-    save_presets_to_disk()
-    save_config(st.session_state.presets[st.session_state.preset_index]["values"])
+    write_presets_to_disk()
 
 def cb_delete_preset():
     if len(st.session_state.presets) > 1 and st.session_state.preset_index != 0:
         st.session_state.presets.pop(st.session_state.preset_index)
         st.session_state.preset_index = max(0, st.session_state.preset_index - 1)
         update_session_state_from_preset(st.session_state.presets[st.session_state.preset_index])
-        save_presets_to_disk()
-        save_config(st.session_state.presets[st.session_state.preset_index]["values"])
+        write_presets_to_disk()
 
 def cb_add_color():
     sync_widgets_to_colors_list()
@@ -293,7 +352,7 @@ def cb_add_color():
     st.session_state[f"color_{new_idx}"] = "#ffffff"
     st.session_state[f"threshold_{new_idx}"] = 1.0
     
-    save_params()
+    save_presets()
 
 def cb_remove_color():
     if len(st.session_state.colors) > 2:
@@ -304,23 +363,34 @@ def cb_remove_color():
         if f"color_{old_idx}" in st.session_state: del st.session_state[f"color_{old_idx}"]
         if f"threshold_{old_idx}" in st.session_state: del st.session_state[f"threshold_{old_idx}"]
         
-        save_params()
+        save_presets()
 
 st.set_page_config(page_title="RPISC Einstellungen", page_icon="🎛️", layout="centered")
 
 if "presets" not in st.session_state:
     preset_data = load_presets()
     st.session_state.presets = preset_data["presets"]
-    st.session_state.preset_index = preset_data.get("selected_index", 0)
-    
+    st.session_state.preset_guid = preset_data["selectedPresetId"]
+
+    preset_index = 0
+    for i in range(len(st.session_state.presets)):
+        if st.session_state.presets[i]["id"] == st.session_state.preset_guid:
+            preset_index = i
+            break
+
+    st.session_state.preset_index = preset_index    
     if st.session_state.preset_index >= len(st.session_state.presets):
         st.session_state.preset_index = 0
+        st.session_state.preset_guid = st.session_state.presets[0]["id"]
     
     if "rename_input" not in st.session_state:
         st.session_state.rename_input = st.session_state.presets[st.session_state.preset_index]["name"]
 
     update_session_state_from_preset(st.session_state.presets[st.session_state.preset_index])
-    save_config(st.session_state.presets[st.session_state.preset_index]["values"])
+
+if "static_settings" not in st.session_state:
+     st.session_state.static_settings = load_static_settings()
+     update_session_state_from_static_settings(st.session_state.static_settings)
 
 st.title("RPISC Einstellungen")
 st.info(f"Aktive Voreinstellung: **{st.session_state.presets[st.session_state.preset_index]['name']}**")
@@ -333,8 +403,7 @@ with st.expander("📂 Voreinstellungs Verwaltung", expanded=True):
         new_index = st.session_state.preset_selector_idx
         st.session_state.preset_index = new_index
         update_session_state_from_preset(st.session_state.presets[new_index])
-        save_presets_to_disk()
-        save_config(st.session_state.presets[new_index]["values"])
+        write_presets_to_disk()
 
     st.selectbox(
         "Voreinstellung auswählen",
@@ -352,7 +421,7 @@ with st.expander("📂 Voreinstellungs Verwaltung", expanded=True):
             new_name = st.session_state.rename_input
             if new_name:
                 st.session_state.presets[st.session_state.preset_index]["name"] = new_name
-                save_presets_to_disk()
+                write_presets_to_disk()
 
         st.text_input(
             "Voreinstellung umbenennen",
@@ -390,83 +459,81 @@ st.markdown("""
 st.divider()
 st.subheader("Audio")
 
-st.selectbox("Audiomodus", list(AUDIO_MODES.values()), key="audioMode", on_change=save_params)
-st.slider("Min. Lautstärke", 0.0, 50.0, step=0.01, key="minFreqAmplitude", on_change=save_params)
-st.slider("Max. Lautstärke", 0.0, 50.0, step=0.01, key="maxFreqAmplitude", on_change=save_params)
+st.selectbox("Audiomodus", list(AUDIO_MODES.values()), key="audioMode", on_change=save_presets)
+st.slider("Min. Lautstärke", 0.0, 50.0, step=0.01, key="minFreqAmplitude", on_change=save_presets)
+st.slider("Max. Lautstärke", 0.0, 50.0, step=0.01, key="maxFreqAmplitude", on_change=save_presets)
 
 st.session_state.meanValueBufferSize = curr_preset.get("meanValueBufferSize")
 st.session_state.meanValueThreshold = curr_preset.get("meanValueThreshold")
 
 if get_audio_mode_id() == 0:
-    st.slider("Vergleichswert Puffergröße", 1, 100, step=1, key="meanValueBufferSize", on_change=save_params)
-    st.slider("Vergleichswert Grenzwert", 0.01, 1.0, step=0.01, key="meanValueThreshold", on_change=save_params)
+    st.slider("Vergleichswert Puffergröße", 1, 100, step=1, key="meanValueBufferSize", on_change=save_presets)
+    st.slider("Vergleichswert Grenzwert", 0.01, 1.0, step=0.01, key="meanValueThreshold", on_change=save_presets)
 
-st.slider("BPM Limit", -1, 999, step=1, key="bpmLimit", on_change=save_params)
-st.slider("Audiowert Skalierung", 0.01, 5.00, step=0.01, key="audioResponseCurve", on_change=save_params)
-st.slider("Min. Peakdauer in ms", 0, 999, step=1, key="audioPeakHoldTimeMs", on_change=save_params)
-st.number_input("Min. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="minFreq", on_change=save_params)
-st.number_input("Max. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="maxFreq", on_change=save_params)
-st.number_input("Audio Puffer Größe", min_value=2, max_value=50000, step=1, format="%d", key="fftSize", on_change=save_params)
+st.slider("BPM Limit", -1, 999, step=1, key="bpmLimit", on_change=save_presets)
+st.slider("Audiowert Skalierung", 0.01, 5.00, step=0.01, key="audioResponseCurve", on_change=save_presets)
+st.slider("Min. Peakdauer in ms", 0, 999, step=1, key="audioPeakHoldTimeMs", on_change=save_presets)
+st.number_input("Min. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="minFreq", on_change=save_presets)
+st.number_input("Max. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="maxFreq", on_change=save_presets)
+st.number_input("Audio Puffer Größe", min_value=2, max_value=50000, step=1, format="%d", key="fftSize", on_change=save_presets)
 
 st.divider()
 st.subheader("Effekt")
 
-st.selectbox("Effektmodus", list(EFFECT_MODES.values()), key="effectMode", on_change=save_params)
-st.number_input("Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="effectOrigin", on_change=save_params)
-st.slider("Effekt Beschleunigung", 0.0, 5.0, step=0.01, key="acceleration", on_change=save_params)
+st.selectbox("Effektmodus", list(EFFECT_MODES.values()), key="effectMode", on_change=save_presets)
+st.number_input("Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="effectOrigin", on_change=save_presets)
+st.slider("Effekt Beschleunigung", 0.0, 5.0, step=0.01, key="acceleration", on_change=save_presets)
 
 st.session_state.speed = curr_preset.get("speed")
 if get_effect_mode_id() in (2, 4):
-    st.slider("Effekt Geschwindigkeit", 1, 600, key="speed", on_change=save_params)
+    st.slider("Effekt Geschwindigkeit", 1, 600, key="speed", on_change=save_presets)
 
-st.slider("Effekt Verstärkung", 0.1, 10.0, key="valueIncreaseFactor", on_change=save_params)
+st.slider("Effekt Verstärkung", 0.1, 10.0, key="valueIncreaseFactor", on_change=save_presets)
 
 st.session_state.staticSpectrum = curr_preset.get("staticSpectrum")
 st.session_state.spectrumSections = curr_preset.get("spectrumSections")
 if get_effect_mode_id() == 3:
-    st.toggle("Statisches Spektrum", key="staticSpectrum", on_change=save_params)
-    st.slider("Spektrum Sektionen", 1, 50, step=1, key="spectrumSections", on_change=save_params)
+    st.toggle("Statisches Spektrum", key="staticSpectrum", on_change=save_presets)
+    st.slider("Spektrum Sektionen", 1, 50, step=1, key="spectrumSections", on_change=save_presets)
 
 st.session_state.particleSize = curr_preset.get("particleSize")
 if get_effect_mode_id() == 4:
-    st.slider("Partikel Größe", 1, 1000, step=1, key="particleSize", on_change=save_params)
+    st.slider("Partikel Größe", 1, 1000, step=1, key="particleSize", on_change=save_presets)
 
 st.session_state.bouncyWave = curr_preset.get("bouncyWave")
 if get_effect_mode_id() == 2:
-    st.toggle("Abprallen", key="bouncyWave", on_change=save_params)
+    st.toggle("Abprallen", key="bouncyWave", on_change=save_presets)
 
 st.session_state.fadeOverTime = curr_preset.get("fadeOverTime")
 if get_effect_mode_id() == 2 or get_effect_mode_id() == 8:
-    st.slider("Verblassung nach Zeit", -0.999, 0.999, step=0.001, key="fadeOverTime", on_change=save_params)
+    st.slider("Verblassung nach Zeit", -0.999, 0.999, step=0.001, key="fadeOverTime", on_change=save_presets)
 
-st.slider("Verblassung", 0.001, 0.999, step=0.001, key="fade", on_change=save_params)
-st.slider("Sättigung", 0.01, 1.0, step=0.01, key="saturate", on_change=save_params)
-st.slider("Sättigungs Grenzwert", 0.0, 1.0, step=0.01, key="saturateThreshold", on_change=save_params)
-st.number_input("FPS", min_value=1, max_value=400, step=1, format="%d", key="fps", on_change=save_params)
-st.number_input("LED Anzahl", min_value=2, max_value=99999, step=1, format="%d", key="ledCount", on_change=save_params)
+st.slider("Verblassung", 0.001, 0.999, step=0.001, key="fade", on_change=save_presets)
+st.slider("Sättigung", 0.01, 1.0, step=0.01, key="saturate", on_change=save_presets)
+st.slider("Sättigungs Grenzwert", 0.0, 1.0, step=0.01, key="saturateThreshold", on_change=save_presets)
 
 st.divider()
 st.subheader("Muster")
-st.slider("Effekt Wiederholungen", 1, 50, step=1, key="effectRepeats", on_change=save_params)
-st.slider("Muster Teilungen", 0, 50, step=1, key="patternSplits", on_change=save_params)
-st.slider("Jedes N'te Muster verdrehen", -1, 50, step=1, key="patternFlip", on_change=save_params)
-st.number_input("Muster Verteilung", min_value=0, max_value=999999, step=1, format="%d", key="patternSpread", on_change=save_params)
-st.number_input("Muster Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="patternCenter", on_change=save_params)
-st.slider("Muster Größenveränderung", -5.00, 5.00, step=0.01, key="patternSectionSizeMod", on_change=save_params)   
+st.slider("Effekt Wiederholungen", 1, 50, step=1, key="effectRepeats", on_change=save_presets)
+st.slider("Muster Teilungen", 0, 50, step=1, key="patternSplits", on_change=save_presets)
+st.slider("Jedes N'te Muster verdrehen", -1, 50, step=1, key="patternFlip", on_change=save_presets)
+st.number_input("Muster Verteilung", min_value=0, max_value=999999, step=1, format="%d", key="patternSpread", on_change=save_presets)
+st.number_input("Muster Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="patternCenter", on_change=save_presets)
+st.slider("Muster Größenveränderung", -5.00, 5.00, step=0.01, key="patternSectionSizeMod", on_change=save_presets)   
     
 st.divider()
 st.subheader("Farben")
-st.selectbox("Farbmodus", list(COLOR_MODES.values()), key="colorMode", on_change=save_params)
-st.slider("Helligkeit", 0.0, 5.0, step=0.01, key="brightness", on_change=save_params)
-st.slider("Gamma", 0.0, 5.0, step=0.01, key="gamma", on_change=save_params)
-st.slider("Farbverstärkung", 0.1, 20.0, key="colorIncreaseFactor", on_change=save_params)
-st.slider("Farbverlauf", 0.00, 0.50, key="colorTransition", on_change=save_params)
+st.selectbox("Farbmodus", list(COLOR_MODES.values()), key="colorMode", on_change=save_presets)
+st.slider("Helligkeit", 0.0, 5.0, step=0.01, key="brightness", on_change=save_presets)
+st.slider("Gamma", 0.0, 5.0, step=0.01, key="gamma", on_change=save_presets)
+st.slider("Farbverstärkung", 0.1, 20.0, key="colorIncreaseFactor", on_change=save_presets)
+st.slider("Farbverlauf", 0.00, 0.50, key="colorTransition", on_change=save_presets)
 
 st.session_state.valueColorBias = curr_preset.get("valueColorBias")
 st.session_state.getAlphaFromValue = curr_preset.get("getAlphaFromValue")
 if get_color_mode_id() != 0:
-    st.slider("Wert / Farb Verschmierung", 0.00, 1.00, step=0.01, key="valueColorBias", on_change=save_params)
-    st.toggle("Transparenz aus Wert", key="getAlphaFromValue", on_change=save_params)
+    st.slider("Wert / Farb Verschmierung", 0.00, 1.00, step=0.01, key="valueColorBias", on_change=save_presets)
+    st.toggle("Transparenz aus Wert", key="getAlphaFromValue", on_change=save_presets)
 
 st.session_state.colorWaveOrigin = curr_preset.get("colorWaveOrigin")
 st.session_state.colorWaveSpeed = curr_preset.get("colorWaveSpeed")
@@ -474,16 +541,16 @@ st.session_state.colorWaveSize = curr_preset.get("colorWaveSize")
 st.session_state.colorWaveInwards = curr_preset.get("colorWaveInwards")
 
 if get_color_mode_id() == 4:
-    st.number_input("Farbwellen Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="colorWaveOrigin", on_change=save_params)
-    st.number_input("Farbwellen Größe", min_value=1, max_value=999999, step=1, format="%d", key="colorWaveSize", on_change=save_params)
-    st.slider("Farbwellen Geschwindigkeit", 1, 600, key="colorWaveSpeed", on_change=save_params)
-    st.toggle("Farbwellen Richtung (nach Außen / Innen)", key="colorWaveInwards", on_change=save_params)
+    st.number_input("Farbwellen Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="colorWaveOrigin", on_change=save_presets)
+    st.number_input("Farbwellen Größe", min_value=1, max_value=999999, step=1, format="%d", key="colorWaveSize", on_change=save_presets)
+    st.slider("Farbwellen Geschwindigkeit", 1, 600, key="colorWaveSpeed", on_change=save_presets)
+    st.toggle("Farbwellen Richtung (nach Außen / Innen)", key="colorWaveInwards", on_change=save_presets)
     
-st.slider("Zufallsfarben Faktor", 0.00, 1.00, step=0.01, key="noiseAmount", on_change=save_params)
-st.slider("Zufallsfarben Glättung", 0.00, 1.00, step=0.01, key="noiseSmoothing", on_change=save_params)
+st.slider("Zufallsfarben Faktor", 0.00, 1.00, step=0.01, key="noiseAmount", on_change=save_presets)
+st.slider("Zufallsfarben Glättung", 0.00, 1.00, step=0.01, key="noiseSmoothing", on_change=save_presets)
 
-st.toggle("Farbüberfluss", key="colorOverflow", on_change=save_params)
-st.toggle("Regenbogen Farben", key="useRainbow", on_change=save_params)
+st.toggle("Farbüberfluss", key="colorOverflow", on_change=save_presets)
+st.toggle("Regenbogen Farben", key="useRainbow", on_change=save_presets)
 
 col_add, col_remove = st.columns(2)
 
@@ -506,7 +573,7 @@ for i, c in enumerate(st.session_state.colors):
         st.color_picker(
             label,
             key=f"color_{i}",
-            on_change=save_params
+            on_change=save_presets
         )
     with col_t:
         st.slider(
@@ -516,5 +583,10 @@ for i, c in enumerate(st.session_state.colors):
             step=0.01,
             key=f"threshold_{i}",
             label_visibility="visible",
-            on_change=save_params
+            on_change=save_presets
         )
+
+st.divider()
+st.subheader("Globale Einstellungen")
+st.number_input("FPS", min_value=1, max_value=400, step=1, format="%d", key="fps", on_change=save_static_config)
+st.number_input("LED Anzahl", min_value=2, max_value=99999, step=1, format="%d", key="ledCount", on_change=save_static_config)
