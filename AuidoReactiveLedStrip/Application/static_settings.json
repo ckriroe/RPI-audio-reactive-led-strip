@@ -3,8 +3,8 @@
   "channels": 2,
   "audioDeviceId": 4,
   "belowMinFreqAmplitudeFunctionFactor": -0.03,
-  "maxFreqAmplitudeIncreaseRatio": 0.22, // Higher = rise faster
-  "maxFreqAmplitudeDecreaseRatio": 0.5, // Higher = fall faster
+  "maxFreqAmplitudeIncreaseRatio": 0.22,
+  "maxFreqAmplitudeDecreaseRatio": 0.5,
   "maxFreqAmplitudeTTL": 4000,
   "maxFreqAmplitudeProlongerThreshholdPercent": 0.03,
   "maxFreqAmplitudeDecayRate": 0.002,
@@ -18,15 +18,15 @@
   "printSequenceInfos": true,
   "minSanitizedValue": 0.01,
   "useGuiVisualization": true,
-  "useLedVisualization": true,
+  "useLedVisualization": false,
   "guiWidth": 800,
   "guiHeight": 200,
   "mainThreadSettingsCheckIntervalMs": 2000,
-  "runIndefinitely": true,
+  "runIndefinitely": false,
   "outputWhenGpioOff": false,
   "accurateSleeping": false,
   "guiVisualizationMode": 0,
   "rectangleGuiVisualizationHeight": 50,
   "fps": 60,
-  "ledCount": 30
+  "ledCount": 600
 }

@@ -82,7 +82,12 @@ DYNAMIC_DEFAULTS = {
     "fftSize": 512,
     "bpmLimit": -1,
     "audioResponseCurve": 1.0,
-    "audioPeakHoldTimeMs": 0
+    "audioPeakHoldTimeMs": 0,
+    "nextEffectId": None,
+    "effectDurationMs": 5000,
+    "effectTransitionDurationMs": 2500,
+    "effectTransitionWarmupDuration": 1000,
+    "resetEffectAfterTransition": False
 }
 
 STATIC_DEFAULTS = {
@@ -117,6 +122,8 @@ STATIC_DEFAULTS = {
     "fps": 60,
     "ledCount": 300
 }
+
+NONE_OPTION = "__none__"
 
 def load_presets():
     if os.path.exists(PRESETS_FILE):
@@ -240,7 +247,12 @@ def get_current_preset_values_from_state():
         "fftSize": st.session_state.fftSize,
         "bpmLimit": st.session_state.bpmLimit,
         "audioResponseCurve": st.session_state.audioResponseCurve,
-        "audioPeakHoldTimeMs": st.session_state.audioPeakHoldTimeMs
+        "audioPeakHoldTimeMs": st.session_state.audioPeakHoldTimeMs,
+        "nextEffectId": st.session_state.nextEffectId,
+        "effectDurationMs": st.session_state.effectDurationMs,
+        "effectTransitionDurationMs": st.session_state.effectTransitionDurationMs,
+        "effectTransitionWarmupDuration": st.session_state.effectTransitionWarmupDuration,
+        "resetEffectAfterTransition": st.session_state.resetEffectAfterTransition
     }
 
 def update_session_state_from_preset(preset_data):
@@ -293,6 +305,11 @@ def update_session_state_from_preset(preset_data):
     st.session_state.bpmLimit = vals.get("bpmLimit", DYNAMIC_DEFAULTS["bpmLimit"])
     st.session_state.audioResponseCurve = vals.get("audioResponseCurve", DYNAMIC_DEFAULTS["audioResponseCurve"])
     st.session_state.audioPeakHoldTimeMs = vals.get("audioPeakHoldTimeMs", DYNAMIC_DEFAULTS["audioPeakHoldTimeMs"])
+    st.session_state.nextEffectId = vals.get("nextEffectId", DYNAMIC_DEFAULTS["nextEffectId"])
+    st.session_state.effectDurationMs = vals.get("effectDurationMs", DYNAMIC_DEFAULTS["effectDurationMs"])
+    st.session_state.effectTransitionDurationMs = vals.get("effectTransitionDurationMs", DYNAMIC_DEFAULTS["effectTransitionDurationMs"])
+    st.session_state.effectTransitionWarmupDuration = vals.get("effectTransitionWarmupDuration", DYNAMIC_DEFAULTS["effectTransitionWarmupDuration"])
+    st.session_state.resetEffectAfterTransition = vals.get("resetEffectAfterTransition", DYNAMIC_DEFAULTS["resetEffectAfterTransition"])
 
     a_mode = vals.get("audioMode", DYNAMIC_DEFAULTS["audioMode"])
     e_mode = vals.get("effectMode", DYNAMIC_DEFAULTS["effectMode"])
@@ -359,7 +376,14 @@ def cb_move_preset_forward():
 
 def cb_delete_preset():
     if len(st.session_state.presets) > 1 and st.session_state.preset_index != 0:
-        st.session_state.presets.pop(st.session_state.preset_index)
+        removed_preset = st.session_state.presets.pop(st.session_state.preset_index)
+        if removed_preset is None:
+            return
+
+        for i in range(len(st.session_state.presets)):
+            if st.session_state.presets[i]["values"]["nextEffectId"] == removed_preset["id"]:
+                st.session_state.presets[i]["values"]["nextEffectId"] = None                
+
         st.session_state.preset_index = max(0, st.session_state.preset_index - 1)
         update_session_state_from_preset(st.session_state.presets[st.session_state.preset_index])
         write_presets_to_disk()
@@ -534,7 +558,46 @@ with st.expander("Muster", expanded=False):
     st.number_input("Muster Verteilung", min_value=0, max_value=999999, step=1, format="%d", key="patternSpread", on_change=save_presets)
     st.number_input("Muster Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="patternCenter", on_change=save_presets)
     st.slider("Muster Größenveränderung", -5.00, 5.00, step=0.01, key="patternSectionSizeMod", on_change=save_presets)   
-    
+
+with st.expander("Sequenzierung", expanded=False):
+    guid_to_obj = {v["id"]: v for v in st.session_state.presets}
+    current_guid = st.session_state.preset_guid
+    filtered_values = [v for v in st.session_state.presets if v["id"] != current_guid]
+    options = [NONE_OPTION] + [v["id"] for v in filtered_values]
+    if "nextEffectId" not in st.session_state:
+        st.session_state.nextEffectId = None
+
+    linked_guid = st.session_state.nextEffectId
+
+    default_index = 0
+    if linked_guid is not None:
+        default_index = next(
+            (i for i, v in enumerate(options) if v is not NONE_OPTION and v == linked_guid),
+            0
+        )
+
+    def on_next_effect_changed():
+        selected_guid = st.session_state["nextEffectEntry"]
+        if selected_guid == NONE_OPTION:
+            st.session_state.nextEffectId = None
+        else:
+            st.session_state.nextEffectId = selected_guid
+        
+        save_presets()
+
+    st.selectbox(
+        "Nächster Effekt",
+        options,
+        index=default_index,
+        format_func=lambda x: "Deaktiviert" if x is NONE_OPTION else guid_to_obj[x]["name"],
+        key="nextEffectEntry",
+        on_change=on_next_effect_changed
+    )
+
+    st.number_input("Effekt Dauer in ms", min_value=1, max_value=99999999, step=1, format="%d", key="effectDurationMs", on_change=save_presets)
+    st.number_input("Effekt Übergangsdauer in ms", min_value=0, max_value=99999999, step=1, format="%d", key="effectTransitionDurationMs", on_change=save_presets)
+    st.number_input("Übergangs Vorlaufzeit in ms", min_value=0, max_value=99999999, step=1, format="%d", key="effectTransitionWarmupDuration", on_change=save_presets)
+    st.toggle("Effekt nach Übergang zurücksetzen", key="resetEffectAfterTransition", on_change=save_presets)
 
 with st.expander("Farben", expanded=False):
     st.selectbox("Farbmodus", list(COLOR_MODES.values()), key="colorMode", on_change=save_presets)
