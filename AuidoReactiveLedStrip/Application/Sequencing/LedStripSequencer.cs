@@ -27,6 +27,7 @@ namespace Application.Sequencing
         private long referenceTimestamp = 0;
         private bool isTransitioning = false;
         private LedSequenceState currentState = LedSequenceState.None;
+        private Guid? initialEffectGuid = null;
 
         public LedStripSequencer(ILedStripRenderer mainRenderer, ILedStripRenderer transitionRenderer)
         {
@@ -76,7 +77,15 @@ namespace Application.Sequencing
             Preset? currentPreset = this.currentPreset;
             if (currentPreset != null)
             {
-                this.SetPresets(dynamicPresetSettings, currentPreset.Id);
+                Guid guidToReload = currentPreset.Id;
+                if (this.initialEffectGuid != dynamicPresetSettings.SelectedPresetId)
+                {
+                    guidToReload = dynamicPresetSettings.SelectedPresetId;
+                    this.initialEffectGuid = dynamicPresetSettings.SelectedPresetId;
+                    this.currentState = LedSequenceState.None;
+                }
+
+                this.SetPresets(dynamicPresetSettings, guidToReload);
                 this.mainRenderer.ApplySettings(staticSettings, currentPreset.EffectSettings);
 
                 Preset? nextPreset = this.nextPreset;
