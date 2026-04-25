@@ -10,6 +10,7 @@ namespace Application.RuntimeSettings
         public float BelowMinFreqAmplitudeFunctionFactor { get; set; }
         public float MaxFreqAmplitudeIncreaseRatio { get; set; }
         public float MaxFreqAmplitudeDecreaseRatio { get; set; }
+        public float MaxFreqAmplitudeValueMultiplier { get; set; }
         public int MaxFreqAmplitudeTTL { get; set; }
         public float MaxFreqAmplitudeProlongerThreshholdPercent { get; set; }
         public float MaxFreqAmplitudeDecayRate { get; set; }
