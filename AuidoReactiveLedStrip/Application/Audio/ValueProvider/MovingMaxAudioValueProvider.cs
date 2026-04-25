@@ -16,16 +16,20 @@ namespace Application.Audio.ValueProvider
             if (maxFrequency > this.dynamicSettings.MaxFreqAmplitude)
                 maxFrequency = this.dynamicSettings.MaxFreqAmplitude;
 
-            if (maxFrequency > this.lastAproxMaxFrequency)
+            char movementIdentifier = '-';
+            float maxFreqMultiplier = base.staticSettings.MaxFreqAmplitudeValueMultiplier;
+            if (maxFrequency * maxFreqMultiplier > this.lastAproxMaxFrequency)
             {
-                this.lastAproxMaxFrequency = MathHelper.Lerp(this.lastAproxMaxFrequency, maxFrequency, base.staticSettings.MaxFreqAmplitudeIncreaseRatio);
+                this.lastAproxMaxFrequency = Math.Max(this.lastAproxMaxFrequency, MathHelper.Lerp(this.lastAproxMaxFrequency, maxFrequency * maxFreqMultiplier, base.staticSettings.MaxFreqAmplitudeIncreaseRatio));
                 this.lastAproxMaxFreqEval = Environment.TickCount;
+                movementIdentifier = '▲';
             } 
-            else if (maxFrequency > this.lastAproxMaxFrequency - this.lastAproxMaxFrequency * base.staticSettings.MaxFreqAmplitudeProlongerThreshholdPercent)
+            else if (maxFrequency * maxFreqMultiplier > this.lastAproxMaxFrequency - this.lastAproxMaxFrequency * base.staticSettings.MaxFreqAmplitudeProlongerThreshholdPercent)
             {
-                this.lastAproxMaxFrequency = MathHelper.Lerp(this.lastAproxMaxFrequency, maxFrequency, base.staticSettings.MaxFreqAmplitudeDecreaseRatio);
+                this.lastAproxMaxFrequency = Math.Min(this.lastAproxMaxFrequency, MathHelper.Lerp(this.lastAproxMaxFrequency, maxFrequency * maxFreqMultiplier, base.staticSettings.MaxFreqAmplitudeDecreaseRatio));
                 this.lastAproxMaxFreqEval = Environment.TickCount;
                 maxFrequency = this.lastAproxMaxFrequency;
+                movementIdentifier = '▼';
             } 
             else if (Environment.TickCount - this.lastAproxMaxFreqEval > this.staticSettings.MaxFreqAmplitudeTTL)
             {
@@ -60,7 +64,7 @@ namespace Application.Audio.ValueProvider
             base.SetAudioValue(newAudioValue);
 
             if (base.staticSettings.PrintFrequencyInfos)
-                Console.WriteLine($"Last approx. max freq: {this.lastAproxMaxFrequency,15:F5}\t\tCurrrent avg. mean amplitude: {avg,15:F5}\t\tMax freq: {maxFrequency,15:F5}\t\tResulting value: {newAudioValue,15:F5}");
+                Console.WriteLine($"Last approx. max freq: {this.lastAproxMaxFrequency,15:F5}\t\tCurrrent avg. mean amplitude: {avg,15:F5}\t\tMax freq: {maxFrequency,15:F5}\t\tResulting value: {newAudioValue,15:F5}\t{movementIdentifier}");
         }
     }
 }

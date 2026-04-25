@@ -97,6 +97,7 @@ STATIC_DEFAULTS = {
     "belowMinFreqAmplitudeFunctionFactor": -0.03,
     "maxFreqAmplitudeIncreaseRatio": 0.22, # Higher = rise faster
     "maxFreqAmplitudeDecreaseRatio": 0.5, # Higher = fall faster
+    "maxFreqAmplitudeValueMultiplier": 0.95,
     "maxFreqAmplitudeTTL": 4000,
     "maxFreqAmplitudeProlongerThreshholdPercent": 0.03,
     "maxFreqAmplitudeDecayRate": 0.002,
