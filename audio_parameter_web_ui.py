@@ -128,24 +128,15 @@ NONE_OPTION = "__none__"
 
 def load_presets():
     if os.path.exists(PRESETS_FILE):
-        try:
-            with open(PRESETS_FILE, "r") as f:
-                data = json.load(f)
-                if "presets" not in data or len(data["presets"]) == 0:
-                    return create_default_presets_file()
-                return data
-        except:
-            return create_default_presets_file()
+        with open(PRESETS_FILE, "r") as f:
+            return json.load(f)
     else:
         return create_default_presets_file()
 
 def load_static_settings():
     if os.path.exists(STATIC_CONFIG_FILE):
-        try:
             with open(STATIC_CONFIG_FILE, "r") as f:
                 return json.load(f)
-        except:
-            return create_default_static_settings_file()
     else:
         return create_default_static_settings_file()
 
