@@ -135,8 +135,8 @@ def load_presets():
 
 def load_static_settings():
     if os.path.exists(STATIC_CONFIG_FILE):
-            with open(STATIC_CONFIG_FILE, "r") as f:
-                return json.load(f)
+        with open(STATIC_CONFIG_FILE, "r") as f:
+             return json.load(f)
     else:
         return create_default_static_settings_file()
 
