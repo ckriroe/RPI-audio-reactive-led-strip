@@ -128,16 +128,24 @@ NONE_OPTION = "__none__"
 
 def load_presets():
     if os.path.exists(PRESETS_FILE):
+        print("Loading preset file...\n")
         with open(PRESETS_FILE, "r") as f:
-            return json.load(f)
+            jsn = json.load(f)
+            print("Preset file loaded:\n", jsn, "\n")
+            return jsn
     else:
+        print("Preset file did not yet exist, creating presets file\n")
         return create_default_presets_file()
 
 def load_static_settings():
     if os.path.exists(STATIC_CONFIG_FILE):
+        print("Loading static config file...\n")
         with open(STATIC_CONFIG_FILE, "r") as f:
-             return json.load(f)
+             jsn = json.load(f)
+             print("Static config file loaded:\n", jsn, "\n")
+             return jsn
     else:
+        print("Static config file did not yet exist, creating static config file\n")
         return create_default_static_settings_file()
 
 def create_default_presets_file():
@@ -167,10 +175,12 @@ def write_presets_to_disk():
         "selectedPresetId": st.session_state.preset_guid,
         "presets": st.session_state.presets
     }
+    print("Writing presets to disk:\n", data, "\n")
     with open(PRESETS_FILE, "w") as f:
         json.dump(data, f, indent=2)
 
 def write_static_config_to_disk(values):
+    print("Writing static config to disk:\n", values, "\n")
     with open(STATIC_CONFIG_FILE, "w") as f:
         json.dump(values, f, indent=2)
 
