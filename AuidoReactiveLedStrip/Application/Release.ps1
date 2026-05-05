@@ -47,8 +47,8 @@ dotnet publish /p:PublishProfile=$publishProfile
 # ===== POST PROCESS =====
 Write-Host "Finalizing output..."
 $filesToRemove = @(
-    "dynamic_settings.json",
-    "static_settings.json"
+    "static_settings.json",
+    "presets.json"
 )
 
 foreach ($file in $filesToRemove) {
