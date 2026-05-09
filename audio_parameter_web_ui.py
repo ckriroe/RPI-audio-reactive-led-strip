@@ -8,8 +8,9 @@ STATIC_CONFIG_FILE = "static_settings.json"
 PRESETS_FILE = "presets.json"
 
 AUDIO_MODES = {
-    0: "Dynamisch",
-    1: "Simple"
+    0: "Gleitender Mittelwert",
+    1: "Satisch",
+    2: "Transientenerkennung"
 }
 
 EFFECT_MODES = {
@@ -87,7 +88,9 @@ DYNAMIC_DEFAULTS = {
     "effectDurationMs": 5000,
     "effectTransitionDurationMs": 2500,
     "effectTransitionWarmupDuration": 1000,
-    "resetEffectAfterTransition": False
+    "resetEffectAfterTransition": False,
+    "fluxInfluence": 1.0,
+    "energyInfluence": 0.5
 }
 
 STATIC_DEFAULTS = {
@@ -121,7 +124,11 @@ STATIC_DEFAULTS = {
     "guiVisualizationMode": 0,
     "rectangleGuiVisualizationHeight": 50,
     "fps": 60,
-    "ledCount": 300
+    "ledCount": 300,
+    "fastFluxSmoothing": 1.0,
+    "fastEnergySmoothing": 1.0,
+    "slowFluxSmoothing": 0.01,
+    "slowEnergySmoothing": 0.01
 }
 
 NONE_OPTION = "__none__"
@@ -254,7 +261,9 @@ def get_current_preset_values_from_state():
         "effectDurationMs": st.session_state.effectDurationMs,
         "effectTransitionDurationMs": st.session_state.effectTransitionDurationMs,
         "effectTransitionWarmupDuration": st.session_state.effectTransitionWarmupDuration,
-        "resetEffectAfterTransition": st.session_state.resetEffectAfterTransition
+        "resetEffectAfterTransition": st.session_state.resetEffectAfterTransition,
+        "fluxInfluence": st.session_state.fluxInfluence,
+        "energyInfluence": st.session_state.energyInfluence
     }
 
 def update_session_state_from_preset(preset_data):
@@ -312,6 +321,8 @@ def update_session_state_from_preset(preset_data):
     st.session_state.effectTransitionDurationMs = vals.get("effectTransitionDurationMs", DYNAMIC_DEFAULTS["effectTransitionDurationMs"])
     st.session_state.effectTransitionWarmupDuration = vals.get("effectTransitionWarmupDuration", DYNAMIC_DEFAULTS["effectTransitionWarmupDuration"])
     st.session_state.resetEffectAfterTransition = vals.get("resetEffectAfterTransition", DYNAMIC_DEFAULTS["resetEffectAfterTransition"])
+    st.session_state.fluxInfluence = vals.get("fluxInfluence", DYNAMIC_DEFAULTS["fluxInfluence"])
+    st.session_state.energyInfluence = vals.get("energyInfluence", DYNAMIC_DEFAULTS["energyInfluence"])
 
     a_mode = vals.get("audioMode", DYNAMIC_DEFAULTS["audioMode"])
     e_mode = vals.get("effectMode", DYNAMIC_DEFAULTS["effectMode"])
@@ -508,10 +519,15 @@ with st.expander("Audio", expanded=False):
 
     st.session_state.meanValueBufferSize = curr_preset.get("meanValueBufferSize")
     st.session_state.meanValueThreshold = curr_preset.get("meanValueThreshold")
-
     if get_audio_mode_id() == 0:
         st.slider("Vergleichswert Puffergröße", 1, 100, step=1, key="meanValueBufferSize", on_change=save_presets)
         st.slider("Vergleichswert Grenzwert", 0.01, 1.0, step=0.01, key="meanValueThreshold", on_change=save_presets)
+
+    st.session_state.energyInfluence = value if (value := curr_preset.get("energyInfluence")) is not None else DYNAMIC_DEFAULTS["energyInfluence"]
+    st.session_state.fluxInfluence = value if (value := curr_preset.get("fluxInfluence")) is not None else DYNAMIC_DEFAULTS["fluxInfluence"]
+    if get_audio_mode_id() == 2:
+        st.slider("Einfluss von Sprektrumsveränderung", 0.0, 1.0, step=0.01, key="energyInfluence", on_change=save_presets)
+        st.slider("Einfluss von Pegelveränderung", 0.0, 1.0, step=0.01, key="fluxInfluence", on_change=save_presets)
 
     st.slider("BPM Limit", -1, 999, step=1, key="bpmLimit", on_change=save_presets)
     st.slider("Audiowert Skalierung", 0.01, 5.00, step=0.01, key="audioResponseCurve", on_change=save_presets)

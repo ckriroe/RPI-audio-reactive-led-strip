@@ -2,7 +2,8 @@
 {
     public enum AudioMode
     {
-        Dynamic = 0,
-        Static = 1
+        MovingMax = 0,
+        Static = 1,
+        TransientDetection = 2
     }
 }

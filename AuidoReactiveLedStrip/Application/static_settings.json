@@ -29,5 +29,9 @@
   "guiVisualizationMode": 0,
   "rectangleGuiVisualizationHeight": 50,
   "fps": 60,
-  "ledCount": 600
+  "ledCount": 600,
+  "fastFluxSmoothing": 1.0,
+  "fastEnergySmoothing": 1.0,
+  "slowFluxSmoothing": 0.01,
+  "slowEnergySmoothing": 0.01
 }

@@ -14,6 +14,7 @@ namespace Application.Audio.Service
         private readonly AudioFftDataProvider audioFftDataProvider;
         private readonly SimpleAudioValueProvider simpleAudioValueProvider;
         private readonly MovingMaxAudioValueProvider movingMaxAudioValueProvider;
+        private readonly TransientAudioValueProvider transientAudioValueProvider;
 
         private AudioServiceMode currentAudioMode = AudioServiceMode.None;
         private IAudioDataProvider? currentDataProvider = null;
@@ -26,7 +27,8 @@ namespace Application.Audio.Service
             IAudioFftTransformer audioFftTransformer,
             AudioFftDataProvider audioFftDataProvider,
             SimpleAudioValueProvider simpleAudioValueProvider,
-            MovingMaxAudioValueProvider movingMaxAudioValueProvider
+            MovingMaxAudioValueProvider movingMaxAudioValueProvider,
+            TransientAudioValueProvider transientAudioValueProvider
         )
         {
             this.audioReceiver = audioReceiver;
@@ -34,6 +36,7 @@ namespace Application.Audio.Service
             this.audioFftDataProvider = audioFftDataProvider;
             this.simpleAudioValueProvider = simpleAudioValueProvider;
             this.movingMaxAudioValueProvider = movingMaxAudioValueProvider;
+            this.transientAudioValueProvider = transientAudioValueProvider;
         }
 
         public float[]? GetCurrentFftData()
@@ -61,6 +64,7 @@ namespace Application.Audio.Service
             this.audioFftDataProvider.ApplySettings(staticSettings, dynamicSettings);
             this.simpleAudioValueProvider.ApplySettings(staticSettings, dynamicSettings);
             this.movingMaxAudioValueProvider.ApplySettings(staticSettings, dynamicSettings);
+            this.transientAudioValueProvider.ApplySettings(staticSettings, dynamicSettings);
         }
 
         public void SetAudioMode(AudioServiceMode audioMode)
@@ -84,7 +88,9 @@ namespace Application.Audio.Service
                     this.currentDataProvider = this.simpleAudioValueProvider;
                 else if (audioMode == AudioServiceMode.MovingMax)
                     this.currentDataProvider = this.movingMaxAudioValueProvider;
-                
+                else if (audioMode == AudioServiceMode.TransientDetection)
+                    this.currentDataProvider = this.transientAudioValueProvider;
+
                 this.TryEnableAudioProcessing();
             }
         }

@@ -5,6 +5,7 @@
         None,
         Fft,
         Simple,
-        MovingMax
+        MovingMax,
+        TransientDetection
     }
 }

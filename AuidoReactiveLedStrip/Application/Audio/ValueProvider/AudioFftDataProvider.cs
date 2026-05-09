@@ -4,11 +4,11 @@ namespace Application.Audio.ValueProvider
 {
     public class AudioFftDataProvider : IAudioDataProvider
     {
-        private float? frequencyRangePerBin = null;
-        private int? minBin = null;
-        private int? maxBin = null;
         private bool isActive;
 
+        protected float? frequencyRangePerBin = null;
+        protected int? minBin = null;
+        protected int? maxBin = null;
         protected volatile float[]? filteredFftData = null;
         protected StaticSettings? staticSettings = null;
         protected DynamicEffectSettings? dynamicSettings = null;

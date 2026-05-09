@@ -93,7 +93,10 @@ namespace Application.Effect.Service
 
             if (this.currentEffect.UseAudioValue)
             {
-                if (dynamicSettings.AudioMode == AudioMode.Dynamic)
+                if (dynamicSettings.AudioMode == AudioMode.TransientDetection)
+                    return AudioServiceMode.TransientDetection;
+
+                if (dynamicSettings.AudioMode == AudioMode.MovingMax)
                     return AudioServiceMode.MovingMax;
 
                 if (dynamicSettings.AudioMode == AudioMode.Static)

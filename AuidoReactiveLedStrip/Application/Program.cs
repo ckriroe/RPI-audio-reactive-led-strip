@@ -94,6 +94,7 @@ var builder = Host.CreateDefaultBuilder(args)
         services.AddTransient<AudioFftDataProvider>();
         services.AddTransient<SimpleAudioValueProvider>();
         services.AddTransient<MovingMaxAudioValueProvider>();
+        services.AddTransient<TransientAudioValueProvider>();
         
         services.AddTransient<IAudioFftTransformer, AudioFftTransformer>();
         services.AddTransient<IAudioService, AudioService>();

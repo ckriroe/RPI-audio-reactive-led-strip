@@ -13,8 +13,6 @@ namespace Application.Audio.ValueProvider
             return this.lastAudioValue;
         }
 
-        private long lastBeatTime = 0;
-
         protected void SetAudioValue(float newValue)
         {
             DynamicEffectSettings? dynamicSettings = base.dynamicSettings;
@@ -28,7 +26,7 @@ namespace Application.Audio.ValueProvider
 
             newValue = MathF.Pow(newValue, dynamicSettings.AudioResponseCurve);
             bool isAboveThreshold = newValue > dynamicSettings.SaturateThreshold;
-            float timeSinceLastBeat = now - lastBeatTime;
+            float timeSinceLastBeat = now - lastPeakTime;
             bool onTime = timeSinceLastBeat >= minMsPerBeat;
 
             if (onTime && isAboveThreshold && newValue > this.lastAudioValue)
@@ -39,7 +37,6 @@ namespace Application.Audio.ValueProvider
                     dynamicSettings.Saturate
                 );
 
-                lastBeatTime = now;
                 lastPeakTime = now;
             }
             else

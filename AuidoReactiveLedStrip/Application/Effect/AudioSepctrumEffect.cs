@@ -102,10 +102,10 @@ namespace Application.Effect
                 } 
                 else
                 {
-                    if (settings.AudioMode == AudioMode.Dynamic)
-                        value = amp / binMax;
-                    else
+                    if (settings.AudioMode == AudioMode.Static)
                         value = amp / settings.MaxFreqAmplitude;
+                    else
+                        value = amp / binMax;
 
                     value = Math.Clamp(value, 0f, 1f);
                 }

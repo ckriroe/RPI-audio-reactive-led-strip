@@ -68,7 +68,9 @@
         "effectDurationMs": 5000,
         "effectTransitionDurationMs": 2500,
         "effectTransitionWarmupDuration": 1000,
-        "resetEffectAfterTransition": false
+        "resetEffectAfterTransition": false,
+        "fluxInfluence": 1.0,
+        "energyInfluence": 0.5
       }
     }
   ]

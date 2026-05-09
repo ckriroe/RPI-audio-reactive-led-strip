@@ -35,5 +35,9 @@ namespace Application.RuntimeSettings
         public int RectangleGuiVisualizationHeight { get; set; }
         public int Fps { get; set; }
         public int LedCount { get; set; }
+        public float FastFluxSmoothing { get; set; } = 1.0f;
+        public float FastEnergySmoothing { get; set; } = 1.0f;
+        public float SlowFluxSmoothing { get; set; } = 0.01f;
+        public float SlowEnergySmoothing { get; set; } = 0.01f;
     }
 }

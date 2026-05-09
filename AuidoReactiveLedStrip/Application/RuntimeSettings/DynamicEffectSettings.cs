@@ -108,6 +108,10 @@ namespace Application.RuntimeSettings
         public long EffectTransitionWarmupDuration { get; set; }
 
         public bool ResetEffectAfterTransition { get; set; }
+
+        public float EnergyInfluence { get; set; }
+        
+        public float FluxInfluence { get; set; }
     }
 
     public class ColorSetting
