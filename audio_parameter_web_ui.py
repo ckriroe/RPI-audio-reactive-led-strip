@@ -526,8 +526,8 @@ with st.expander("Audio", expanded=False):
     st.session_state.energyInfluence = value if (value := curr_preset.get("energyInfluence")) is not None else DYNAMIC_DEFAULTS["energyInfluence"]
     st.session_state.fluxInfluence = value if (value := curr_preset.get("fluxInfluence")) is not None else DYNAMIC_DEFAULTS["fluxInfluence"]
     if get_audio_mode_id() == 2:
-        st.slider("Einfluss von Sprektrumsveränderung", 0.0, 1.0, step=0.01, key="energyInfluence", on_change=save_presets)
-        st.slider("Einfluss von Pegelveränderung", 0.0, 1.0, step=0.01, key="fluxInfluence", on_change=save_presets)
+        st.slider("Einfluss von Pegelveränderung", 0.0, 1.0, step=0.01, key="energyInfluence", on_change=save_presets)
+        st.slider("Einfluss von Sprektrumsveränderung", 0.0, 1.0, step=0.01, key="fluxInfluence", on_change=save_presets)
 
     st.slider("BPM Limit", -1, 999, step=1, key="bpmLimit", on_change=save_presets)
     st.slider("Audiowert Skalierung", 0.01, 5.00, step=0.01, key="audioResponseCurve", on_change=save_presets)
