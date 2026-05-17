@@ -91,7 +91,8 @@ DYNAMIC_DEFAULTS = {
     "effectTransitionWarmupDuration": 1000,
     "resetEffectAfterTransition": False,
     "fluxInfluence": 1.0,
-    "energyInfluence": 0.5
+    "energyInfluence": 0.5,
+    "templateId": None
 }
 
 STATIC_DEFAULTS = {
@@ -204,145 +205,213 @@ def sync_widgets_to_colors_list():
             if t_key in st.session_state:
                 st.session_state.colors[i]["threshold"] = st.session_state[t_key]
 
-def get_current_preset_values_from_state():
+def apply_settings_from_template(template_values, preset_values):
+    prev_preset_values = preset_values.copy()
+    preset_values.clear()
+    preset_values.update(template_values)
+    preset_values.update(prev_preset_values)
+    preset_values["templateId"] = None
+
+def set_value_from_state2(stateObj, get_for_template, template_values, preset_key, session_key):
+    get_for_template = get_for_template and template_values != None
+    if st.session_state.get("templateId") != None:
+        if st.session_state.get(preset_key + "_ow") == True:
+            if get_for_template == True:
+                stateObj[preset_key] = template_values[preset_key]
+            else:
+                stateObj[preset_key] = st.session_state[session_key]
+        elif get_for_template == True:
+            stateObj[preset_key] = st.session_state[session_key]
+    else:
+        stateObj[preset_key] = st.session_state[session_key]
+
+def set_value_from_state(stateObj, get_for_template, template_values, key):
+    set_value_from_state2(stateObj, get_for_template, template_values, key, key)
+
+def get_current_preset_values_from_state(get_for_template):
     sync_widgets_to_colors_list()
    
-    aud_mode_id = next(k for k, v in AUDIO_MODES.items() if v == st.session_state.audioMode) 
-    eff_mode_id = next(k for k, v in EFFECT_MODES.items() if v == st.session_state.effectMode)
-    col_mode_id = next(k for k, v in COLOR_MODES.items() if v == st.session_state.colorMode)
+    st.session_state.audioModeValue = next(k for k, v in AUDIO_MODES.items() if v == st.session_state.audioMode) 
+    st.session_state.effectModeValue = next(k for k, v in EFFECT_MODES.items() if v == st.session_state.effectMode)
+    st.session_state.colorModeValue = next(k for k, v in COLOR_MODES.items() if v == st.session_state.colorMode)
+    
+    template_values = None
+    templateId = st.session_state.get("templateId")
+    if templateId != None:
+        template_values = next((pre["values"] for pre in st.session_state.presets if pre["id"] == templateId), None)
 
-    return {
-        "colors": st.session_state.colors,
-        "useRainbow": st.session_state.useRainbow,
-        "effectOrigin": st.session_state.effectOrigin,
-        "speed": st.session_state.speed,
-        "minFreq": st.session_state.minFreq,
-        "maxFreq": st.session_state.maxFreq,
-        "fade": st.session_state.fade,
-        "fadeOverTime": st.session_state.fadeOverTime,
-        "staticSpectrum": st.session_state.staticSpectrum,
-        "spectrumSections": st.session_state.spectrumSections,
-        "bouncyWave": st.session_state.bouncyWave,
-        "saturate": st.session_state.saturate,
-        "saturateThreshold": st.session_state.saturateThreshold,
-        "meanValueBufferSize": st.session_state.meanValueBufferSize,
-        "meanValueThreshold": st.session_state.meanValueThreshold,
-        "audioMode": aud_mode_id,
-        "effectMode": eff_mode_id,
-        "colorMode": col_mode_id,
-        "minFreqAmplitude": st.session_state.minFreqAmplitude,
-        "maxFreqAmplitude": st.session_state.maxFreqAmplitude,
-        "colorIncreaseFactor": st.session_state.colorIncreaseFactor,
-        "valueIncreaseFactor": st.session_state.valueIncreaseFactor,
-        "colorTransition": st.session_state.colorTransition,
-        "valueColorBias": st.session_state.valueColorBias,
-        "colorWaveOrigin": st.session_state.colorWaveOrigin,
-        "colorWaveSpeed": st.session_state.colorWaveSpeed,
-        "colorWaveSize": st.session_state.colorWaveSize,
-        "colorWaveInwards": st.session_state.colorWaveInwards,
-        "noiseAmount": st.session_state.noiseAmount,
-        "noiseSmoothing": st.session_state.noiseSmoothing,
-        "getAlphaFromValue": st.session_state.getAlphaFromValue,
-        "colorOverflow": st.session_state.colorOverflow,
-        "brightness": st.session_state.brightness,
-        "gamma": st.session_state.gamma,
-        "effectRepeats": st.session_state.effectRepeats,
-        "acceleration": st.session_state.acceleration,
-        "particleSize": st.session_state.particleSize,
-        "patternSplits": st.session_state.patternSplits,
-        "patternSpread": st.session_state.patternSpread,
-        "patternFlip": st.session_state.patternFlip,
-        "patternCenter": st.session_state.patternCenter,
-        "patternSectionSizeMod": st.session_state.patternSectionSizeMod,
-        "fftSize": st.session_state.fftSize,
-        "bpmLimit": st.session_state.bpmLimit,
-        "audioResponseCurve": st.session_state.audioResponseCurve,
-        "audioPeakHoldTimeMs": st.session_state.audioPeakHoldTimeMs,
-        "nextEffectId": st.session_state.nextEffectId,
-        "effectDurationMs": st.session_state.effectDurationMs,
-        "effectTransitionDurationMs": st.session_state.effectTransitionDurationMs,
-        "effectTransitionWarmupDuration": st.session_state.effectTransitionWarmupDuration,
-        "resetEffectAfterTransition": st.session_state.resetEffectAfterTransition,
-        "fluxInfluence": st.session_state.fluxInfluence,
-        "energyInfluence": st.session_state.energyInfluence
+    stateObj = {
+        "templateId": st.session_state.templateId
     }
+
+    if get_for_template == True:
+        stateObj["templateId"] = None
+        
+    set_value_from_state(stateObj, get_for_template, template_values, "colors")
+    set_value_from_state(stateObj, get_for_template, template_values, "useRainbow")
+    set_value_from_state(stateObj, get_for_template, template_values, "effectOrigin")
+    set_value_from_state(stateObj, get_for_template, template_values, "speed")
+    set_value_from_state(stateObj, get_for_template, template_values, "minFreq")
+    set_value_from_state(stateObj, get_for_template, template_values, "maxFreq")
+    set_value_from_state(stateObj, get_for_template, template_values, "fade")
+    set_value_from_state(stateObj, get_for_template, template_values, "fadeOverTime")
+    set_value_from_state(stateObj, get_for_template, template_values, "staticSpectrum")
+    set_value_from_state(stateObj, get_for_template, template_values, "spectrumSections")
+    set_value_from_state(stateObj, get_for_template, template_values, "bouncyWave")
+    set_value_from_state(stateObj, get_for_template, template_values, "saturate")
+    set_value_from_state(stateObj, get_for_template, template_values, "saturateThreshold")
+    set_value_from_state(stateObj, get_for_template, template_values, "meanValueBufferSize")
+    set_value_from_state(stateObj, get_for_template, template_values, "meanValueThreshold")
+    set_value_from_state2(stateObj, get_for_template, template_values, "audioMode", "audioModeValue")
+    set_value_from_state2(stateObj, get_for_template, template_values, "effectMode", "effectModeValue")
+    set_value_from_state2(stateObj, get_for_template, template_values, "colorMode", "colorModeValue")
+    set_value_from_state(stateObj, get_for_template, template_values, "minFreqAmplitude")
+    set_value_from_state(stateObj, get_for_template, template_values, "maxFreqAmplitude")
+    set_value_from_state(stateObj, get_for_template, template_values, "colorIncreaseFactor")
+    set_value_from_state(stateObj, get_for_template, template_values, "valueIncreaseFactor")
+    set_value_from_state(stateObj, get_for_template, template_values, "colorTransition")
+    set_value_from_state(stateObj, get_for_template, template_values, "valueColorBias")
+    set_value_from_state(stateObj, get_for_template, template_values, "colorWaveOrigin")
+    set_value_from_state(stateObj, get_for_template, template_values, "colorWaveSpeed")
+    set_value_from_state(stateObj, get_for_template, template_values, "colorWaveSize")
+    set_value_from_state(stateObj, get_for_template, template_values, "colorWaveInwards")
+    set_value_from_state(stateObj, get_for_template, template_values, "noiseAmount")
+    set_value_from_state(stateObj, get_for_template, template_values, "noiseSmoothing")
+    set_value_from_state(stateObj, get_for_template, template_values, "getAlphaFromValue")
+    set_value_from_state(stateObj, get_for_template, template_values, "colorOverflow")
+    set_value_from_state(stateObj, get_for_template, template_values, "brightness")
+    set_value_from_state(stateObj, get_for_template, template_values, "gamma")
+    set_value_from_state(stateObj, get_for_template, template_values, "effectRepeats")
+    set_value_from_state(stateObj, get_for_template, template_values, "acceleration")
+    set_value_from_state(stateObj, get_for_template, template_values, "particleSize")
+    set_value_from_state(stateObj, get_for_template, template_values, "patternSplits")
+    set_value_from_state(stateObj, get_for_template, template_values, "patternSpread")
+    set_value_from_state(stateObj, get_for_template, template_values, "patternFlip")
+    set_value_from_state(stateObj, get_for_template, template_values, "patternCenter")
+    set_value_from_state(stateObj, get_for_template, template_values, "patternSectionSizeMod")
+    set_value_from_state(stateObj, get_for_template, template_values, "fftSize")
+    set_value_from_state(stateObj, get_for_template, template_values, "bpmLimit")
+    set_value_from_state(stateObj, get_for_template, template_values, "audioResponseCurve")
+    set_value_from_state(stateObj, get_for_template, template_values, "audioPeakHoldTimeMs")
+    set_value_from_state(stateObj, get_for_template, template_values, "nextEffectId")
+    set_value_from_state(stateObj, get_for_template, template_values, "effectDurationMs")
+    set_value_from_state(stateObj, get_for_template, template_values, "effectTransitionDurationMs")
+    set_value_from_state(stateObj, get_for_template, template_values, "effectTransitionWarmupDuration")
+    set_value_from_state(stateObj, get_for_template, template_values, "resetEffectAfterTransition")
+    set_value_from_state(stateObj, get_for_template, template_values, "fluxInfluence")
+    set_value_from_state(stateObj, get_for_template, template_values, "energyInfluence")
+
+    return stateObj
+
+def update_session_value_from_preset2(preset_values, template_values, preset_key, session_key):
+    preset_value = preset_values.get(preset_key)
+    if template_values != None:
+        if preset_key in preset_values:
+            st.session_state[preset_key + "_ow"] = True
+        else:
+            preset_value = template_values.get(preset_key)
+            st.session_state[preset_key + "_ow"] = False
+
+    if preset_value == None:
+        preset_value = DYNAMIC_DEFAULTS[preset_key]
+
+    st.session_state[session_key] = preset_value
+
+def update_session_value_from_preset(preset_values, template_values, key):
+    update_session_value_from_preset2(preset_values, template_values, key, key)
 
 def update_session_state_from_preset(preset_data):
     st.session_state.preset_guid = preset_data["id"]
-    vals = preset_data["values"]
-    st.session_state.colors = copy.deepcopy(vals.get("colors", DYNAMIC_DEFAULTS["colors"]))
+    preset_values = preset_data["values"]
+
+    template_values = None
+    templateId = preset_values.get("templateId")
+    if templateId != None:
+        template_values = next((pre["values"] for pre in st.session_state.presets if pre["id"] == templateId), None)
+
+    st.session_state.rename_input = preset_data["name"]
+    st.session_state.templateId = preset_values.get("templateId", DYNAMIC_DEFAULTS["templateId"])
+
+    update_session_value_from_preset2(preset_values, template_values, "colors", "colorsRaw")
+
+    st.session_state.colors = copy.deepcopy(st.session_state.colorsRaw)
     for i, c in enumerate(st.session_state.colors):
         st.session_state[f"color_{i}"] = c["color"]
         st.session_state[f"threshold_{i}"] = c["threshold"]
 
-    st.session_state.useRainbow = vals.get("useRainbow", DYNAMIC_DEFAULTS["useRainbow"])
-    st.session_state.effectOrigin = vals.get("effectOrigin", DYNAMIC_DEFAULTS["effectOrigin"])
-    st.session_state.speed = vals.get("speed", DYNAMIC_DEFAULTS["speed"])
-    st.session_state.minFreq = vals.get("minFreq", DYNAMIC_DEFAULTS["minFreq"])
-    st.session_state.maxFreq = vals.get("maxFreq", DYNAMIC_DEFAULTS["maxFreq"])
-    st.session_state.fade = vals.get("fade", DYNAMIC_DEFAULTS["fade"])
-    st.session_state.fadeOverTime = vals.get("fadeOverTime", DYNAMIC_DEFAULTS["fadeOverTime"])
-    st.session_state.bouncyWave = vals.get("bouncyWave", DYNAMIC_DEFAULTS["bouncyWave"])
-    st.session_state.staticSpectrum = vals.get("staticSpectrum", DYNAMIC_DEFAULTS["staticSpectrum"])
-    st.session_state.spectrumSections = vals.get("spectrumSections", DYNAMIC_DEFAULTS["spectrumSections"])
-    st.session_state.saturate = vals.get("saturate", DYNAMIC_DEFAULTS["saturate"])
-    st.session_state.saturateThreshold = vals.get("saturateThreshold", DYNAMIC_DEFAULTS["saturateThreshold"])
-    st.session_state.meanValueBufferSize = vals.get("meanValueBufferSize", DYNAMIC_DEFAULTS["meanValueBufferSize"])
-    st.session_state.meanValueThreshold = vals.get("meanValueThreshold", DYNAMIC_DEFAULTS["meanValueThreshold"])
-    st.session_state.minFreqAmplitude = vals.get("minFreqAmplitude", DYNAMIC_DEFAULTS["minFreqAmplitude"])
-    st.session_state.maxFreqAmplitude = vals.get("maxFreqAmplitude", DYNAMIC_DEFAULTS["maxFreqAmplitude"])
-    st.session_state.colorIncreaseFactor = vals.get("colorIncreaseFactor", DYNAMIC_DEFAULTS["colorIncreaseFactor"])
-    st.session_state.valueIncreaseFactor = vals.get("valueIncreaseFactor", DYNAMIC_DEFAULTS["valueIncreaseFactor"])
-    st.session_state.colorTransition = vals.get("colorTransition", DYNAMIC_DEFAULTS["colorTransition"])
-    st.session_state.valueColorBias = vals.get("valueColorBias", DYNAMIC_DEFAULTS["valueColorBias"])
-    st.session_state.getAlphaFromValue = vals.get("getAlphaFromValue", DYNAMIC_DEFAULTS["getAlphaFromValue"])
-    st.session_state.colorOverflow = vals.get("colorOverflow", DYNAMIC_DEFAULTS["colorOverflow"])
-    st.session_state.colorWaveOrigin = vals.get("colorWaveOrigin", DYNAMIC_DEFAULTS["colorWaveOrigin"])
-    st.session_state.colorWaveSpeed = vals.get("colorWaveSpeed", DYNAMIC_DEFAULTS["colorWaveSpeed"])
-    st.session_state.colorWaveSize = vals.get("colorWaveSize", DYNAMIC_DEFAULTS["colorWaveSize"])
-    st.session_state.colorWaveInwards = vals.get("colorWaveInwards", DYNAMIC_DEFAULTS["colorWaveInwards"])
-    st.session_state.noiseAmount = vals.get("noiseAmount", DYNAMIC_DEFAULTS["noiseAmount"])
-    st.session_state.noiseSmoothing = vals.get("noiseSmoothing", DYNAMIC_DEFAULTS["noiseSmoothing"])
-    st.session_state.brightness = vals.get("brightness", DYNAMIC_DEFAULTS["brightness"])
-    st.session_state.gamma = vals.get("gamma", DYNAMIC_DEFAULTS["gamma"])
-    st.session_state.effectRepeats = vals.get("effectRepeats", DYNAMIC_DEFAULTS["effectRepeats"])
-    st.session_state.acceleration = vals.get("acceleration", DYNAMIC_DEFAULTS["acceleration"])
-    st.session_state.particleSize = vals.get("particleSize", DYNAMIC_DEFAULTS["particleSize"])
-    st.session_state.patternSplits = vals.get("patternSplits", DYNAMIC_DEFAULTS["patternSplits"])
-    st.session_state.patternSpread = vals.get("patternSpread", DYNAMIC_DEFAULTS["patternSpread"])
-    st.session_state.patternFlip = vals.get("patternFlip", DYNAMIC_DEFAULTS["patternFlip"])
-    st.session_state.patternCenter = vals.get("patternCenter", DYNAMIC_DEFAULTS["patternCenter"])
-    st.session_state.patternSectionSizeMod = vals.get("patternSectionSizeMod", DYNAMIC_DEFAULTS["patternSectionSizeMod"])
-    st.session_state.fftSize = vals.get("fftSize", DYNAMIC_DEFAULTS["fftSize"])
-    st.session_state.bpmLimit = vals.get("bpmLimit", DYNAMIC_DEFAULTS["bpmLimit"])
-    st.session_state.audioResponseCurve = vals.get("audioResponseCurve", DYNAMIC_DEFAULTS["audioResponseCurve"])
-    st.session_state.audioPeakHoldTimeMs = vals.get("audioPeakHoldTimeMs", DYNAMIC_DEFAULTS["audioPeakHoldTimeMs"])
-    st.session_state.nextEffectId = vals.get("nextEffectId", DYNAMIC_DEFAULTS["nextEffectId"])
-    st.session_state.effectDurationMs = vals.get("effectDurationMs", DYNAMIC_DEFAULTS["effectDurationMs"])
-    st.session_state.effectTransitionDurationMs = vals.get("effectTransitionDurationMs", DYNAMIC_DEFAULTS["effectTransitionDurationMs"])
-    st.session_state.effectTransitionWarmupDuration = vals.get("effectTransitionWarmupDuration", DYNAMIC_DEFAULTS["effectTransitionWarmupDuration"])
-    st.session_state.resetEffectAfterTransition = vals.get("resetEffectAfterTransition", DYNAMIC_DEFAULTS["resetEffectAfterTransition"])
-    st.session_state.fluxInfluence = vals.get("fluxInfluence", DYNAMIC_DEFAULTS["fluxInfluence"])
-    st.session_state.energyInfluence = vals.get("energyInfluence", DYNAMIC_DEFAULTS["energyInfluence"])
+    update_session_value_from_preset(preset_values, template_values, "useRainbow")
+    update_session_value_from_preset(preset_values, template_values, "effectOrigin")
+    update_session_value_from_preset(preset_values, template_values, "speed")
+    update_session_value_from_preset(preset_values, template_values, "minFreq")
+    update_session_value_from_preset(preset_values, template_values, "maxFreq")
+    update_session_value_from_preset(preset_values, template_values, "fade")
+    update_session_value_from_preset(preset_values, template_values, "fadeOverTime")
+    update_session_value_from_preset(preset_values, template_values, "bouncyWave")
+    update_session_value_from_preset(preset_values, template_values, "staticSpectrum")
+    update_session_value_from_preset(preset_values, template_values, "spectrumSections")
+    update_session_value_from_preset(preset_values, template_values, "saturate")
+    update_session_value_from_preset(preset_values, template_values, "saturateThreshold")
+    update_session_value_from_preset(preset_values, template_values, "meanValueBufferSize")
+    update_session_value_from_preset(preset_values, template_values, "meanValueThreshold")
+    update_session_value_from_preset(preset_values, template_values, "minFreqAmplitude")
+    update_session_value_from_preset(preset_values, template_values, "maxFreqAmplitude")
+    update_session_value_from_preset(preset_values, template_values, "colorIncreaseFactor")
+    update_session_value_from_preset(preset_values, template_values, "valueIncreaseFactor")
+    update_session_value_from_preset(preset_values, template_values, "colorTransition")
+    update_session_value_from_preset(preset_values, template_values, "valueColorBias")
+    update_session_value_from_preset(preset_values, template_values, "getAlphaFromValue")
+    update_session_value_from_preset(preset_values, template_values, "colorOverflow")
+    update_session_value_from_preset(preset_values, template_values, "colorWaveOrigin")
+    update_session_value_from_preset(preset_values, template_values, "colorWaveSpeed")
+    update_session_value_from_preset(preset_values, template_values, "colorWaveSize")
+    update_session_value_from_preset(preset_values, template_values, "colorWaveInwards")
+    update_session_value_from_preset(preset_values, template_values, "noiseAmount")
+    update_session_value_from_preset(preset_values, template_values, "noiseSmoothing")
+    update_session_value_from_preset(preset_values, template_values, "brightness")
+    update_session_value_from_preset(preset_values, template_values, "gamma")
+    update_session_value_from_preset(preset_values, template_values, "effectRepeats")
+    update_session_value_from_preset(preset_values, template_values, "acceleration")
+    update_session_value_from_preset(preset_values, template_values, "particleSize")
+    update_session_value_from_preset(preset_values, template_values, "patternSplits")
+    update_session_value_from_preset(preset_values, template_values, "patternSpread")
+    update_session_value_from_preset(preset_values, template_values, "patternFlip")
+    update_session_value_from_preset(preset_values, template_values, "patternCenter")
+    update_session_value_from_preset(preset_values, template_values, "patternSectionSizeMod")
+    update_session_value_from_preset(preset_values, template_values, "fftSize")
+    update_session_value_from_preset(preset_values, template_values, "bpmLimit")
+    update_session_value_from_preset(preset_values, template_values, "audioResponseCurve")
+    update_session_value_from_preset(preset_values, template_values, "audioPeakHoldTimeMs")
+    update_session_value_from_preset(preset_values, template_values, "nextEffectId")
+    update_session_value_from_preset(preset_values, template_values, "effectDurationMs")
+    update_session_value_from_preset(preset_values, template_values, "effectTransitionDurationMs")
+    update_session_value_from_preset(preset_values, template_values, "effectTransitionWarmupDuration")
+    update_session_value_from_preset(preset_values, template_values, "resetEffectAfterTransition")
+    update_session_value_from_preset(preset_values, template_values, "fluxInfluence")
+    update_session_value_from_preset(preset_values, template_values, "energyInfluence")
 
-    a_mode = vals.get("audioMode", DYNAMIC_DEFAULTS["audioMode"])
-    e_mode = vals.get("effectMode", DYNAMIC_DEFAULTS["effectMode"])
-    c_mode = vals.get("colorMode", DYNAMIC_DEFAULTS["colorMode"])
-    st.session_state.audioMode = AUDIO_MODES.get(a_mode, AUDIO_MODES[0])
-    st.session_state.effectMode = EFFECT_MODES.get(e_mode, EFFECT_MODES[0])
-    st.session_state.colorMode = COLOR_MODES.get(c_mode, COLOR_MODES[0])
-    st.session_state.rename_input = preset_data["name"]
+    update_session_value_from_preset2(preset_values, template_values, "audioMode", "audioModeValue")
+    update_session_value_from_preset2(preset_values, template_values, "effectMode", "effectModeValue")
+    update_session_value_from_preset2(preset_values, template_values, "colorMode", "colorModeValue")
+    st.session_state.audioMode = AUDIO_MODES.get(st.session_state.audioModeValue, AUDIO_MODES[0])
+    st.session_state.effectMode = EFFECT_MODES.get(st.session_state.effectModeValue, EFFECT_MODES[0])
+    st.session_state.colorMode = COLOR_MODES.get(st.session_state.colorModeValue, COLOR_MODES[0])
 
 def update_session_state_from_static_settings(static_settings_data):
     st.session_state.fps = static_settings_data.get("fps", STATIC_DEFAULTS["fps"])
     st.session_state.ledCount = static_settings_data.get("ledCount", STATIC_DEFAULTS["ledCount"])
 
 def save_presets():
-    current_values = get_current_preset_values_from_state()
+    current_values = get_current_preset_values_from_state(False)
     
     idx = st.session_state.preset_index
     st.session_state.presets[idx]["values"] = current_values
     
+    templateId = st.session_state.get("templateId")
+    if templateId != None:
+        templateIndex = next((i for i, pre in enumerate(st.session_state.presets) if pre["id"] == templateId), None)
+        if templateIndex != None:
+            st.session_state.presets[templateIndex]["values"] = get_current_preset_values_from_state(True)
+
     write_presets_to_disk()
 
 def save_static_config():
@@ -395,8 +464,12 @@ def cb_delete_preset():
             return
 
         for i in range(len(st.session_state.presets)):
-            if st.session_state.presets[i]["values"]["nextEffectId"] == removed_preset["id"]:
-                st.session_state.presets[i]["values"]["nextEffectId"] = None                
+            preVals = st.session_state.presets[i]["values"]
+            if preVals.get("nextEffectId") == removed_preset["id"]:
+                preVals["nextEffectId"] = None
+
+            if preVals.get("templateId") == removed_preset["id"]:
+                apply_settings_from_template(removed_preset["values"], preVals)
 
         st.session_state.preset_index = max(0, st.session_state.preset_index - 1)
         update_session_state_from_preset(st.session_state.presets[st.session_state.preset_index])
@@ -412,39 +485,45 @@ def cb_add_color():
     
     save_presets()
 
-def cb_remove_color():
-    if len(st.session_state.colors) > 2:
-        sync_widgets_to_colors_list()
-        st.session_state.colors.pop()
+def remove_color(index):
+    if len(st.session_state.colors) <= 2:
+        return
 
-        old_idx = len(st.session_state.colors) 
-        if f"color_{old_idx}" in st.session_state: del st.session_state[f"color_{old_idx}"]
-        if f"threshold_{old_idx}" in st.session_state: del st.session_state[f"threshold_{old_idx}"]
-        
-        save_presets()
+    st.session_state.colors.pop(index)
+    for i in range(index, len(st.session_state.colors) + 1):
+        if f"color_{i + 1}" in st.session_state:
+            st.session_state[f"color_{i}"] = st.session_state[f"color_{i + 1}"]
+
+        if f"threshold_{i + 1}" in st.session_state:
+            st.session_state[f"threshold_{i}"] = st.session_state[f"threshold_{i + 1}"]
+
+    last_idx = len(st.session_state.colors)
+    st.session_state.pop(f"color_{last_idx}", None)
+    st.session_state.pop(f"threshold_{last_idx}", None)
+    sync_widgets_to_colors_list()
+
+    save_presets()
 
 st.set_page_config(page_title="RPISC Einstellungen", page_icon="🎛️", layout="centered")
+preset_data = load_presets()
+st.session_state.presets = preset_data["presets"]
+st.session_state.preset_guid = preset_data["selectedPresetId"]
 
-if "presets" not in st.session_state:
-    preset_data = load_presets()
-    st.session_state.presets = preset_data["presets"]
-    st.session_state.preset_guid = preset_data["selectedPresetId"]
+preset_index = 0
+for i in range(len(st.session_state.presets)):
+    if st.session_state.presets[i]["id"] == st.session_state.preset_guid:
+        preset_index = i
+        break
 
-    preset_index = 0
-    for i in range(len(st.session_state.presets)):
-        if st.session_state.presets[i]["id"] == st.session_state.preset_guid:
-            preset_index = i
-            break
-
-    st.session_state.preset_index = preset_index    
-    if st.session_state.preset_index >= len(st.session_state.presets):
-        st.session_state.preset_index = 0
-        st.session_state.preset_guid = st.session_state.presets[0]["id"]
+st.session_state.preset_index = preset_index    
+if st.session_state.preset_index >= len(st.session_state.presets):
+    st.session_state.preset_index = 0
+    st.session_state.preset_guid = st.session_state.presets[0]["id"]
     
-    if "rename_input" not in st.session_state:
-        st.session_state.rename_input = st.session_state.presets[st.session_state.preset_index]["name"]
+if "rename_input" not in st.session_state:
+    st.session_state.rename_input = st.session_state.presets[st.session_state.preset_index]["name"]
 
-    update_session_state_from_preset(st.session_state.presets[st.session_state.preset_index])
+update_session_state_from_preset(st.session_state.presets[st.session_state.preset_index])
 
 if "static_settings" not in st.session_state:
      st.session_state.static_settings = load_static_settings()
@@ -499,6 +578,9 @@ components.html(slider_fix_js, height=0, width=0)
 st.title("RPISC Einstellungen")
 st.info(f"Aktive Voreinstellung: **{st.session_state.presets[st.session_state.preset_index]['name']}**")
 
+guid_to_obj = {v["id"]: v for v in st.session_state.presets}
+current_guid = st.session_state.preset_guid
+
 with st.expander("📂 Voreinstellungs Verwaltung", expanded=False):
     preset_names = [p["name"] for p in st.session_state.presets]
     
@@ -538,9 +620,41 @@ with st.expander("📂 Voreinstellungs Verwaltung", expanded=False):
 
     with col_move_down:
         st.button("➕ Neu (Kopieren)", on_click=cb_create_preset, width="stretch")
-        st.button("🗑️ Löschen", disabled=(st.session_state.preset_index == 0), on_click=cb_delete_preset, width="stretch")       
+        st.button("🗑️ Löschen", disabled=(st.session_state.preset_index == 0), on_click=cb_delete_preset, width="stretch")
 
-curr_preset = st.session_state.presets[st.session_state.preset_index]["values"]
+    is_master = any(pre["values"].get("templateId") == current_guid for pre in st.session_state.presets)
+    if st.session_state.preset_index != 0 and is_master == False:
+        filtered_values = [v for v in st.session_state.presets if v["id"] != st.session_state.preset_guid and v["values"].get("templateId") is None]
+        options = [NONE_OPTION] + [v["id"] for v in filtered_values]
+        if "templateId" not in st.session_state:
+            st.session_state.templateId = None
+
+        template_guid = st.session_state.templateId
+
+        default_index = 0
+        if template_guid is not None:
+            default_index = next(
+                (i for i, v in enumerate(options) if v is not NONE_OPTION and v == template_guid),
+                0
+            )
+
+        def on_template_changed():
+            selected_guid = st.session_state["presetEntry"]
+            if selected_guid == NONE_OPTION:
+                st.session_state.templateId = None
+            else:
+                st.session_state.templateId = selected_guid
+        
+            save_presets()
+
+        st.selectbox(
+            "Vorlage",
+            options,
+            index=default_index,
+            format_func=lambda x: "Deaktiviert" if x is NONE_OPTION else guid_to_obj[x]["name"],
+            key="presetEntry",
+            on_change=on_template_changed
+        )
 
 def get_audio_mode_id():
     return next(k for k, v in AUDIO_MODES.items() if v == st.session_state.audioMode)
@@ -549,75 +663,82 @@ def get_effect_mode_id():
 def get_color_mode_id():
     return next(k for k, v in COLOR_MODES.items() if v == st.session_state.colorMode)
 
+# Overwrite widget func
+def ow_widget(content_lambda, checkbox_key, use_margin=True):
+    checkbox_key = checkbox_key + "_ow"
+    if st.session_state.get("templateId") != None:
+        if use_margin == True:
+            st.markdown(f"""
+            <style>
+            div[class*="st-key-{checkbox_key}"] {{
+                margin-top: 27px;
+            }}
+            </style>
+            """, unsafe_allow_html=True)
+
+        with st.container(horizontal=True, vertical_alignment="center", horizontal_alignment="distribute"):
+            content_lambda()
+            st.checkbox("✏️", key=checkbox_key, on_change=save_presets)
+    else:
+        content_lambda()
+
 with st.expander("Audio", expanded=False):
-    st.selectbox("Audiomodus", list(AUDIO_MODES.values()), key="audioMode", on_change=save_presets)
-    st.slider("Min. Lautstärke", 0.0, 50.0, step=0.01, key="minFreqAmplitude", on_change=save_presets)
-    st.slider("Max. Lautstärke", 0.0, 50.0, step=0.01, key="maxFreqAmplitude", on_change=save_presets)
+    ow_widget(lambda: st.selectbox("Audiomodus", list(AUDIO_MODES.values()), key="audioMode", on_change=save_presets), "audioMode")
+    ow_widget(lambda: st.slider("Min. Lautstärke", 0.0, 500.0, step=0.01, key="minFreqAmplitude", on_change=save_presets), "minFreqAmplitude")
+    ow_widget(lambda: st.slider("Max. Lautstärke", 0.0, 500.0, step=0.01, key="maxFreqAmplitude", on_change=save_presets), "maxFreqAmplitude")
 
-    st.session_state.meanValueBufferSize = curr_preset.get("meanValueBufferSize")
-    st.session_state.meanValueThreshold = curr_preset.get("meanValueThreshold")
     if get_audio_mode_id() == 0:
-        st.slider("Vergleichswert Puffergröße", 1, 100, step=1, key="meanValueBufferSize", on_change=save_presets)
-        st.slider("Vergleichswert Grenzwert", 0.01, 1.0, step=0.01, key="meanValueThreshold", on_change=save_presets)
+        ow_widget(lambda: st.slider("Vergleichswert Puffergröße", 1, 100, step=1, key="meanValueBufferSize", on_change=save_presets), "meanValueBufferSize")
+        ow_widget(lambda: st.slider("Vergleichswert Grenzwert", 0.01, 1.0, step=0.01, key="meanValueThreshold", on_change=save_presets), "meanValueThreshold")
 
-    st.session_state.energyInfluence = value if (value := curr_preset.get("energyInfluence")) is not None else DYNAMIC_DEFAULTS["energyInfluence"]
-    st.session_state.fluxInfluence = value if (value := curr_preset.get("fluxInfluence")) is not None else DYNAMIC_DEFAULTS["fluxInfluence"]
     if get_audio_mode_id() == 2:
-        st.slider("Einfluss von Pegelveränderung", 0.0, 1.0, step=0.01, key="energyInfluence", on_change=save_presets)
-        st.slider("Einfluss von Sprektrumsveränderung", 0.0, 1.0, step=0.01, key="fluxInfluence", on_change=save_presets)
+        ow_widget(lambda: st.slider("Einfluss von Pegelveränderung", 0.0, 1.0, step=0.01, key="energyInfluence", on_change=save_presets), "energyInfluence")
+        ow_widget(lambda: st.slider("Einfluss von Sprektrumsveränderung", 0.0, 1.0, step=0.01, key="fluxInfluence", on_change=save_presets), "fluxInfluence")
 
-    st.slider("BPM Limit", -1, 999, step=1, key="bpmLimit", on_change=save_presets)
-    st.slider("Audiowert Skalierung", 0.01, 5.00, step=0.01, key="audioResponseCurve", on_change=save_presets)
-    st.slider("Min. Peakdauer in ms", 0, 999, step=1, key="audioPeakHoldTimeMs", on_change=save_presets)
-    st.number_input("Min. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="minFreq", on_change=save_presets)
-    st.number_input("Max. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="maxFreq", on_change=save_presets)
-    st.number_input("Audio Puffer Größe", min_value=2, max_value=50000, step=1, format="%d", key="fftSize", on_change=save_presets)
+    ow_widget(lambda: st.slider("BPM Limit", -1, 999, step=1, key="bpmLimit", on_change=save_presets), "bpmLimit")
+    ow_widget(lambda: st.slider("Audiowert Skalierung", 0.01, 5.00, step=0.01, key="audioResponseCurve", on_change=save_presets), "audioResponseCurve")
+    ow_widget(lambda: st.slider("Min. Peakdauer in ms", 0, 999, step=1, key="audioPeakHoldTimeMs", on_change=save_presets), "audioPeakHoldTimeMs")
+    ow_widget(lambda: st.number_input("Min. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="minFreq", on_change=save_presets), "minFreq")
+    ow_widget(lambda: st.number_input("Max. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="maxFreq", on_change=save_presets), "maxFreq")
+    ow_widget(lambda: st.number_input("Audio Puffer Größe", min_value=2, max_value=50000, step=1, format="%d", key="fftSize", on_change=save_presets), "fftSize")
 
 with st.expander("Effekt", expanded=False):
-    st.selectbox("Effektmodus", list(EFFECT_MODES.values()), key="effectMode", on_change=save_presets)
-    st.number_input("Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="effectOrigin", on_change=save_presets)
-    st.slider("Effekt Beschleunigung", 0.0, 5.0, step=0.01, key="acceleration", on_change=save_presets)
+    ow_widget(lambda: st.selectbox("Effektmodus", list(EFFECT_MODES.values()), key="effectMode", on_change=save_presets), "effectMode")
+    ow_widget(lambda: st.number_input("Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="effectOrigin", on_change=save_presets), "effectOrigin")
+    ow_widget(lambda: st.slider("Effekt Beschleunigung", 0.0, 5.0, step=0.01, key="acceleration", on_change=save_presets), "acceleration")
 
-    st.session_state.speed = curr_preset.get("speed")
     if get_effect_mode_id() in (2, 4):
-        st.slider("Effekt Geschwindigkeit", 1, 600, key="speed", on_change=save_presets)
+        ow_widget(lambda: st.slider("Effekt Geschwindigkeit", 1, 600, key="speed", on_change=save_presets), "speed")
 
-    st.slider("Effekt Verstärkung", 0.1, 10.0, key="valueIncreaseFactor", on_change=save_presets)
+    ow_widget(lambda: st.slider("Effekt Verstärkung", 0.1, 10.0, key="valueIncreaseFactor", on_change=save_presets), "valueIncreaseFactor")
 
-    st.session_state.staticSpectrum = curr_preset.get("staticSpectrum")
-    st.session_state.spectrumSections = curr_preset.get("spectrumSections")
     if get_effect_mode_id() == 3:
-        st.toggle("Statisches Spektrum", key="staticSpectrum", on_change=save_presets)
-        st.slider("Spektrum Sektionen", 1, 50, step=1, key="spectrumSections", on_change=save_presets)
+        ow_widget(lambda: st.toggle("Statisches Spektrum", key="staticSpectrum", on_change=save_presets), "staticSpectrum", False)
+        ow_widget(lambda: st.slider("Spektrum Sektionen", 1, 50, step=1, key="spectrumSections", on_change=save_presets), "spectrumSections")
 
-    st.session_state.particleSize = curr_preset.get("particleSize")
     if get_effect_mode_id() == 4:
-        st.slider("Partikel Größe", 1, 1000, step=1, key="particleSize", on_change=save_presets)
+        ow_widget(lambda: st.slider("Partikel Größe", 1, 1000, step=1, key="particleSize", on_change=save_presets), "particleSize")
 
-    st.session_state.bouncyWave = curr_preset.get("bouncyWave")
     if get_effect_mode_id() == 2:
-        st.toggle("Abprallen", key="bouncyWave", on_change=save_presets)
+        ow_widget(lambda: st.toggle("Abprallen", key="bouncyWave", on_change=save_presets), "bouncyWave", False)
 
-    st.session_state.fadeOverTime = curr_preset.get("fadeOverTime")
     if get_effect_mode_id() == 2 or get_effect_mode_id() == 8:
-        st.slider("Verblassung nach Zeit", -0.999, 0.999, step=0.001, key="fadeOverTime", on_change=save_presets)
+        ow_widget(lambda: st.slider("Verblassung nach Zeit", -0.999, 0.999, step=0.001, key="fadeOverTime", on_change=save_presets), "fadeOverTime")
 
-    st.slider("Verblassung", 0.001, 0.999, step=0.001, key="fade", on_change=save_presets)
-    st.slider("Sättigung", 0.01, 1.0, step=0.01, key="saturate", on_change=save_presets)
-    st.slider("Sättigungs Grenzwert", 0.0, 1.0, step=0.01, key="saturateThreshold", on_change=save_presets)
+    ow_widget(lambda: st.slider("Verblassung", 0.001, 0.999, step=0.001, key="fade", on_change=save_presets), "fade")
+    ow_widget(lambda: st.slider("Sättigung", 0.01, 1.0, step=0.01, key="saturate", on_change=save_presets), "saturate")
+    ow_widget(lambda: st.slider("Sättigungs Grenzwert", 0.0, 1.0, step=0.01, key="saturateThreshold", on_change=save_presets), "saturateThreshold")
 
 with st.expander("Muster", expanded=False):
-    st.slider("Effekt Wiederholungen", 1, 50, step=1, key="effectRepeats", on_change=save_presets)
-    st.slider("Muster Teilungen", 0, 50, step=1, key="patternSplits", on_change=save_presets)
-    st.slider("Jedes N'te Muster verdrehen", -1, 50, step=1, key="patternFlip", on_change=save_presets)
-    st.number_input("Muster Verteilung", min_value=0, max_value=999999, step=1, format="%d", key="patternSpread", on_change=save_presets)
-    st.number_input("Muster Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="patternCenter", on_change=save_presets)
-    st.slider("Muster Größenveränderung", -5.00, 5.00, step=0.01, key="patternSectionSizeMod", on_change=save_presets)   
+    ow_widget(lambda: st.slider("Effekt Wiederholungen", 1, 50, step=1, key="effectRepeats", on_change=save_presets), "effectRepeats")
+    ow_widget(lambda: st.slider("Muster Teilungen", 0, 50, step=1, key="patternSplits", on_change=save_presets), "patternSplits")
+    ow_widget(lambda: st.slider("Jedes N'te Muster verdrehen", -1, 50, step=1, key="patternFlip", on_change=save_presets), "patternFlip")
+    ow_widget(lambda: st.number_input("Muster Verteilung", min_value=0, max_value=999999, step=1, format="%d", key="patternSpread", on_change=save_presets), "patternSpread")
+    ow_widget(lambda: st.number_input("Muster Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="patternCenter", on_change=save_presets), "patternCenter")
+    ow_widget(lambda: st.slider("Muster Größenveränderung", -5.00, 5.00, step=0.01, key="patternSectionSizeMod", on_change=save_presets), "patternSectionSizeMod")
 
 with st.expander("Sequenzierung", expanded=False):
-    guid_to_obj = {v["id"]: v for v in st.session_state.presets}
-    current_guid = st.session_state.preset_guid
-    filtered_values = [v for v in st.session_state.presets if v["id"] != current_guid]
+    filtered_values = [v for v in st.session_state.presets if v["id"] != st.session_state.preset_guid]
     options = [NONE_OPTION] + [v["id"] for v in filtered_values]
     if "nextEffectId" not in st.session_state:
         st.session_state.nextEffectId = None
@@ -640,57 +761,42 @@ with st.expander("Sequenzierung", expanded=False):
         
         save_presets()
 
-    st.selectbox(
+    ow_widget(lambda: st.selectbox(
         "Nächster Effekt",
         options,
         index=default_index,
         format_func=lambda x: "Deaktiviert" if x is NONE_OPTION else guid_to_obj[x]["name"],
         key="nextEffectEntry",
         on_change=on_next_effect_changed
-    )
+    ), "nextEffectId")
 
-    st.number_input("Effekt Dauer in ms", min_value=1, max_value=99999999, step=1, format="%d", key="effectDurationMs", on_change=save_presets)
-    st.number_input("Effekt Übergangsdauer in ms", min_value=0, max_value=99999999, step=1, format="%d", key="effectTransitionDurationMs", on_change=save_presets)
-    st.number_input("Übergangs Vorlaufzeit in ms", min_value=0, max_value=99999999, step=1, format="%d", key="effectTransitionWarmupDuration", on_change=save_presets)
-    st.toggle("Effekt nach Übergang zurücksetzen", key="resetEffectAfterTransition", on_change=save_presets)
+    ow_widget(lambda: st.number_input("Effekt Dauer in ms", min_value=1, max_value=99999999, step=1, format="%d", key="effectDurationMs", on_change=save_presets), "effectDurationMs")
+    ow_widget(lambda: st.number_input("Effekt Übergangsdauer in ms", min_value=0, max_value=99999999, step=1, format="%d", key="effectTransitionDurationMs", on_change=save_presets), "effectTransitionDurationMs")
+    ow_widget(lambda: st.number_input("Übergangs Vorlaufzeit in ms", min_value=0, max_value=99999999, step=1, format="%d", key="effectTransitionWarmupDuration", on_change=save_presets), "effectTransitionWarmupDuration")
+    ow_widget(lambda: st.toggle("Effekt nach Übergang zurücksetzen", key="resetEffectAfterTransition", on_change=save_presets), "resetEffectAfterTransition", False)
 
 with st.expander("Farben", expanded=False):
-    st.selectbox("Farbmodus", list(COLOR_MODES.values()), key="colorMode", on_change=save_presets)
-    st.slider("Helligkeit", 0.0, 5.0, step=0.01, key="brightness", on_change=save_presets)
-    st.slider("Gamma", 0.0, 5.0, step=0.01, key="gamma", on_change=save_presets)
-    st.slider("Farbverstärkung", 0.1, 20.0, key="colorIncreaseFactor", on_change=save_presets)
-    st.slider("Farbverlauf", 0.00, 0.50, key="colorTransition", on_change=save_presets)
+    ow_widget(lambda: st.selectbox("Farbmodus", list(COLOR_MODES.values()), key="colorMode", on_change=save_presets), "colorMode")
+    ow_widget(lambda: st.slider("Helligkeit", 0.0, 5.0, step=0.01, key="brightness", on_change=save_presets), "brightness")
+    ow_widget(lambda: st.slider("Gamma", 0.0, 5.0, step=0.01, key="gamma", on_change=save_presets), "gamma")
+    ow_widget(lambda: st.slider("Farbverstärkung", 0.1, 20.0, key="colorIncreaseFactor", on_change=save_presets), "colorIncreaseFactor")
+    ow_widget(lambda: st.slider("Farbverlauf", 0.00, 0.50, key="colorTransition", on_change=save_presets), "colorTransition")
 
-    st.session_state.valueColorBias = curr_preset.get("valueColorBias")
-    st.session_state.getAlphaFromValue = curr_preset.get("getAlphaFromValue")
     if get_color_mode_id() != 0:
-        st.slider("Wert / Farb Verschmierung", 0.00, 1.00, step=0.01, key="valueColorBias", on_change=save_presets)
-        st.toggle("Transparenz aus Wert", key="getAlphaFromValue", on_change=save_presets)
-
-    st.session_state.colorWaveOrigin = curr_preset.get("colorWaveOrigin")
-    st.session_state.colorWaveSpeed = curr_preset.get("colorWaveSpeed")
-    st.session_state.colorWaveSize = curr_preset.get("colorWaveSize")
-    st.session_state.colorWaveInwards = curr_preset.get("colorWaveInwards")
+        ow_widget(lambda: st.slider("Wert / Farb Verschmierung", 0.00, 1.00, step=0.01, key="valueColorBias", on_change=save_presets), "valueColorBias")
+        ow_widget(lambda: st.toggle("Transparenz aus Wert", key="getAlphaFromValue", on_change=save_presets), "getAlphaFromValue", False)
 
     if get_color_mode_id() == 4:
-        st.number_input("Farbwellen Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="colorWaveOrigin", on_change=save_presets)
-        st.number_input("Farbwellen Größe", min_value=1, max_value=999999, step=1, format="%d", key="colorWaveSize", on_change=save_presets)
-        st.slider("Farbwellen Geschwindigkeit", 1, 600, key="colorWaveSpeed", on_change=save_presets)
-        st.toggle("Farbwellen Richtung (nach Außen / Innen)", key="colorWaveInwards", on_change=save_presets)
+        ow_widget(lambda: st.number_input("Farbwellen Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="colorWaveOrigin", on_change=save_presets), "colorWaveOrigin")
+        ow_widget(lambda: st.number_input("Farbwellen Größe", min_value=1, max_value=999999, step=1, format="%d", key="colorWaveSize", on_change=save_presets), "colorWaveSize")
+        ow_widget(lambda: st.slider("Farbwellen Geschwindigkeit", 1, 600, key="colorWaveSpeed", on_change=save_presets), "colorWaveSpeed")
+        ow_widget(lambda: st.toggle("Farbwellen Richtung (nach Außen / Innen)", key="colorWaveInwards", on_change=save_presets), "colorWaveInwards", False)
     
-    st.slider("Zufallsfarben Faktor", 0.00, 1.00, step=0.01, key="noiseAmount", on_change=save_presets)
-    st.slider("Zufallsfarben Glättung", 0.00, 1.00, step=0.01, key="noiseSmoothing", on_change=save_presets)
-
-    st.toggle("Farbüberfluss", key="colorOverflow", on_change=save_presets)
-    st.toggle("Regenbogen Farben", key="useRainbow", on_change=save_presets)
-
-    col_add, col_remove = st.columns(2)
-
-    with col_add:
-        st.button("➕ Farbe hinzufügen", on_click=cb_add_color)
-
-    with col_remove:
-        st.button("➖ Letzte Farbe entfernen", disabled=(len(st.session_state.colors) <= 2), on_click=cb_remove_color)
+    ow_widget(lambda: st.slider("Zufallsfarben Faktor", 0.00, 1.00, step=0.01, key="noiseAmount", on_change=save_presets), "noiseAmount")
+    ow_widget(lambda: st.slider("Zufallsfarben Glättung", 0.00, 1.00, step=0.01, key="noiseSmoothing", on_change=save_presets), "noiseSmoothing")
+    ow_widget(lambda: st.toggle("Farbüberfluss", key="colorOverflow", on_change=save_presets), "colorOverflow", False)
+    ow_widget(lambda: st.toggle("Regenbogen Farben", key="useRainbow", on_change=save_presets), "useRainbow", False)
+    ow_widget(lambda: st.button("➕ Farbe hinzufügen", on_click=cb_add_color), "colors", False)
 
     for i, c in enumerate(st.session_state.colors):
         label = "Hintergrund Farbe" if i == 0 else f"Farbe {i}"
@@ -700,23 +806,32 @@ with st.expander("Farben", expanded=False):
         if f"threshold_{i}" not in st.session_state:
             st.session_state[f"threshold_{i}"] = c["threshold"]
         
-        col_c, col_t = st.columns([1, 2])
-        with col_c:
-            st.color_picker(
-                label,
-                key=f"color_{i}",
-                on_change=save_presets
-            )
-        with col_t:
-            st.slider(
-                "Grenzwert",
-                min_value=0.00,
-                max_value=1.00,
-                step=0.01,
-                key=f"threshold_{i}",
-                label_visibility="visible",
-                on_change=save_presets
-            )
+
+        col_color, col_threshold = st.columns([1, 2])
+        with col_color:
+            with st.container(horizontal=True, vertical_alignment="center", horizontal_alignment="distribute"):
+                st.color_picker(
+                    label,
+                    key=f"color_{i}",
+                    on_change=save_presets
+                )
+        with col_threshold:
+            if i >= len(st.session_state.colors) - 1:
+                st.session_state[f"threshold_{i}"] = 1.0
+
+            with st.container(horizontal=True, vertical_alignment="center", horizontal_alignment="distribute"):
+                st.slider(
+                    "Grenzwert",
+                    min_value=0.00,
+                    max_value=1.00,
+                    step=0.01,
+                    key=f"threshold_{i}",
+                    disabled=(i >= len(st.session_state.colors) - 1),
+                    label_visibility="visible",
+                    on_change=save_presets
+                )
+                if i > 1:
+                    st.button("❌", disabled=(len(st.session_state.colors) <= 2), key=f"rm_col_{i}", on_click=remove_color, args=(i,))
 
 with st.expander("Globale Einstellungen", expanded=False):
     st.number_input("FPS", min_value=1, max_value=400, step=1, format="%d", key="fps", on_change=save_static_config)
