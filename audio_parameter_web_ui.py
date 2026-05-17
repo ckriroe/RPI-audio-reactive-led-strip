@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import json
 import os
 import copy
@@ -449,15 +450,51 @@ if "static_settings" not in st.session_state:
      st.session_state.static_settings = load_static_settings()
      update_session_state_from_static_settings(st.session_state.static_settings)
 
-st.markdown("""
-<style>
-@media (max-width: 768px) {
-    div[data-testid="stSlider"] {
-        width: 80% !important;
+slider_fix_js = """
+<script>
+(function() {
+    const parentWindow = window.parent;
+    const parentDoc = parentWindow.document;
+
+    function isMobile() {
+        const hasTouch = 'ontouchstart' in parentWindow || parentWindow.navigator.maxTouchPoints > 0;
+        const isSmallScreen = parentWindow.innerWidth <= 768;
+        return hasTouch && isSmallScreen;
     }
-}
-</style>
-""", unsafe_allow_html=True)
+
+    function interceptSliderEvents() {
+        const sliders = parentDoc.querySelectorAll('[data-baseweb="slider"]');
+        
+        sliders.forEach((slider, index) => {
+            if (slider.getAttribute('data-slider-scroll-fixed') === 'true') return;
+            const eventsToIntercept = ['pointerdown', 'touchstart', 'mousedown', 'pointerup', 'touchend', 'mouseup', 'click'];
+            
+            eventsToIntercept.forEach(eventType => {
+                slider.addEventListener(eventType, function(e) {
+                    if (!isMobile()) return;
+                    const thumb = slider.querySelector('[role="slider"]');
+
+                    if (thumb && e.target !== thumb && !thumb.contains(e.target)) {
+                        e.stopPropagation(); 
+                    }
+                }, { capture: true, passive: true });
+            });
+
+            slider.setAttribute('data-slider-scroll-fixed', 'true');
+        });
+    }
+
+    const observer = new MutationObserver((mutations) => {
+        interceptSliderEvents();
+    });
+
+    observer.observe(parentDoc.body, { childList: true, subtree: true });
+    interceptSliderEvents();
+})();
+</script>
+"""
+
+components.html(slider_fix_js, height=0, width=0)
 
 st.title("RPISC Einstellungen")
 st.info(f"Aktive Voreinstellung: **{st.session_state.presets[st.session_state.preset_index]['name']}**")
