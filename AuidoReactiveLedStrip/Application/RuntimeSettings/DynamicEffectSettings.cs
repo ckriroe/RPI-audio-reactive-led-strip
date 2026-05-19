@@ -91,11 +91,11 @@ namespace Application.RuntimeSettings
 
         public int FftSize { get; set; }
 
-        public int BpmLimit { get; set; } = -1;
+        public int BpmLimit { get; set; }
 
-        public float AudioResponseCurve { get; set; } = 1.0f;
+        public float AudioResponseCurve { get; set; }
 
-        public int AudioPeakHoldTimeMs { get; set; } = 0;
+        public int AudioPeakHoldTimeMs { get; set; }
 
         public int CalculatedLedCount { get; set; }
 

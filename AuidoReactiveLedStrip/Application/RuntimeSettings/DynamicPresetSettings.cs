@@ -15,8 +15,9 @@ namespace Application.RuntimeSettings
 
         public required string Name { get; set; }
 
-
         [ConfigurationKeyName("values")]
+        public required TemplateEffectSettings TemplateEffectSettings { get; set; }
+
         public required DynamicEffectSettings EffectSettings { get; set; }
     }
 }

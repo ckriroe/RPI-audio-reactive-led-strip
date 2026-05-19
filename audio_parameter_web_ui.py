@@ -228,6 +228,13 @@ def set_value_from_state2(stateObj, get_for_template, template_values, preset_ke
 def set_value_from_state(stateObj, get_for_template, template_values, key):
     set_value_from_state2(stateObj, get_for_template, template_values, key, key)
 
+def set_none_templateable_value_from_state(stateObj, get_for_template, template_values, key):
+    if get_for_template == True:
+        if template_values != None:
+            stateObj[key] = template_values[key]
+    else:
+        stateObj[key] = st.session_state[key]
+
 def get_current_preset_values_from_state(get_for_template):
     sync_widgets_to_colors_list()
    
@@ -293,7 +300,7 @@ def get_current_preset_values_from_state(get_for_template):
     set_value_from_state(stateObj, get_for_template, template_values, "bpmLimit")
     set_value_from_state(stateObj, get_for_template, template_values, "audioResponseCurve")
     set_value_from_state(stateObj, get_for_template, template_values, "audioPeakHoldTimeMs")
-    set_value_from_state(stateObj, get_for_template, template_values, "nextEffectId")
+    set_none_templateable_value_from_state(stateObj, get_for_template, template_values, "nextEffectId")
     set_value_from_state(stateObj, get_for_template, template_values, "effectDurationMs")
     set_value_from_state(stateObj, get_for_template, template_values, "effectTransitionDurationMs")
     set_value_from_state(stateObj, get_for_template, template_values, "effectTransitionWarmupDuration")
@@ -319,6 +326,13 @@ def update_session_value_from_preset2(preset_values, template_values, preset_key
 
 def update_session_value_from_preset(preset_values, template_values, key):
     update_session_value_from_preset2(preset_values, template_values, key, key)
+
+def update_session_none_templateable_value_from_preset(preset_values, key):
+    preset_value = preset_values.get(key)
+    if preset_value == None:
+        preset_value = DYNAMIC_DEFAULTS[key]
+
+    st.session_state[key] = preset_value
 
 def update_session_state_from_preset(preset_data):
     st.session_state.preset_guid = preset_data["id"]
@@ -381,7 +395,7 @@ def update_session_state_from_preset(preset_data):
     update_session_value_from_preset(preset_values, template_values, "bpmLimit")
     update_session_value_from_preset(preset_values, template_values, "audioResponseCurve")
     update_session_value_from_preset(preset_values, template_values, "audioPeakHoldTimeMs")
-    update_session_value_from_preset(preset_values, template_values, "nextEffectId")
+    update_session_none_templateable_value_from_preset(preset_values, "nextEffectId")
     update_session_value_from_preset(preset_values, template_values, "effectDurationMs")
     update_session_value_from_preset(preset_values, template_values, "effectTransitionDurationMs")
     update_session_value_from_preset(preset_values, template_values, "effectTransitionWarmupDuration")
@@ -684,8 +698,8 @@ def ow_widget(content_lambda, checkbox_key, use_margin=True):
 
 with st.expander("Audio", expanded=False):
     ow_widget(lambda: st.selectbox("Audiomodus", list(AUDIO_MODES.values()), key="audioMode", on_change=save_presets), "audioMode")
-    ow_widget(lambda: st.slider("Min. Lautstärke", 0.0, 500.0, step=0.01, key="minFreqAmplitude", on_change=save_presets), "minFreqAmplitude")
-    ow_widget(lambda: st.slider("Max. Lautstärke", 0.0, 500.0, step=0.01, key="maxFreqAmplitude", on_change=save_presets), "maxFreqAmplitude")
+    ow_widget(lambda: st.slider("Min. Lautstärke", 0.0, 50.0, step=0.01, key="minFreqAmplitude", on_change=save_presets), "minFreqAmplitude")
+    ow_widget(lambda: st.slider("Max. Lautstärke", 0.0, 50.0, step=0.01, key="maxFreqAmplitude", on_change=save_presets), "maxFreqAmplitude")
 
     if get_audio_mode_id() == 0:
         ow_widget(lambda: st.slider("Vergleichswert Puffergröße", 1, 100, step=1, key="meanValueBufferSize", on_change=save_presets), "meanValueBufferSize")
@@ -761,14 +775,14 @@ with st.expander("Sequenzierung", expanded=False):
         
         save_presets()
 
-    ow_widget(lambda: st.selectbox(
+    st.selectbox(
         "Nächster Effekt",
         options,
         index=default_index,
         format_func=lambda x: "Deaktiviert" if x is NONE_OPTION else guid_to_obj[x]["name"],
         key="nextEffectEntry",
         on_change=on_next_effect_changed
-    ), "nextEffectId")
+    )
 
     ow_widget(lambda: st.number_input("Effekt Dauer in ms", min_value=1, max_value=99999999, step=1, format="%d", key="effectDurationMs", on_change=save_presets), "effectDurationMs")
     ow_widget(lambda: st.number_input("Effekt Übergangsdauer in ms", min_value=0, max_value=99999999, step=1, format="%d", key="effectTransitionDurationMs", on_change=save_presets), "effectTransitionDurationMs")
