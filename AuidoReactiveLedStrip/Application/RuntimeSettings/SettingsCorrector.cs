@@ -1,6 +1,5 @@
 ﻿using Application.Util;
 using System.Drawing;
-using System.Runtime.CompilerServices;
 
 namespace Application.RuntimeSettings
 {
@@ -69,7 +68,6 @@ namespace Application.RuntimeSettings
                 BpmLimit                            = GetTemplateVal(tes, temp, t => t.BpmLimit, -1),
                 AudioResponseCurve                  = GetTemplateVal(tes, temp, t => t.AudioResponseCurve, 1.0f),
                 AudioPeakHoldTimeMs                 = GetTemplateVal(tes, temp, t => t.AudioPeakHoldTimeMs),
-                CalculatedLedCount                  = GetTemplateVal(tes, temp, t => t.CalculatedLedCount),
                 NextEffectId                        = tes.NextEffectId,
                 EffectDurationMs                    = GetTemplateVal(tes, temp, t => t.EffectDurationMs),
                 EffectTransitionDurationMs          = GetTemplateVal(tes, temp, t => t.EffectTransitionDurationMs),

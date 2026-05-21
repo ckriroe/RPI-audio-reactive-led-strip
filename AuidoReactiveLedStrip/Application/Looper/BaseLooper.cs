@@ -46,8 +46,18 @@ namespace Application.Looper
             {
                 lock (this.lck)
                 {
-                    this.currentStaticSettings = staticSettings;
-                    this.shouldReloadSettings = true;
+                    if (staticSettings != null)
+                    {
+                        SettingsCorrector.CorrectStaticSettings(staticSettings);
+                        if (this.currentStaticSettings != staticSettings)
+                        {
+                            this.currentStaticSettings = staticSettings;
+                            if (this.currentDynamicSettings != null)
+                                SettingsCorrector.CorrectDynamicPresetSettings(this.currentDynamicSettings, this.currentStaticSettings);
+
+                            this.shouldReloadSettings = true;
+                        }                        
+                    }                        
                 }
             });
 
@@ -56,14 +66,30 @@ namespace Application.Looper
             {
                 lock (this.lck)
                 {
-                    this.currentDynamicSettings = dynamicSettings;
-                    this.shouldReloadSettings = true;
+                    if (dynamicSettings != null && this.currentStaticSettings != null)
+                    {
+                        SettingsCorrector.CorrectDynamicPresetSettings(dynamicSettings, this.currentStaticSettings);
+                        if (!dynamicSettings.Equals(this.currentDynamicSettings))
+                        {
+                            this.currentDynamicSettings = dynamicSettings;
+                            this.shouldReloadSettings = true;
+                        }
+                    }
                 }
             });
 
-            this.currentStaticSettings = this.staticSettings.CurrentValue;
-            this.currentDynamicSettings = this.dynamicSettings.CurrentValue;
-            this.shouldReloadSettings = true;
+            lock (this.lck)
+            {
+                this.currentStaticSettings = this.staticSettings.CurrentValue;
+                this.currentDynamicSettings = this.dynamicSettings.CurrentValue;
+
+                if (this.currentStaticSettings != null && this.currentDynamicSettings != null)
+                {
+                    SettingsCorrector.CorrectStaticSettings(this.currentStaticSettings);
+                    SettingsCorrector.CorrectDynamicPresetSettings(this.currentDynamicSettings, currentStaticSettings);
+                    this.shouldReloadSettings = true;
+                }
+            }
 
             this.sw.Restart();
             while (this.isLooperRunning)
@@ -94,11 +120,13 @@ namespace Application.Looper
                 if (dynamicSettings == null || staticSettings == null)
                     return;
 
+                Console.WriteLine("Corrected settings, reloading...");
                 this.printFrameTimes = staticSettings.PrintFrameTimes;
                 this.fps = staticSettings.Fps;
                 this.frameTime = 1.0 / fps;
 
                 this.looperConsumer?.OnSettingsChanged(staticSettings, dynamicSettings);
+                Console.WriteLine("Settings reloaded");
                 this.shouldReloadSettings = false;
             }
         }

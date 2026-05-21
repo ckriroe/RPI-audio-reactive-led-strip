@@ -1,4 +1,5 @@
 ﻿using Application.Domain;
+using System.Collections.Immutable;
 
 namespace Application.RuntimeSettings
 {
@@ -95,8 +96,6 @@ namespace Application.RuntimeSettings
         public float? AudioResponseCurve { get; set; }
 
         public int? AudioPeakHoldTimeMs { get; set; }
-
-        public int? CalculatedLedCount { get; set; }
 
         public Guid? NextEffectId { get; set; }
 

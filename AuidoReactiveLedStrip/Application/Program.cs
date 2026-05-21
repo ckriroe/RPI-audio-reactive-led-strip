@@ -45,13 +45,8 @@ var builder = Host.CreateDefaultBuilder(args)
     })
     .ConfigureServices((context, services) =>
     {
-        services.AddOptions<StaticSettings>()
-            .Bind(context.Configuration)
-            .PostConfigure(staticSetting => SettingsCorrector.CorrectStaticSettings(staticSetting));
-
-        services.AddOptions<DynamicPresetSettings>()
-            .Bind(context.Configuration)
-            .PostConfigure<IOptionsMonitor<StaticSettings>>((dynamicPresetSettings, staticSettings) => SettingsCorrector.CorrectDynamicPresetSettings(dynamicPresetSettings, staticSettings.CurrentValue));
+        services.AddOptions<StaticSettings>().Bind(context.Configuration);
+        services.AddOptions<DynamicPresetSettings>().Bind(context.Configuration);
 
         services.AddSingleton<Application.Application.Lifetime.IApplicationLifetime, ApplicationLifetime>();
         services.AddSingleton<IApplicationService, ApplicationService>();

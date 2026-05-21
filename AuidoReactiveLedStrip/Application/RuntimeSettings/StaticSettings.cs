@@ -2,7 +2,7 @@
 
 namespace Application.RuntimeSettings
 {
-    public class StaticSettings
+    public record StaticSettings
     {
         public int SampleRate { get; set; }
         public int Channels { get; set; }
