@@ -86,13 +86,17 @@ namespace Application.Sequencing
                 }
 
                 this.SetPresets(dynamicPresetSettings, guidToReload);
-                this.mainRenderer.ApplySettings(staticSettings, currentPreset.EffectSettings);
+                currentPreset = this.currentPreset;
+                if (currentPreset != null)
+                {
+                    this.mainRenderer.ApplySettings(staticSettings, currentPreset.EffectSettings);
 
-                Preset? nextPreset = this.nextPreset;
-                if (nextPreset != null && this.isTransitioning)
-                    this.transitionRenderer.ApplySettings(staticSettings, nextPreset.EffectSettings);
-                else
-                    this.transitionRenderer.Disable();
+                    Preset? nextPreset = this.nextPreset;
+                    if (nextPreset != null && this.isTransitioning)
+                        this.transitionRenderer.ApplySettings(staticSettings, nextPreset.EffectSettings);
+                    else
+                        this.transitionRenderer.Disable();
+                }
             }
         }
 
