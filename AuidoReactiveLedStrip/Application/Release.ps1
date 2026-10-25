@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$increment = "patch"  # patch | minor | major
 )
 
@@ -34,6 +34,11 @@ switch ($increment) {
 $newVersion = "$major.$minor.$patch"
 Write-Host "Version updated: $oldVersion -> $newVersion"
 
+Write-Host "Bump version to $newVersion..."
+Set-Content $versionFile $newVersion
+(Get-Content $csprojFile) -replace '<Version>.*</Version>', "<Version>$newVersion</Version>" |
+        Set-Content $csprojFile
+
 # ===== CLEAN =====
 Write-Host "Cleaning publish folder..."
 if (Test-Path $publishDir) {
@@ -59,6 +64,7 @@ foreach ($file in $filesToRemove) {
 }
 
 $filesToCopy = @(
+    $versionFile,
     "..\..\audio_parameter_web_ui.py",
     "..\..\aux_in_alsa_state.state"
 )
@@ -90,11 +96,6 @@ if (Test-Path $zipName) {
 if (Test-Path $publishDir) {
     Remove-Item $publishDir -Recurse -Force
 }
-
-Write-Host "Bump version to $newVersion..."
-Set-Content $versionFile $newVersion
-(Get-Content $csprojFile) -replace '<Version>.*</Version>', "<Version>$newVersion</Version>" |
-        Set-Content $csprojFile
 
 git add $versionFile
 git add $csprojFile

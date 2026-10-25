@@ -7,6 +7,18 @@ import uuid
 
 STATIC_CONFIG_FILE = "static_settings.json"
 PRESETS_FILE = "presets.json"
+VERSION_FILE = "version.txt"
+
+def load_version():
+    if os.path.exists(VERSION_FILE):
+        try:
+            with open(VERSION_FILE, "r", encoding="utf-8") as f:
+                ver = f.read().strip()
+                if ver:
+                    return ver
+        except Exception:
+            pass
+    return None
 
 MIN_VOLUME_DB = -120.0
 MAX_VOLUME_DB = 0.0
@@ -528,7 +540,10 @@ def remove_color(index):
 
     save_presets()
 
-st.set_page_config(page_title="RPISC Einstellungen", page_icon="🎛️", layout="centered")
+app_version = load_version()
+app_title = f"RPISC Einstellungen {app_version}" if app_version else "RPISC Einstellungen"
+
+st.set_page_config(page_title=app_title, page_icon="🎛️", layout="centered")
 preset_data = load_presets()
 st.session_state.presets = preset_data["presets"]
 st.session_state.preset_guid = preset_data["selectedPresetId"]
@@ -599,7 +614,7 @@ slider_fix_js = """
 
 components.html(slider_fix_js, height=0, width=0)
 
-st.title("RPISC Einstellungen")
+st.title(app_title)
 st.info(f"Aktive Voreinstellung: **{st.session_state.presets[st.session_state.preset_index]['name']}**")
 
 guid_to_obj = {v["id"]: v for v in st.session_state.presets}

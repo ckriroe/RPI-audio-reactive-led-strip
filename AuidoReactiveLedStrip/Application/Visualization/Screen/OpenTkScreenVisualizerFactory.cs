@@ -1,4 +1,4 @@
-﻿using Application.RuntimeSettings;
+using Application.RuntimeSettings;
 using Microsoft.Extensions.Options;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.Desktop;
@@ -19,7 +19,7 @@ namespace Application.Visualization.Screen
             var settings = new NativeWindowSettings()
             {
                 ClientSize = new OpenTK.Mathematics.Vector2i(initialWidth, initialHeight),
-                Title = "Screen Visualizer",
+                Title = GetWindowTitle(),
                 API = ContextAPI.OpenGL,
                 APIVersion = new Version(3, 0),
                 Flags = ContextFlags.Default,
@@ -27,6 +27,34 @@ namespace Application.Visualization.Screen
             };
 
             return new OpenTkScreenVisualizer(GameWindowSettings.Default, settings, this.staticSettings);
+        }
+
+        private static string GetWindowTitle()
+        {
+            const string baseTitle = "Screen Visualizer";
+            try
+            {
+                string path = Path.Combine(AppContext.BaseDirectory, "version.txt");
+                if (!File.Exists(path))
+                {
+                    path = "version.txt";
+                }
+
+                if (File.Exists(path))
+                {
+                    string version = File.ReadAllText(path).Trim();
+                    if (!string.IsNullOrWhiteSpace(version))
+                    {
+                        return $"{baseTitle} {version}";
+                    }
+                }
+            }
+            catch
+            {
+                // Optional file; fallback to baseTitle
+            }
+
+            return baseTitle;
         }
     }
 }
