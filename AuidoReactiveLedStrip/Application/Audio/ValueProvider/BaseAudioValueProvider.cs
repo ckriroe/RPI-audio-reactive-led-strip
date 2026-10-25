@@ -1,4 +1,4 @@
-﻿using Application.RuntimeSettings;
+using Application.RuntimeSettings;
 using Application.Util;
 
 namespace Application.Audio.ValueProvider
@@ -13,7 +13,7 @@ namespace Application.Audio.ValueProvider
             return this.lastAudioValue;
         }
 
-        protected void SetAudioValue(float newValue)
+        protected void SetAudioValue(float newValue, bool canIncrease = true)
         {
             DynamicEffectSettings? dynamicSettings = base.dynamicSettings;
             if (dynamicSettings == null)
@@ -29,7 +29,7 @@ namespace Application.Audio.ValueProvider
             float timeSinceLastBeat = now - lastPeakTime;
             bool onTime = timeSinceLastBeat >= minMsPerBeat;
 
-            if (onTime && isAboveThreshold && newValue > this.lastAudioValue)
+            if (canIncrease && onTime && isAboveThreshold && newValue > this.lastAudioValue)
             {
                 this.lastAudioValue = MathHelper.Lerp(
                     this.lastAudioValue,

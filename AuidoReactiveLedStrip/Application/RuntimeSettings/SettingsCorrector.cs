@@ -1,4 +1,4 @@
-﻿using Application.Util;
+using Application.Util;
 using System.Drawing;
 
 namespace Application.RuntimeSettings
@@ -114,6 +114,21 @@ namespace Application.RuntimeSettings
 
             dynamicSettings.SpectrumSections = Math.Min(dynamicSettings.CalculatedLedCount, dynamicSettings.SpectrumSections);
 
+            if (dynamicSettings.MinFreqAmplitude < AudioUtil.MinDb || dynamicSettings.MinFreqAmplitude > AudioUtil.MaxDb)
+            {
+                dynamicSettings.MinFreqAmplitude = AudioUtil.MinDb;
+            }
+
+            if (dynamicSettings.MaxFreqAmplitude < AudioUtil.MinDb || dynamicSettings.MaxFreqAmplitude > AudioUtil.MaxDb)
+            {
+                dynamicSettings.MaxFreqAmplitude = AudioUtil.MaxDb;
+            }
+
+            if (dynamicSettings.MaxFreqAmplitude < dynamicSettings.MinFreqAmplitude)
+            {
+                dynamicSettings.MaxFreqAmplitude = dynamicSettings.MinFreqAmplitude;
+            }
+
             List<ColorSetting> correctedColorSettings = [];
             float lastThreshold = 0.0f;
             for (int i = 0; i < dynamicSettings.Colors.Count; i++)
@@ -137,7 +152,6 @@ namespace Application.RuntimeSettings
             }
 
             dynamicSettings.Colors = correctedColorSettings;
-            dynamicSettings.MaxFreqAmplitude = 500;
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿using Application.Audio.Service;
+using Application.Audio.Service;
 using Application.Domain;
 using Application.RuntimeSettings;
 using Application.Util;
@@ -43,7 +43,8 @@ namespace Application.Effect
             int maxDist = Math.Max(center, (length - 1) - center);
             double sectionLength = binCount / (double)settings.SpectrumSections;
 
-            float binMax = Math.Min(bins.Max(), settings.MaxFreqAmplitude);
+            float maxBinDb = AudioUtil.MagnitudeToDb(bins.Max());
+            float binMaxDb = Math.Min(maxBinDb, settings.MaxFreqAmplitude);
 
             for (int i = 0; i < length; i++)
             {
@@ -86,28 +87,25 @@ namespace Application.Effect
                     amp = (float)((1 - t) * bins[b0] + t * bins[b1]);
                 }
 
-                if (amp > settings.MaxFreqAmplitude)
-                    amp = settings.MaxFreqAmplitude;
+                float ampDb = AudioUtil.MagnitudeToDb(amp);
+                if (ampDb > settings.MaxFreqAmplitude)
+                    ampDb = settings.MaxFreqAmplitude;
 
-                if (amp < settings.MinFreqAmplitude)
-                    amp = 0f;
+                float maxRefDb = (settings.AudioMode == AudioMode.Static)
+                    ? settings.MaxFreqAmplitude
+                    : binMaxDb;
 
-                amp *= settings.ValueIncreaseFactor;
-
+                float rangeDb = maxRefDb - settings.MinFreqAmplitude;
                 float value;
 
-                if (settings.MaxFreqAmplitude == 0f)
+                if (rangeDb > 0f && ampDb >= settings.MinFreqAmplitude)
                 {
-                    value = 0f;
-                } 
+                    value = Math.Clamp((ampDb - settings.MinFreqAmplitude) / rangeDb, 0f, 1f) * settings.ValueIncreaseFactor;
+                    value = Math.Clamp(value, 0f, 1f);
+                }
                 else
                 {
-                    if (settings.AudioMode == AudioMode.Static)
-                        value = amp / settings.MaxFreqAmplitude;
-                    else
-                        value = amp / binMax;
-
-                    value = Math.Clamp(value, 0f, 1f);
+                    value = 0f;
                 }
 
                 float prevValue = prevStrip.LedPixels[i].Value;

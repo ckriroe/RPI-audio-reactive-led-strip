@@ -1,4 +1,5 @@
-﻿using MathNet.Numerics.IntegralTransforms;
+using Application.Util;
+using MathNet.Numerics.IntegralTransforms;
 using System.Numerics;
 
 namespace Application.Audio.FftTransformer
@@ -20,16 +21,18 @@ namespace Application.Audio.FftTransformer
                         maxSample = Math.Abs(sample);
                 }
 
-                fftInput[f] = new Complex(maxSample, 0.0);
+                double hannWindow = 0.5 * (1.0 - Math.Cos(2.0 * Math.PI * f / (frames - 1)));
+                fftInput[f] = new Complex(maxSample * hannWindow, 0.0);
             }
 
             Fourier.Forward(fftInput, FourierOptions.Matlab);
-
             int magSize = frames - 1;
             float[] mags = new float[magSize];
+            float scalingFactor = 4.0f / frames;
+
             for (int i = 0; i < magSize; i++)
             {
-                mags[i] = ((float)fftInput[i + 1].Magnitude / frames) * 512;
+                mags[i] = (float)fftInput[i + 1].Magnitude * scalingFactor;
             }
 
             return mags;

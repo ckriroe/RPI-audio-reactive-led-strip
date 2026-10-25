@@ -8,6 +8,9 @@ import uuid
 STATIC_CONFIG_FILE = "static_settings.json"
 PRESETS_FILE = "presets.json"
 
+MIN_VOLUME_DB = -120.0
+MAX_VOLUME_DB = 0.0
+
 AUDIO_MODES = {
     0: "Gleitender Mittelwert",
     1: "Satisch",
@@ -57,8 +60,8 @@ DYNAMIC_DEFAULTS = {
     "audioMode": 0,
     "effectMode": 0,
     "colorMode": 0,
-    "minFreqAmplitude": 0.1,
-    "maxFreqAmplitude": 10.0,
+    "minFreqAmplitude": MIN_VOLUME_DB,
+    "maxFreqAmplitude": MAX_VOLUME_DB,
     "colorIncreaseFactor": 1.0,
     "valueIncreaseFactor": 1.0,
     "colorTransition": 0.25,
@@ -141,6 +144,12 @@ def load_presets():
         print("Loading preset file...\n")
         with open(PRESETS_FILE, "r") as f:
             jsn = json.load(f)
+            for preset in jsn.get("presets", []):
+                vals = preset.get("values", {})
+                if "minFreqAmplitude" in vals and (vals["minFreqAmplitude"] < MIN_VOLUME_DB or vals["minFreqAmplitude"] > MAX_VOLUME_DB):
+                    vals["minFreqAmplitude"] = MIN_VOLUME_DB
+                if "maxFreqAmplitude" in vals and (vals["maxFreqAmplitude"] < MIN_VOLUME_DB or vals["maxFreqAmplitude"] > MAX_VOLUME_DB):
+                    vals["maxFreqAmplitude"] = MAX_VOLUME_DB
             print("Preset file loaded:\n", jsn, "\n")
             return jsn
     else:
@@ -699,8 +708,8 @@ def ow_widget(content_lambda, checkbox_key, use_margin=True):
 
 with st.expander("Audio", expanded=False):
     ow_widget(lambda: st.selectbox("Audiomodus", list(AUDIO_MODES.values()), key="audioMode", on_change=save_presets), "audioMode")
-    ow_widget(lambda: st.slider("Min. Lautstärke", 0.0, 50.0, step=0.01, key="minFreqAmplitude", on_change=save_presets), "minFreqAmplitude")
-    ow_widget(lambda: st.slider("Max. Lautstärke", 0.0, 50.0, step=0.01, key="maxFreqAmplitude", on_change=save_presets), "maxFreqAmplitude")
+    ow_widget(lambda: st.slider("Min. Lautstärke in dB", MIN_VOLUME_DB, MAX_VOLUME_DB, step=0.1, key="minFreqAmplitude", on_change=save_presets), "minFreqAmplitude")
+    ow_widget(lambda: st.slider("Max. Lautstärke in dB", MIN_VOLUME_DB, MAX_VOLUME_DB, step=0.1, key="maxFreqAmplitude", on_change=save_presets), "maxFreqAmplitude")
 
     if get_audio_mode_id() == 0:
         ow_widget(lambda: st.slider("Vergleichswert Puffergröße", 1, 100, step=1, key="meanValueBufferSize", on_change=save_presets), "meanValueBufferSize")

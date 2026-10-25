@@ -1,4 +1,4 @@
-﻿using Application.RuntimeSettings;
+using Application.RuntimeSettings;
 using Application.Util;
 
 namespace Application.Audio.ValueProvider
@@ -63,13 +63,16 @@ namespace Application.Audio.ValueProvider
             float fluxKickPart = Math.Max(1.0f - dynamicEffectSettings.FluxInfluence, 0.0f) + normalizedFlux * dynamicEffectSettings.FluxInfluence;
 
             float kickValue = fluxKickPart * energyKickPart;
-            float result = maxFrequency >= dynamicEffectSettings.MinFreqAmplitude ? kickValue : 0f;
+            float maxFreqDb = AudioUtil.MagnitudeToDb(maxFrequency);
+            bool canIncrease = maxFreqDb >= dynamicEffectSettings.MinFreqAmplitude;
+            float result = canIncrease ? kickValue : 0f;
 
             Array.Copy(base.filteredFftData, this.previousSpectrum, base.filteredFftData.Length);
-            base.SetAudioValue(result);
+            base.SetAudioValue(result, canIncrease);
             if (staticSettings.PrintFrequencyInfos)
             {
                 Console.WriteLine(
+                    $"Max freq: {maxFreqDb,7:F1} dB\t" +
                     $"Kick: {result:F3}\t" +
                     $"TransFlux: {transientFlux:F3}\t" +
                     $"TransEnergy: {transientEnergy:F3}\t" +

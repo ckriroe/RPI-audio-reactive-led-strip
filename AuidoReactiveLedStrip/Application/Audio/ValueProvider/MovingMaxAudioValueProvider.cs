@@ -1,4 +1,4 @@
-﻿using Application.Util;
+using Application.Util;
 
 namespace Application.Audio.ValueProvider
 {
@@ -13,12 +13,21 @@ namespace Application.Audio.ValueProvider
             if (base.staticSettings == null || base.dynamicSettings == null)
                 return;
 
-            if (maxFrequency > this.dynamicSettings.MaxFreqAmplitude)
-                maxFrequency = this.dynamicSettings.MaxFreqAmplitude;
+            float maxFreqDb = AudioUtil.MagnitudeToDb(maxFrequency);
+            float minMag = AudioUtil.DbToMagnitude(base.dynamicSettings.MinFreqAmplitude);
+            float maxMag = AudioUtil.DbToMagnitude(base.dynamicSettings.MaxFreqAmplitude);
+
+            if (maxFreqDb > this.dynamicSettings.MaxFreqAmplitude)
+            {
+                maxFrequency = maxMag;
+                maxFreqDb = this.dynamicSettings.MaxFreqAmplitude;
+            }
+
+            bool canIncrease = maxFreqDb >= this.dynamicSettings.MinFreqAmplitude;
 
             char movementIdentifier = '-';
             float maxFreqMultiplier = base.staticSettings.MaxFreqAmplitudeValueMultiplier;
-            if (maxFrequency * maxFreqMultiplier > this.lastAproxMaxFrequency)
+            if (canIncrease && maxFrequency * maxFreqMultiplier > this.lastAproxMaxFrequency)
             {
                 this.lastAproxMaxFrequency = Math.Max(this.lastAproxMaxFrequency, MathHelper.Lerp(this.lastAproxMaxFrequency, maxFrequency * maxFreqMultiplier, base.staticSettings.MaxFreqAmplitudeIncreaseRatio));
                 this.lastAproxMaxFreqEval = Environment.TickCount;
@@ -45,26 +54,28 @@ namespace Application.Audio.ValueProvider
             float avg = this.lastExtraOrdanarySampleBuffer.Items.Any() ? this.lastExtraOrdanarySampleBuffer.Items.Average() : 0.0f;
 
             float adjustedFreqValue;
-            if (maxFrequency > this.dynamicSettings.MinFreqAmplitude)
+            if (canIncrease)
             {
                 adjustedFreqValue = maxFrequency;
             } 
             else
             {
                 float scaleFactor = this.staticSettings.BelowMinFreqAmplitudeFunctionFactor;
-                adjustedFreqValue = this.dynamicSettings.MinFreqAmplitude -
+                adjustedFreqValue = minMag -
                     (1.0f / scaleFactor) +
                     (1.0f / scaleFactor) *
-                    (float)Math.Exp(scaleFactor * (maxFrequency - this.dynamicSettings.MinFreqAmplitude));
+                    (float)Math.Exp(scaleFactor * (maxFrequency - minMag));
 
                 adjustedFreqValue = Math.Max(0.0f, adjustedFreqValue);
             }
 
-            float newAudioValue = Math.Max(0, (adjustedFreqValue - avg) / this.lastAproxMaxFrequency);
-            base.SetAudioValue(newAudioValue);
+            float newAudioValue = 0.0f;
+            if (this.lastAproxMaxFrequency >= minMag && this.lastAproxMaxFrequency > 0.0f)
+                newAudioValue = Math.Max(0, (adjustedFreqValue - avg) / this.lastAproxMaxFrequency);
 
+            base.SetAudioValue(newAudioValue, canIncrease);
             if (base.staticSettings.PrintFrequencyInfos)
-                Console.WriteLine($"Last approx. max freq: {this.lastAproxMaxFrequency,15:F5}\t\tCurrrent avg. mean amplitude: {avg,15:F5}\t\tMax freq: {maxFrequency,15:F5}\t\tResulting value: {newAudioValue,15:F5}\t{movementIdentifier}");
+                Console.WriteLine($"Last approx. max freq: {AudioUtil.MagnitudeToDb(this.lastAproxMaxFrequency),7:F1} dB\t\tCurrrent avg. mean amplitude: {AudioUtil.MagnitudeToDb(avg),7:F1} dB\t\tMax freq: {maxFreqDb,7:F1} dB\t\tResulting value: {newAudioValue,15:F5}\t{movementIdentifier}");
         }
     }
 }
