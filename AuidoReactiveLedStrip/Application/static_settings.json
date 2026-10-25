@@ -1,7 +1,7 @@
 {
-  "sampleRate": 48000,
+  "sampleRate": 44100,
   "channels": 2,
-  "audioDeviceId": 4,
+  "audioDeviceId": 3,
   "belowMinFreqAmplitudeFunctionFactor": -0.03,
   "maxFreqAmplitudeIncreaseRatio": 0.22,
   "maxFreqAmplitudeDecreaseRatio": 0.5,
