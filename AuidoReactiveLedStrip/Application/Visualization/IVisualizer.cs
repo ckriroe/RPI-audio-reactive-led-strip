@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+using Application.Looper;
+using System.Drawing;
 
 namespace Application.Visualization
 {
@@ -7,5 +8,6 @@ namespace Application.Visualization
         void Start();
         void Stop();
         void UpdateColors(Color[] colors);
+        void UpdateMetrics(LooperPerformanceMetrics metrics);
     }
 }

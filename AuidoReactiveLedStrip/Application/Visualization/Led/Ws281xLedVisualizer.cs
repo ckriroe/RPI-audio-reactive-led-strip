@@ -1,4 +1,5 @@
-﻿using Application.Gpio;
+using Application.Gpio;
+using Application.Looper;
 using Application.RuntimeSettings;
 using Microsoft.Extensions.Options;
 using rpi_ws281x;
@@ -81,6 +82,10 @@ namespace Application.Visualization.Led
             }
 
             this.ws281x?.Render();
+        }
+
+        public void UpdateMetrics(LooperPerformanceMetrics metrics)
+        {
         }
 
         public void Dispose()

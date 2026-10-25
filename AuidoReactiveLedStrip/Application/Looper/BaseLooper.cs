@@ -1,4 +1,4 @@
-﻿using Application.RuntimeSettings;
+using Application.RuntimeSettings;
 using Microsoft.Extensions.Options;
 using System.Diagnostics;
 
@@ -137,6 +137,9 @@ namespace Application.Looper
                 return;
 
             double totalFrameTime = (frameEnd - frameStart).TotalSeconds;
+            double actualFps = totalFrameTime > 0
+                ? 1.0 / totalFrameTime
+                : 0.0;
             double theoreticalFps = processTime > 0
                 ? 1.0 / processTime
                 : double.PositiveInfinity;
@@ -146,6 +149,13 @@ namespace Application.Looper
                 $"Process: {processTime * 1000:F2} ms | " +
                 $"Theo FPS: {theoreticalFps:F1}"
             );
+
+            this.looperConsumer?.OnMetricsUpdated(new LooperPerformanceMetrics(
+                actualFps,
+                totalFrameTime * 1000.0,
+                processTime * 1000.0,
+                theoreticalFps
+            ));
         }
 
         protected abstract void RunLooperLogic();

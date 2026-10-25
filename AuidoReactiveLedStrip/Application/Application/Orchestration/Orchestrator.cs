@@ -1,4 +1,4 @@
-﻿using Application.LedStripRendering;
+using Application.LedStripRendering;
 using Application.Looper;
 using Application.RuntimeSettings;
 using Application.Sequencing;
@@ -109,6 +109,11 @@ namespace Application.Application.Orchestration
                 this.screenVisualizer?.UpdateColors(this.currentColors);
                 this.ledVisualizer.UpdateColors(this.currentColors);
             }
+        }
+
+        public void OnMetricsUpdated(LooperPerformanceMetrics metrics)
+        {
+            this.screenVisualizer?.UpdateMetrics(metrics);
         }
     }
 }

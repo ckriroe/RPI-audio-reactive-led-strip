@@ -1,9 +1,4 @@
-﻿using Application.RuntimeSettings;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Application.RuntimeSettings;
 
 namespace Application.Looper
 {
@@ -12,5 +7,6 @@ namespace Application.Looper
         public void OnSettingsChanged(StaticSettings staticSettings, DynamicPresetSettings dynamicSettings);
         public void OnTick();
         public void OnBeforeTick();
+        public void OnMetricsUpdated(LooperPerformanceMetrics metrics);
     }
 }
