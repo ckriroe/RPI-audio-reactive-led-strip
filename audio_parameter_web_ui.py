@@ -114,6 +114,7 @@ STATIC_DEFAULTS = {
     "printFrameTimes": False,
     "printFrequencyInfos": False,
     "printSequenceInfos": False,
+    "printAudioDevices": False,
     "minSanitizedValue": 0.01,
     "useGuiVisualization": True,
     "useLedVisualization": True,

@@ -36,6 +36,7 @@ namespace AudioProcessing.AudioProcessor
         private int? channelCount = null;
         private int? sampleRate = null;
         private int? minBufferSize = null;
+        private bool printAudioDevices = false;
 
         private volatile bool isAudioThreadRunning = false;
         private Thread? audioWorker = null;
@@ -52,7 +53,8 @@ namespace AudioProcessing.AudioProcessor
             {
                 if (this.audioDeviceId == staticSettings.AudioDeviceId &&
                     this.channelCount == staticSettings.Channels &&
-                    this.sampleRate == staticSettings.SampleRate)
+                    this.sampleRate == staticSettings.SampleRate &&
+                    this.printAudioDevices == staticSettings.PrintAudioDevices)
                     return;
 
                 bool wasRunning = this.isRunning;
@@ -62,6 +64,7 @@ namespace AudioProcessing.AudioProcessor
                 this.audioDeviceId = staticSettings.AudioDeviceId;
                 this.channelCount = staticSettings.Channels;
                 this.sampleRate = staticSettings.SampleRate;
+                this.printAudioDevices = staticSettings.PrintAudioDevices;
 
                 this.PublishStateSnapshot();
 
@@ -178,35 +181,49 @@ namespace AudioProcessing.AudioProcessor
                 this.minBufferSize == null || this.sampleRate == null || this.isRunning)
                 return;
 
-            this.isRunning = true;
-            PortAudio.Initialize();
-            DeviceInfo info = PortAudio.GetDeviceInfo(this.audioDeviceId.Value);
-
-            var param = new StreamParameters
+            try
             {
-                device = this.audioDeviceId.Value,
-                channelCount = this.channelCount.Value,
-                sampleFormat = SampleFormat.Float32,
-                suggestedLatency = info.defaultLowInputLatency,
-                hostApiSpecificStreamInfo = IntPtr.Zero
-            };
+                PortAudio.Initialize();
+                if (this.printAudioDevices)
+                {
+                    for (int i = 0; i < PortAudio.DeviceCount; i++)
+                    {
+                        Console.WriteLine($"Device {i}: " + PortAudio.GetDeviceInfo(i));
+                    }
+                }
 
-            this.currentAudioStream = new PortAudioBlockingAudioStream(
-                inParams: param,
-                outParams: null,
-                sampleRate: this.sampleRate.Value,
-                framesPerBuffer: (uint)this.minBufferSize.Value,
-                streamFlags: StreamFlags.ClipOff,
-                callback: null,
-                userData: IntPtr.Zero
-            );
+                DeviceInfo info = PortAudio.GetDeviceInfo(this.audioDeviceId.Value);
+                var param = new StreamParameters
+                {
+                    device = this.audioDeviceId.Value,
+                    channelCount = this.channelCount.Value,
+                    sampleFormat = SampleFormat.Float32,
+                    suggestedLatency = info.defaultLowInputLatency,
+                    hostApiSpecificStreamInfo = IntPtr.Zero
+                };
 
-            this.currentAudioStream.Start();
+                this.currentAudioStream = new PortAudioBlockingAudioStream(
+                    inParams: param,
+                    outParams: null,
+                    sampleRate: this.sampleRate.Value,
+                    framesPerBuffer: (uint)this.minBufferSize.Value,
+                    streamFlags: StreamFlags.ClipOff,
+                    callback: null,
+                    userData: IntPtr.Zero
+                );
 
-            this.isAudioThreadRunning = true;
-            this.audioWorker = new Thread(AudioProcessingLoop);
-            this.audioWorker.Start();
-            Console.WriteLine("Started audio processing");
+                this.currentAudioStream.Start();
+
+                this.isAudioThreadRunning = true;
+                this.audioWorker = new Thread(AudioProcessingLoop);
+                this.audioWorker.Start();
+                this.isRunning = true;
+                Console.WriteLine("Started audio processing");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to start audio processing: {ex}");
+            }
         }
 
         private void StopAudioStream()

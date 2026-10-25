@@ -17,6 +17,7 @@
   "printFrameTimes": false,
   "printFrequencyInfos": false,
   "printSequenceInfos": true,
+  "printAudioDevices": false,
   "minSanitizedValue": 0.01,
   "useGuiVisualization": true,
   "useLedVisualization": false,

@@ -222,7 +222,7 @@ namespace AudioProcessing.Stream
                 GCHandle.ToIntPtr(userDataHandle)
             );
             if (ec != ErrorCode.NoError)
-                throw new PortAudioException(ec, "Error opening PortAudio Stream");
+                throw new PortAudioException(ec, $"Error opening PortAudio Stream: {ec}");
 
             // Cleanup the in/out params ptrs
             if (inParamsPtr != nint.Zero)
