@@ -1,4 +1,4 @@
-﻿using Application.Coloring.Noise;
+using Application.Coloring.Noise;
 using Application.RuntimeSettings;
 using Application.Util;
 using System.Drawing;
@@ -15,7 +15,7 @@ namespace Application.Coloring.Mode
         {
             return ColorHelper.ValueToColor(
                 LedHelper.ApplyNoise(pixelValue, base.noiseGenerator.GetSmoothNoise(index, length, dynamicSettings)),
-                dynamicSettings
+                dynamicSettings.Colors, dynamicSettings
             );
         }
     }

@@ -1,4 +1,4 @@
-﻿using Application.Domain;
+using Application.Domain;
 using Application.RuntimeSettings;
 using System.Drawing;
 
@@ -128,7 +128,7 @@ namespace Application.Util
             if (h < 0) h += 1.0f;
         }
 
-        public static Color ValueToColor(float value, DynamicEffectSettings dynamicSettings, float? bgThresholdOverride = null)
+        public static Color ValueToColor(float value, IList<ColorSetting> colors, DynamicEffectSettings dynamicSettings, float? bgThresholdOverride = null)
         {
             value *= dynamicSettings.ColorIncreaseFactor;
 
@@ -143,15 +143,15 @@ namespace Application.Util
             if (value > 1.0f)
                 value = 1.0f;
 
-            List<ColorSetting> colors = dynamicSettings.Colors;
+
 
             if (colors.Count == 0)
                 return Color.Black;
 
             if (dynamicSettings.UseRainbow)
-                return ValueToRainbowColor(value, dynamicSettings, bgThresholdOverride);
+                return ValueToRainbowColor(value, colors, dynamicSettings, bgThresholdOverride);
 
-            var backgroundColor = dynamicSettings.Colors[0];
+            var backgroundColor = colors[0];
             if (colors.Count < 2)
                 return backgroundColor.ColorInstance;
 
@@ -254,10 +254,10 @@ namespace Application.Util
             }
         }
 
-        private static Color ValueToRainbowColor(float value, DynamicEffectSettings dynamicSettings, float? bgThresholdOverride)
+        private static Color ValueToRainbowColor(float value, IList<ColorSetting> colors, DynamicEffectSettings dynamicSettings, float? bgThresholdOverride)
         {
             var colorTransition = dynamicSettings.ColorTransition;
-            var backgroundEntry = dynamicSettings.Colors[0];
+            var backgroundEntry = colors[0];
             var backgroundThreshold = bgThresholdOverride ?? backgroundEntry.Threshold;
             float transitionAreaSize = 0f;
 
@@ -305,25 +305,25 @@ namespace Application.Util
             }
         }
 
-        public static Color NonAudioValueToColor(float value, float audioValue, DynamicEffectSettings dynamicSettings)
+        public static Color NonAudioValueToColor(float value, float audioValue, IList<ColorSetting> colors, DynamicEffectSettings dynamicSettings)
         {
             float valueToColorBias = dynamicSettings.ValueColorBias;
-            var colors = dynamicSettings.Colors;
+
             Color color;
 
             if (valueToColorBias <= 0.0f)
             {
-                color = ValueToColor(value, dynamicSettings, 0.0f);
+                color = ValueToColor(value, colors, dynamicSettings, 0.0f);
             } 
             else if (valueToColorBias >= 1.0f)
             {
-                color = ValueToColor(audioValue, dynamicSettings, 0.0f);
+                color = ValueToColor(audioValue, colors, dynamicSettings, 0.0f);
             } 
             else
             {
                 color = LerpColor(
-                    ValueToColor(value, dynamicSettings, 0.0f),
-                    ValueToColor(audioValue, dynamicSettings, 0.0f),
+                    ValueToColor(value, colors, dynamicSettings, 0.0f),
+                    ValueToColor(audioValue, colors, dynamicSettings, 0.0f),
                     valueToColorBias
                 );
             }

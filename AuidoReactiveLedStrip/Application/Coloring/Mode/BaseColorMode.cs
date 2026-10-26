@@ -1,4 +1,4 @@
-﻿using Application.Coloring.Noise;
+using Application.Coloring.Noise;
 using Application.Domain;
 using Application.RuntimeSettings;
 using Application.Util;
@@ -22,13 +22,13 @@ namespace Application.Coloring.Mode
             // do nothing by default
         }
 
-        protected Color NonAudioValueToColor(float value, float audioValue, int index, int length, DynamicEffectSettings dynamicSettings)
+        protected Color NonAudioValueToColor(float value, float audioValue, int index, int length, DynamicEffectSettings dynamicSettings, IList<ColorSetting>? colors = null)
         {
             float noise = this.noiseGenerator.GetSmoothNoise(index, length, dynamicSettings);
             return ColorHelper.NonAudioValueToColor(
                 LedHelper.ApplyNoise(value, noise),
                 LedHelper.ApplyNoise(audioValue, noise),
-                dynamicSettings
+                colors ?? dynamicSettings.Colors, dynamicSettings
             );
         }
     }
