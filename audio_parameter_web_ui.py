@@ -4,6 +4,7 @@ import json
 import os
 import copy
 import uuid
+import re
 
 STATIC_CONFIG_FILE = "static_settings.json"
 PRESETS_FILE = "presets.json"
@@ -161,18 +162,25 @@ STATIC_DEFAULTS = {
 }
 
 NONE_OPTION = "__none__"
+GLOBAL_GROUP_ID = "__global__"
 
 def load_presets():
     if os.path.exists(PRESETS_FILE):
         print("Loading preset file...\n")
-        with open(PRESETS_FILE, "r") as f:
+        with open(PRESETS_FILE, "r", encoding="utf-8") as f:
             jsn = json.load(f)
+            if "groups" not in jsn:
+                jsn["groups"] = []
             for preset in jsn.get("presets", []):
+                if "groupId" not in preset:
+                    preset["groupId"] = None
                 vals = preset.get("values", {})
                 if "minFreqAmplitude" in vals and (vals["minFreqAmplitude"] < MIN_VOLUME_DB or vals["minFreqAmplitude"] > MAX_VOLUME_DB):
                     vals["minFreqAmplitude"] = MIN_VOLUME_DB
                 if "maxFreqAmplitude" in vals and (vals["maxFreqAmplitude"] < MIN_VOLUME_DB or vals["maxFreqAmplitude"] > MAX_VOLUME_DB):
                     vals["maxFreqAmplitude"] = MAX_VOLUME_DB
+            if jsn.get("presets") and len(jsn["presets"]) > 0:
+                jsn["presets"][0]["groupId"] = None
             print("Preset file loaded:\n", jsn, "\n")
             return jsn
     else:
@@ -182,7 +190,7 @@ def load_presets():
 def load_static_settings():
     if os.path.exists(STATIC_CONFIG_FILE):
         print("Loading static config file...\n")
-        with open(STATIC_CONFIG_FILE, "r") as f:
+        with open(STATIC_CONFIG_FILE, "r", encoding="utf-8") as f:
              jsn = json.load(f)
              print("Static config file loaded:\n", jsn, "\n")
              return jsn
@@ -194,15 +202,17 @@ def create_default_presets_file():
     preset_id = str(uuid.uuid4())
     initial_data = {
         "selectedPresetId": preset_id,
+        "groups": [],
         "presets": [
             {
                 "name": "Standard",
                 "id": preset_id,
+                "groupId": None,
                 "values": copy.deepcopy(DYNAMIC_DEFAULTS)
             }
         ]
     }
-    with open(PRESETS_FILE, "w") as f:
+    with open(PRESETS_FILE, "w", encoding="utf-8") as f:
         json.dump(initial_data, f, indent=2)
 
     return initial_data
@@ -215,16 +225,18 @@ def create_default_static_settings_file():
 def write_presets_to_disk():
     data = {
         "selectedPresetId": st.session_state.preset_guid,
+        "groups": st.session_state.get("groups", []),
         "presets": st.session_state.presets
     }
     print("Writing presets to disk:\n", data, "\n")
-    with open(PRESETS_FILE, "w") as f:
+    with open(PRESETS_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
 def write_static_config_to_disk(values):
     print("Writing static config to disk:\n", values, "\n")
-    with open(STATIC_CONFIG_FILE, "w") as f:
+    with open(STATIC_CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(values, f, indent=2)
+
 
 def sync_widgets_to_colors_list():
     if "colors" in st.session_state:
@@ -378,7 +390,6 @@ def update_session_state_from_preset(preset_data):
     if templateId != None:
         template_values = next((pre["values"] for pre in st.session_state.presets if pre["id"] == templateId), None)
 
-    st.session_state.rename_input = preset_data["name"]
     st.session_state.templateId = preset_values.get("templateId", DYNAMIC_DEFAULTS["templateId"])
 
     update_session_value_from_preset2(preset_values, template_values, "colors", "colorsRaw")
@@ -473,58 +484,261 @@ def save_static_config():
 
     write_static_config_to_disk(current_values)
 
-def cb_create_preset():
-    curr_index = st.session_state.preset_index
-    new_index = curr_index + 1
+
+def extract_base_name(name):
+    m = re.match(r"^(.*?)\s*\(Kopieren(?:\s+\d+)?\)$", name.strip())
+    return m.group(1).strip() if m else name.strip()
+
+
+def is_preset_template_master(preset_id):
+    if not st.session_state.presets or preset_id == st.session_state.presets[0]["id"]:
+        return False
+    return any(p["values"].get("templateId") == preset_id for p in st.session_state.presets)
+
+
+def get_preset_icon_tag(preset):
+    if is_preset_template_master(preset["id"]):
+        return " ⭐"
+    if preset["values"].get("templateId") is not None:
+        return " 🔗"
+    return ""
+
+
+def get_group_name(group_id):
+    if group_id == GLOBAL_GROUP_ID or group_id is None:
+        return "Global"
+    g = next((x for x in st.session_state.groups if x["id"] == group_id), None)
+    return g["name"] if g else "Global"
+
+
+def get_presets_in_group(group_id):
+    if group_id == GLOBAL_GROUP_ID or group_id is None:
+        return [p for p in st.session_state.presets if p.get("groupId") is None or p.get("groupId") == GLOBAL_GROUP_ID]
+    return [p for p in st.session_state.presets if p.get("groupId") == group_id]
+
+
+def generate_copy_name(original_name, existing_names):
+    base_name = extract_base_name(original_name)
+
+    existing_nums = set()
+    for name in existing_names:
+        if name == f"{base_name} (Kopieren)":
+            existing_nums.add(1)
+        else:
+            m_ex = re.match(rf"^{re.escape(base_name)}\s*\(Kopieren\s+(\d+)\)$", name)
+            if m_ex:
+                existing_nums.add(int(m_ex.group(1)))
+
+    if not existing_nums or 1 not in existing_nums:
+        return f"{base_name} (Kopieren)"
+    else:
+        next_num = 2
+        while next_num in existing_nums:
+            next_num += 1
+        return f"{base_name} (Kopieren {next_num})"
+
+
+def select_preset_by_id(preset_id):
+    idx = next((i for i, p in enumerate(st.session_state.presets) if p["id"] == preset_id), None)
+    if idx is not None:
+        st.session_state.preset_index = idx
+        st.session_state.preset_guid = preset_id
+        gid = st.session_state.presets[idx].get("groupId")
+        st.session_state.active_group_id = gid if gid else GLOBAL_GROUP_ID
+        update_session_state_from_preset(st.session_state.presets[idx])
+        write_presets_to_disk()
+
+
+def copy_preset_by_id(preset_id, new_name=None):
+    if preset_id == st.session_state.preset_guid:
+        save_presets()
+
+    idx = next((i for i, p in enumerate(st.session_state.presets) if p["id"] == preset_id), None)
+    if idx is None:
+        return
+
     new_id = str(uuid.uuid4())
-    current_data = copy.deepcopy(st.session_state.presets[curr_index])
-    current_data["name"] = f"{current_data['name']} (Kopieren)"
-    current_data["id"] = new_id
-    st.session_state.presets.insert(new_index, current_data)
- 
-    st.session_state.preset_guid = new_id
-    st.session_state.preset_index = new_index
-    update_session_state_from_preset(st.session_state.presets[new_index])
-    
-    write_presets_to_disk()
+    copied_data = copy.deepcopy(st.session_state.presets[idx])
+    copied_data["id"] = new_id
 
-def cb_move_preset_back(): 
-    curr_index = st.session_state.preset_index
-    new_index = curr_index - 1
-    tmp = st.session_state.presets[new_index]
-    st.session_state.presets[new_index] = st.session_state.presets[curr_index]
-    st.session_state.presets[curr_index] = tmp
-    st.session_state.preset_index = new_index
-    update_session_state_from_preset(st.session_state.presets[new_index])
-    write_presets_to_disk()
+    existing_names = [p["name"] for p in st.session_state.presets]
+    if new_name and new_name.strip():
+        copied_data["name"] = new_name.strip()
+    else:
+        copied_data["name"] = generate_copy_name(copied_data["name"], existing_names)
 
-def cb_move_preset_forward(): 
-    curr_index = st.session_state.preset_index
-    new_index = curr_index + 1
-    tmp = st.session_state.presets[new_index]
-    st.session_state.presets[new_index] = st.session_state.presets[curr_index]
-    st.session_state.presets[curr_index] = tmp
-    st.session_state.preset_index = new_index
-    update_session_state_from_preset(st.session_state.presets[new_index])
-    write_presets_to_disk()
+    base_root = extract_base_name(st.session_state.presets[idx]["name"])
 
-def cb_delete_preset():
-    if len(st.session_state.presets) > 1 and st.session_state.preset_index != 0:
-        removed_preset = st.session_state.presets.pop(st.session_state.preset_index)
-        if removed_preset is None:
-            return
+    insert_idx = idx + 1
+    while insert_idx < len(st.session_state.presets):
+        next_p = st.session_state.presets[insert_idx]
+        if next_p.get("groupId") == copied_data.get("groupId"):
+            m_next = re.match(rf"^{re.escape(base_root)}\s*\(Kopieren(?:\s+\d+)?\)$", next_p["name"])
+            if m_next:
+                insert_idx += 1
+                continue
+        break
 
-        for i in range(len(st.session_state.presets)):
-            preVals = st.session_state.presets[i]["values"]
-            if preVals.get("nextEffectId") == removed_preset["id"]:
-                preVals["nextEffectId"] = None
+    st.session_state.presets.insert(insert_idx, copied_data)
+    select_preset_by_id(new_id)
+    st.rerun()
 
-            if preVals.get("templateId") == removed_preset["id"]:
-                apply_settings_from_template(removed_preset["values"], preVals)
 
-        st.session_state.preset_index = max(0, st.session_state.preset_index - 1)
+def move_preset_in_group(preset_id, direction):
+    preset = next((p for p in st.session_state.presets if p["id"] == preset_id), None)
+    if not preset or preset["id"] == st.session_state.presets[0]["id"]:
+        return
+
+    group_id = preset.get("groupId") or GLOBAL_GROUP_ID
+    siblings = get_presets_in_group(group_id)
+    s_idx = next((i for i, p in enumerate(siblings) if p["id"] == preset_id), None)
+    if s_idx is None:
+        return
+
+    target_s_idx = s_idx + direction
+    if group_id == GLOBAL_GROUP_ID and target_s_idx == 0:
+        return
+
+    if 0 <= target_s_idx < len(siblings):
+        target_preset = siblings[target_s_idx]
+        p_idx = st.session_state.presets.index(preset)
+        t_idx = st.session_state.presets.index(target_preset)
+        st.session_state.presets[p_idx], st.session_state.presets[t_idx] = (
+            st.session_state.presets[t_idx],
+            st.session_state.presets[p_idx],
+        )
+        cur_id = st.session_state.preset_guid
+        st.session_state.preset_index = next((i for i, p in enumerate(st.session_state.presets) if p["id"] == cur_id), 0)
+        write_presets_to_disk()
+
+
+def unassign_preset(preset_id):
+    preset = next((p for p in st.session_state.presets if p["id"] == preset_id), None)
+    if not preset or preset["id"] == st.session_state.presets[0]["id"]:
+        return
+    cur_group = preset.get("groupId")
+    if not cur_group or cur_group == GLOBAL_GROUP_ID:
+        return
+
+    cur_group_presets = get_presets_in_group(cur_group)
+    prev_idx_in_group = next((i for i, p in enumerate(cur_group_presets) if p["id"] == preset_id), 0) - 1
+
+    preset["groupId"] = None
+
+    if st.session_state.preset_guid == preset_id:
+        remaining = get_presets_in_group(cur_group)
+        if len(remaining) > 0:
+            target_idx = max(0, prev_idx_in_group)
+            if target_idx >= len(remaining):
+                target_idx = len(remaining) - 1
+            select_preset_by_id(remaining[target_idx]["id"])
+        else:
+            select_preset_by_id(st.session_state.presets[0]["id"])
+            st.session_state.active_group_id = cur_group
+    else:
+        write_presets_to_disk()
+
+
+def delete_preset_by_id(preset_id):
+    if len(st.session_state.presets) <= 1 or preset_id == st.session_state.presets[0]["id"]:
+        return
+
+    idx = next((i for i, p in enumerate(st.session_state.presets) if p["id"] == preset_id), None)
+    if idx is None:
+        return
+
+    cur_group_presets = get_presets_in_group(st.session_state.active_group_id)
+    prev_idx_in_group = next((i for i, p in enumerate(cur_group_presets) if p["id"] == preset_id), 0) - 1
+
+    removed_preset = st.session_state.presets.pop(idx)
+
+    for pre in st.session_state.presets:
+        preVals = pre["values"]
+        if preVals.get("nextEffectId") == removed_preset["id"]:
+            preVals["nextEffectId"] = None
+        if preVals.get("templateId") == removed_preset["id"]:
+            apply_settings_from_template(removed_preset["values"], preVals)
+
+    if st.session_state.preset_guid == preset_id:
+        remaining_in_group = get_presets_in_group(st.session_state.active_group_id)
+        if len(remaining_in_group) > 0:
+            target_idx = max(0, prev_idx_in_group)
+            if target_idx >= len(remaining_in_group):
+                target_idx = len(remaining_in_group) - 1
+            select_preset_by_id(remaining_in_group[target_idx]["id"])
+        else:
+            cur_group = st.session_state.active_group_id
+            select_preset_by_id(st.session_state.presets[0]["id"])
+            st.session_state.active_group_id = cur_group
+    else:
+        cur_id = st.session_state.preset_guid
+        st.session_state.preset_index = next((i for i, p in enumerate(st.session_state.presets) if p["id"] == cur_id), 0)
         update_session_state_from_preset(st.session_state.presets[st.session_state.preset_index])
         write_presets_to_disk()
+
+
+def move_group(group_id, direction):
+    idx = next((i for i, g in enumerate(st.session_state.groups) if g["id"] == group_id), None)
+    if idx is None:
+        return
+    new_idx = idx + direction
+    if 0 <= new_idx < len(st.session_state.groups):
+        st.session_state.groups[idx], st.session_state.groups[new_idx] = (
+            st.session_state.groups[new_idx],
+            st.session_state.groups[idx],
+        )
+        st.session_state.active_group_id = group_id
+        st.session_state.group_selector_ver = st.session_state.get("group_selector_ver", 0) + 1
+        write_presets_to_disk()
+
+
+def delete_group_by_id(group_id):
+    to_delete = [p for p in st.session_state.presets if p.get("groupId") == group_id]
+    to_delete_ids = {p["id"] for p in to_delete}
+    if len(st.session_state.presets) > 0:
+        to_delete_ids.discard(st.session_state.presets[0]["id"])
+
+    for pre in st.session_state.presets:
+        if pre["id"] not in to_delete_ids:
+            preVals = pre["values"]
+            if preVals.get("nextEffectId") in to_delete_ids:
+                preVals["nextEffectId"] = None
+            if preVals.get("templateId") in to_delete_ids:
+                tmpl = next((p for p in to_delete if p["id"] == preVals.get("templateId")), None)
+                if tmpl:
+                    apply_settings_from_template(tmpl["values"], preVals)
+                else:
+                    preVals["templateId"] = None
+
+    current_options = [GLOBAL_GROUP_ID] + [g["id"] for g in st.session_state.groups]
+    prev_group_id = GLOBAL_GROUP_ID
+    if group_id in current_options:
+        curr_idx = current_options.index(group_id)
+        prev_group_id = current_options[max(0, curr_idx - 1)]
+
+    st.session_state.presets = [p for p in st.session_state.presets if p["id"] not in to_delete_ids]
+    st.session_state.groups = [g for g in st.session_state.groups if g["id"] != group_id]
+    st.session_state.active_group_id = prev_group_id
+    st.session_state.group_selector_ver = st.session_state.get("group_selector_ver", 0) + 1
+
+    presets_in_target = get_presets_in_group(prev_group_id)
+    if st.session_state.preset_guid in to_delete_ids or st.session_state.preset_index >= len(st.session_state.presets):
+        if len(presets_in_target) > 0:
+            select_preset_by_id(presets_in_target[0]["id"])
+        else:
+            st.session_state.preset_index = 0
+            st.session_state.preset_guid = st.session_state.presets[0]["id"]
+            update_session_state_from_preset(st.session_state.presets[0])
+            write_presets_to_disk()
+    else:
+        cur_id = st.session_state.preset_guid
+        st.session_state.preset_index = next((i for i, p in enumerate(st.session_state.presets) if p["id"] == cur_id), 0)
+        update_session_state_from_preset(st.session_state.presets[st.session_state.preset_index])
+        write_presets_to_disk()
+
+def get_preset_name(preset_id):
+    p = next((x for x in st.session_state.presets if x["id"] == preset_id), None)
+    return p["name"] if p else str(preset_id)
 
 def cb_add_color():
     sync_widgets_to_colors_list()
@@ -552,7 +766,6 @@ def remove_color(index):
     st.session_state.pop(f"color_{last_idx}", None)
     st.session_state.pop(f"threshold_{last_idx}", None)
     sync_widgets_to_colors_list()
-
     save_presets()
 
 def move_color(index, direction):
@@ -567,8 +780,146 @@ def move_color(index, direction):
     )
     st.session_state[f"color_{index}"] = st.session_state.colors[index]["color"]
     st.session_state[f"color_{new_index}"] = st.session_state.colors[new_index]["color"]
-
     save_presets()
+
+def on_dialog_dismiss():
+    st.session_state.active_dialog = None
+    st.session_state.popover_ver = st.session_state.get("popover_ver", 0) + 1
+    st.session_state.pop("dlg_create_grp_name", None)
+
+@st.dialog("Neue Gruppe erstellen", on_dismiss=on_dialog_dismiss)
+def dialog_create_group():
+    new_name = st.text_input("Gruppenname", key="dlg_create_grp_name")
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("Abbrechen", key="dlg_create_grp_cancel", use_container_width=True):
+            st.session_state.pop("dlg_create_grp_name", None)
+            st.session_state.active_dialog = None
+            st.rerun()
+    with col2:
+        if st.button("Erstellen", key="dlg_create_grp_submit", type="primary", use_container_width=True):
+            name_clean = new_name.strip() if new_name else ""
+            if not name_clean:
+                name_clean = "Gruppe"
+            new_gid = str(uuid.uuid4())
+            st.session_state.groups.append({"id": new_gid, "name": name_clean})
+            st.session_state.active_group_id = new_gid
+            st.session_state.group_selector_ver = st.session_state.get("group_selector_ver", 0) + 1
+            write_presets_to_disk()
+            st.session_state.pop("dlg_create_grp_name", None)
+            st.session_state.active_dialog = None
+            st.rerun()
+
+@st.dialog("Gruppe umbenennen", on_dismiss=on_dialog_dismiss)
+def dialog_rename_group(group_id, current_name=None):
+    if not current_name:
+        current_name = get_group_name(group_id)
+    input_key = f"dlg_ren_grp_name_{group_id}"
+    new_name = st.text_input("Neuer Gruppenname", value=current_name, key=input_key)
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("Abbrechen", key="dlg_ren_grp_cancel", use_container_width=True):
+            st.session_state.pop(input_key, None)
+            st.session_state.active_dialog = None
+            st.rerun()
+    with col2:
+        is_disabled = (len(new_name.strip()) == 0)
+        if st.button("Speichern", key="dlg_ren_grp_submit", type="primary", disabled=is_disabled, use_container_width=True):
+            name_clean = new_name.strip()
+            if name_clean:
+                g = next((x for x in st.session_state.groups if x["id"] == group_id), None)
+                if g:
+                    g["name"] = name_clean
+                    write_presets_to_disk()
+                    st.session_state.group_selector_ver = st.session_state.get("group_selector_ver", 0) + 1
+            st.session_state.pop(input_key, None)
+            st.session_state.active_dialog = None
+            st.rerun()
+
+@st.dialog("Gruppe löschen", on_dismiss=on_dialog_dismiss)
+def dialog_delete_group(group_id, group_name=None):
+    if not group_name:
+        group_name = get_group_name(group_id)
+    presets_count = len([p for p in st.session_state.presets if p.get("groupId") == group_id])
+    st.write(f"Möchtest du die Gruppe **{group_name}** wirklich löschen?")
+    if presets_count > 0:
+        st.write(f"⚠️ Es werden auch alle **{presets_count}** Voreinstellung(en) in dieser Gruppe unwiderruflich gelöscht!")
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("Abbrechen", key="dlg_del_grp_cancel", use_container_width=True):
+            st.session_state.active_dialog = None
+            st.rerun()
+    with col2:
+        if st.button("Ja, Gruppe löschen", key="dlg_del_grp_submit", type="primary", use_container_width=True):
+            delete_group_by_id(group_id)
+            st.session_state.active_dialog = None
+            st.rerun()
+
+@st.dialog("Voreinstellung umbenennen", on_dismiss=on_dialog_dismiss)
+def dialog_rename_preset(preset_id, current_name=None):
+    if not current_name:
+        current_name = get_preset_name(preset_id)
+    input_key = f"dlg_ren_pre_name_{preset_id}"
+    new_name = st.text_input("Neuer Name", value=current_name, key=input_key)
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("Abbrechen", key="dlg_ren_pre_cancel", use_container_width=True):
+            st.session_state.pop(input_key, None)
+            st.session_state.active_dialog = None
+            st.rerun()
+    with col2:
+        is_disabled = (len(new_name.strip()) == 0)
+        if st.button("Speichern", key="dlg_ren_pre_submit", type="primary", disabled=is_disabled, use_container_width=True):
+            name_clean = new_name.strip()
+            if name_clean:
+                p = next((x for x in st.session_state.presets if x["id"] == preset_id), None)
+                if p:
+                    p["name"] = name_clean
+                    write_presets_to_disk()
+            st.session_state.pop(input_key, None)
+            st.session_state.active_dialog = None
+            st.rerun()
+
+@st.dialog("Voreinstellung löschen", on_dismiss=on_dialog_dismiss)
+def dialog_delete_preset(preset_id, preset_name=None):
+    if not preset_name:
+        preset_name = get_preset_name(preset_id)
+    st.write(f"Möchtest du die Voreinstellung **{preset_name}** wirklich löschen?")
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("Abbrechen", key="dlg_del_pre_cancel", use_container_width=True):
+            st.session_state.active_dialog = None
+            st.rerun()
+    with col2:
+        if st.button("Ja, löschen", key="dlg_del_pre_submit", type="primary", use_container_width=True):
+            delete_preset_by_id(preset_id)
+            st.session_state.active_dialog = None
+            st.rerun()
+
+@st.dialog("Voreinstellung kopieren", on_dismiss=on_dialog_dismiss)
+def dialog_copy_preset(preset_id, preset_name=None):
+    if not preset_name:
+        preset_name = get_preset_name(preset_id)
+    existing_names = [p["name"] for p in st.session_state.presets]
+    default_name = generate_copy_name(preset_name, existing_names)
+    input_key = f"dlg_cp_pre_name_{preset_id}"
+    new_name = st.text_input("Name der Kopie", value="", placeholder=default_name, key=input_key)
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("Abbrechen", key="dlg_cp_pre_cancel", use_container_width=True):
+            st.session_state.pop(input_key, None)
+            st.session_state.active_dialog = None
+            st.rerun()
+    with col2:
+        if st.button("Kopieren", key="dlg_cp_pre_submit", type="primary", use_container_width=True):
+            name_clean = new_name.strip() if new_name and new_name.strip() else default_name
+            st.session_state.pop(input_key, None)
+            st.session_state.active_dialog = None
+            copy_preset_by_id(preset_id, name_clean)
+
+def trigger_dialog(dlg_type, item_id=None):
+    st.session_state.popover_ver = st.session_state.get("popover_ver", 0) + 1
+    st.session_state.active_dialog = {"type": dlg_type, "id": item_id}
 
 app_version = load_version()
 app_title = f"RPISC Einstellungen {app_version}" if app_version else "RPISC Einstellungen"
@@ -576,6 +927,7 @@ app_title = f"RPISC Einstellungen {app_version}" if app_version else "RPISC Eins
 st.set_page_config(page_title=app_title, page_icon="🎛️", layout="centered")
 preset_data = load_presets()
 st.session_state.presets = preset_data["presets"]
+st.session_state.groups = preset_data.get("groups", [])
 st.session_state.preset_guid = preset_data["selectedPresetId"]
 
 preset_index = 0
@@ -588,15 +940,39 @@ st.session_state.preset_index = preset_index
 if st.session_state.preset_index >= len(st.session_state.presets):
     st.session_state.preset_index = 0
     st.session_state.preset_guid = st.session_state.presets[0]["id"]
-    
-if "rename_input" not in st.session_state:
-    st.session_state.rename_input = st.session_state.presets[st.session_state.preset_index]["name"]
+
+if "active_group_id" not in st.session_state or st.session_state.active_group_id is None:
+    cur_gid = st.session_state.presets[st.session_state.preset_index].get("groupId")
+    st.session_state.active_group_id = cur_gid if cur_gid is not None else GLOBAL_GROUP_ID
+elif st.session_state.active_group_id != GLOBAL_GROUP_ID:
+    if not any(g["id"] == st.session_state.active_group_id for g in st.session_state.groups):
+        st.session_state.active_group_id = GLOBAL_GROUP_ID
 
 update_session_state_from_preset(st.session_state.presets[st.session_state.preset_index])
 
 if "static_settings" not in st.session_state:
      st.session_state.static_settings = load_static_settings()
      update_session_state_from_static_settings(st.session_state.static_settings)
+
+if "active_dialog" not in st.session_state:
+    st.session_state.active_dialog = None
+
+if st.session_state.get("active_dialog"):
+    d = st.session_state.active_dialog
+    dtype = d.get("type")
+    did = d.get("id")
+    if dtype == "create_group":
+        dialog_create_group()
+    elif dtype == "rename_group":
+        dialog_rename_group(did)
+    elif dtype == "delete_group":
+        dialog_delete_group(did)
+    elif dtype == "rename_preset":
+        dialog_rename_preset(did)
+    elif dtype == "delete_preset":
+        dialog_delete_preset(did)
+    elif dtype == "copy_preset":
+        dialog_copy_preset(did)
 
 slider_fix_js = """
 <script>
@@ -644,71 +1020,344 @@ slider_fix_js = """
 
 components.html(slider_fix_js, height=0, width=0)
 
+st.markdown("""
+<style>
+/* Prevent inner scroll containers */
+div[data-testid="stHorizontalBlock"],
+div[data-testid="stColumn"] {
+    overflow: visible !important;
+}
+
+/* Preset rows: Vertically center preset names with adjacent action buttons */
+div[data-testid="stHorizontalBlock"]:has([class*="btn_pre_sel_"]) div[data-testid="stMarkdownContainer"],
+div[data-testid="stHorizontalBlock"]:has([class*="pop_pre_"]) div[data-testid="stMarkdownContainer"] {
+    margin: 0 !important;
+    padding: 0 !important;
+    min-height: 38px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+div[data-testid="stHorizontalBlock"]:has([class*="btn_pre_sel_"]) div[data-testid="stMarkdownContainer"] p,
+div[data-testid="stHorizontalBlock"]:has([class*="pop_pre_"]) div[data-testid="stMarkdownContainer"] p {
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: normal !important;
+}
+
+/* Action buttons: 38px square buttons */
+div[class*="st-key-btn_pre_sel_"] button,
+div[class*="st-key-mv_up_"] button,
+div[class*="st-key-mv_down_"] button,
+div[class*="st-key-rm_col_"] button,
+button[data-testid="stPopoverButton"] {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    min-height: 38px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+}
+button[data-testid="stPopoverButton"] svg {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+button[data-testid="stPopoverButton"] [data-testid="stMarkdownContainer"] {
+    display: none !important;
+}
+
+/* Group selector row: group selectbox takes all free space, button column takes exactly 38px */
+div[data-testid="stHorizontalBlock"]:has([class*="st-key-pop_grp_menu"]) {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-end !important;
+    width: 100% !important;
+}
+div[data-testid="stHorizontalBlock"]:has([class*="st-key-pop_grp_menu"]) > div[data-testid="stColumn"]:first-child {
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
+    width: auto !important;
+}
+div[data-testid="stHorizontalBlock"]:has([class*="st-key-pop_grp_menu"]) > div[data-testid="stColumn"]:last-child,
+div[data-testid="stColumn"]:has([class*="st-key-pop_grp_menu"]) {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: 38px !important;
+}
+[class*="st-key-pop_grp_menu"] {
+    width: auto !important;
+    min-width: 38px !important;
+    display: inline-flex !important;
+}
+
+/* Popover menu */
+div[data-testid="stPopoverBody"] {
+    min-width: 220px !important;
+}
+div[data-testid="stPopoverBody"] button {
+    justify-content: flex-start !important;
+    width: 100% !important;
+    padding: 8px 12px !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 st.title(app_title)
-st.info(f"Aktive Voreinstellung: **{st.session_state.presets[st.session_state.preset_index]['name']}**")
 
-guid_to_obj = {v["id"]: v for v in st.session_state.presets}
-current_guid = st.session_state.preset_guid
+active_p = st.session_state.presets[st.session_state.preset_index]
+active_gid = active_p.get("groupId")
+active_gname = get_group_name(active_gid)
+st.info(f"Aktive Voreinstellung: **{active_p['name']}{get_preset_icon_tag(active_p)}** (Gruppe: *{active_gname}*)")
 
-with st.expander("📂 Voreinstellungs Verwaltung", expanded=False):
-    preset_names = [p["name"] for p in st.session_state.presets]
-    
-    def on_preset_change():
-        new_index = st.session_state.preset_selector_idx
-        st.session_state.preset_index = new_index
-        update_session_state_from_preset(st.session_state.presets[new_index])
-        write_presets_to_disk()
+with st.expander("📁 Voreinstellungen & Gruppen", expanded=True):
+    group_options = [GLOBAL_GROUP_ID] + [g["id"] for g in st.session_state.groups]
+    group_names = {GLOBAL_GROUP_ID: "Global", **{g["id"]: g["name"] for g in st.session_state.groups}}
 
-    st.selectbox(
-        "Voreinstellung auswählen",
-        range(len(preset_names)),
-        format_func=lambda x: preset_names[x],
-        index=st.session_state.preset_index,
-        key="preset_selector_idx",
-        on_change=on_preset_change
-    )
+    # Map each group ID to a unique display label (stable zero-width spaces keyed by sorted ID)
+    name_to_gids = {}
+    for gid in group_options:
+        name = group_names.get(gid, "Global")
+        name_to_gids.setdefault(name, []).append(gid)
 
-    def on_rename():
-        new_name = st.session_state.rename_input
-        if new_name:
-            st.session_state.presets[st.session_state.preset_index]["name"] = new_name
-            write_presets_to_disk()
+    group_display_map = {}
+    for name, gids in name_to_gids.items():
+        if len(gids) == 1:
+            group_display_map[gids[0]] = name
+        else:
+            sorted_gids = sorted(gids)
+            for count, gid in enumerate(sorted_gids):
+                group_display_map[gid] = name + ("\u200b" * count)
 
-    st.text_input(
-        "Voreinstellung umbenennen",
-        key="rename_input",
-        disabled=(st.session_state.preset_index == 0),
-        on_change=on_rename
-    )
+    grp_ver = st.session_state.get("group_selector_ver", 0)
+    grp_sel_key = f"group_selector_{grp_ver}"
 
-    col_move_up, col_move_down = st.columns([1, 1])
+    def on_group_change():
+        selected_gid = st.session_state.get(grp_sel_key)
+        if not selected_gid:
+            selected_gid = GLOBAL_GROUP_ID
+            st.session_state[grp_sel_key] = GLOBAL_GROUP_ID
+        st.session_state.active_group_id = selected_gid
+        presets_in_new_group = get_presets_in_group(selected_gid)
+        cur_preset = st.session_state.presets[st.session_state.preset_index]
+        cur_p_gid = cur_preset.get("groupId") or GLOBAL_GROUP_ID
+        if cur_p_gid != selected_gid:
+            if len(presets_in_new_group) > 0:
+                select_preset_by_id(presets_in_new_group[0]["id"])
 
-    with col_move_up:
-        st.button("▲ Nach oben", disabled=(st.session_state.preset_index == 0 or st.session_state.preset_index == 1), on_click=cb_move_preset_back, width="stretch")
-        st.button("▼ Nach unten", disabled=(st.session_state.preset_index == 0 or st.session_state.preset_index == len(st.session_state.presets) - 1), on_click=cb_move_preset_forward, width="stretch")
+    grp_idx = 0
+    if st.session_state.active_group_id in group_options:
+        grp_idx = group_options.index(st.session_state.active_group_id)
+    else:
+        st.session_state.active_group_id = GLOBAL_GROUP_ID
 
-    with col_move_down:
-        st.button("➕ Neu (Kopieren)", on_click=cb_create_preset, width="stretch")
-        st.button("🗑️ Löschen", disabled=(st.session_state.preset_index == 0), on_click=cb_delete_preset, width="stretch")
+    if st.session_state.get(grp_sel_key) not in group_options or st.session_state.get(grp_sel_key) != st.session_state.active_group_id:
+        st.session_state[grp_sel_key] = st.session_state.active_group_id
+        grp_idx = group_options.index(st.session_state.active_group_id)
 
-    is_master = any(pre["values"].get("templateId") == current_guid for pre in st.session_state.presets)
-    if st.session_state.preset_index != 0 and is_master == False:
-        filtered_values = [v for v in st.session_state.presets if v["id"] != st.session_state.preset_guid and v["values"].get("templateId") is None]
+    col_grp, col_grp_menu = st.columns([8, 1], vertical_alignment="bottom", gap="small", wrap=False)
+    with col_grp:
+        st.selectbox(
+            "Gruppe",
+            group_options,
+            index=grp_idx,
+            format_func=lambda x: group_display_map.get(x, "Global"),
+            key=grp_sel_key,
+            on_change=on_group_change
+        )
+    pop_ver = st.session_state.get("popover_ver", 0)
+    with col_grp_menu:
+        is_custom_group = (st.session_state.active_group_id != GLOBAL_GROUP_ID and st.session_state.active_group_id is not None)
+        with st.popover("", key=f"pop_grp_menu_{pop_ver}"):
+                st.button("➕ Neue Gruppe", key="btn_grp_new", on_click=trigger_dialog, args=("create_group",), use_container_width=True)
+                
+                cur_grp_idx = 0
+                if is_custom_group:
+                    cur_grp_idx = next((i for i, g in enumerate(st.session_state.groups) if g["id"] == st.session_state.active_group_id), 0)
+
+                st.button(
+                    "▲ Nach oben",
+                    key="btn_grp_up",
+                    disabled=(not is_custom_group or cur_grp_idx == 0),
+                    on_click=move_group,
+                    args=(st.session_state.active_group_id, -1),
+                    use_container_width=True
+                )
+                st.button(
+                    "▼ Nach unten",
+                    key="btn_grp_down",
+                    disabled=(not is_custom_group or cur_grp_idx == len(st.session_state.groups) - 1),
+                    on_click=move_group,
+                    args=(st.session_state.active_group_id, 1),
+                    use_container_width=True
+                )
+                st.button(
+                    "✏️ Gruppe umbenennen",
+                    key="btn_grp_rename",
+                    disabled=not is_custom_group,
+                    on_click=trigger_dialog,
+                    args=("rename_group", st.session_state.active_group_id),
+                    use_container_width=True
+                )
+                st.button(
+                    "🗑️ Gruppe löschen",
+                    key="btn_grp_delete",
+                    disabled=not is_custom_group,
+                    on_click=trigger_dialog,
+                    args=("delete_group", st.session_state.active_group_id),
+                    use_container_width=True
+                )
+
+    if is_custom_group:
+        ungrouped_presets = [p for p in get_presets_in_group(GLOBAL_GROUP_ID) if p["id"] != st.session_state.presets[0]["id"]]
+        if len(ungrouped_presets) > 0:
+            def on_add_preset_from_global():
+                selected_pid = st.session_state.add_from_global_selector
+                if selected_pid and selected_pid != NONE_OPTION:
+                    p = next((x for x in st.session_state.presets if x["id"] == selected_pid), None)
+                    if p:
+                        p["groupId"] = st.session_state.active_group_id
+                        select_preset_by_id(selected_pid)
+                    st.session_state.add_from_global_selector = NONE_OPTION
+
+            options = [NONE_OPTION] + [p["id"] for p in ungrouped_presets]
+            format_map = {NONE_OPTION: "Voreinstellung hinzufügen", **{p["id"]: p["name"] for p in ungrouped_presets}}
+            st.selectbox(
+                "➕ Globale Voreinstellung hinzufügen",
+                options,
+                index=0,
+                format_func=lambda x: format_map.get(x, str(x)),
+                key="add_from_global_selector",
+                on_change=on_add_preset_from_global
+            )
+
+    presets_in_current_group = get_presets_in_group(st.session_state.active_group_id)
+    current_grp_title = group_names.get(st.session_state.active_group_id, "Global")
+
+    with st.expander(f"📂 Voreinstellungen in {current_grp_title} ({len(presets_in_current_group)})", expanded=True):
+        if len(presets_in_current_group) == 0:
+            st.info("Diese Gruppe enthält noch keine Voreinstellungen.")
+            if is_custom_group:
+                if st.button("➕ Neue Voreinstellung erstellen", key="btn_create_empty_grp_pre"):
+                    new_id = str(uuid.uuid4())
+                    existing_names = [p["name"] for p in st.session_state.presets]
+                    new_name = generate_copy_name("Standard", existing_names)
+                    new_preset = {
+                        "name": new_name,
+                        "id": new_id,
+                        "groupId": st.session_state.active_group_id,
+                        "values": copy.deepcopy(DYNAMIC_DEFAULTS)
+                    }
+                    st.session_state.presets.append(new_preset)
+                    select_preset_by_id(new_id)
+                    st.rerun()
+        else:
+            for idx_in_grp, p in enumerate(presets_in_current_group):
+                is_standard = (p["id"] == st.session_state.presets[0]["id"])
+                is_active = (p["id"] == st.session_state.preset_guid)
+                icon_tag = get_preset_icon_tag(p)
+
+                col_name, col_actions = st.columns([7, 3], vertical_alignment="center", gap="small", wrap=False)
+                with col_name:
+                    if is_active:
+                        st.markdown(f"**🟢 {p['name']}{icon_tag}**")
+                    else:
+                        st.markdown(f"⚪ {p['name']}{icon_tag}")
+                with col_actions:
+                    with st.container(horizontal=True, horizontal_alignment="right", vertical_alignment="center"):
+                        if not is_active:
+                            st.button(
+                                "✅",
+                                key=f"btn_pre_sel_{p['id']}",
+                                on_click=select_preset_by_id,
+                                args=(p["id"],),
+                                help="Voreinstellung aktivieren"
+                            )
+                        with st.popover("", key=f"pop_pre_{p['id']}_{pop_ver}"):
+                            can_move_up = False
+                            if not is_standard:
+                                if st.session_state.active_group_id == GLOBAL_GROUP_ID:
+                                    can_move_up = (idx_in_grp > 1)
+                                else:
+                                    can_move_up = (idx_in_grp > 0)
+
+                            can_move_down = (not is_standard and idx_in_grp < len(presets_in_current_group) - 1)
+
+                            st.button(
+                                "▲ Nach oben",
+                                key=f"btn_up_{p['id']}",
+                                disabled=(not can_move_up),
+                                on_click=move_preset_in_group,
+                                args=(p["id"], -1),
+                                use_container_width=True
+                            )
+                            st.button(
+                                "▼ Nach unten",
+                                key=f"btn_down_{p['id']}",
+                                disabled=(not can_move_down),
+                                on_click=move_preset_in_group,
+                                args=(p["id"], 1),
+                                use_container_width=True
+                            )
+                            st.button(
+                                "✏️ Umbenennen",
+                                key=f"btn_ren_{p['id']}",
+                                disabled=is_standard,
+                                on_click=trigger_dialog,
+                                args=("rename_preset", p["id"]),
+                                use_container_width=True
+                            )
+                            st.button(
+                                "📋 Kopieren",
+                                key=f"btn_cp_{p['id']}",
+                                on_click=trigger_dialog,
+                                args=("copy_preset", p["id"]),
+                                use_container_width=True
+                            )
+                            if p.get("groupId") is not None and p.get("groupId") != GLOBAL_GROUP_ID:
+                                st.button(
+                                    "↩️ In 'Global' verschieben",
+                                    key=f"btn_ungrp_{p['id']}",
+                                    on_click=unassign_preset,
+                                    args=(p["id"],),
+                                    use_container_width=True
+                                )
+                            st.button(
+                                "🗑️ Löschen",
+                                key=f"btn_del_{p['id']}",
+                                disabled=is_standard,
+                                on_click=trigger_dialog,
+                                args=("delete_preset", p["id"]),
+                                use_container_width=True
+                            )
+
+    current_guid = st.session_state.preset_guid
+    is_master = is_preset_template_master(current_guid)
+    cur_p = st.session_state.presets[st.session_state.preset_index]
+    cur_p_gid = cur_p.get("groupId") or GLOBAL_GROUP_ID
+    if st.session_state.preset_index != 0 and not is_master and len(presets_in_current_group) > 0 and cur_p_gid == st.session_state.active_group_id:
+        std_id = st.session_state.presets[0]["id"]
+        filtered_values = [
+            v for v in st.session_state.presets
+            if v["id"] != st.session_state.preset_guid
+            and v["id"] != std_id
+            and v["values"].get("templateId") is None
+        ]
         options = [NONE_OPTION] + [v["id"] for v in filtered_values]
         if "templateId" not in st.session_state:
             st.session_state.templateId = None
 
-        template_guid = st.session_state.templateId
+        cur_tmpl_key = f"template_select_{st.session_state.preset_guid}"
+        template_guid = cur_p["values"].get("templateId")
 
         default_index = 0
-        if template_guid is not None:
-            default_index = next(
-                (i for i, v in enumerate(options) if v is not NONE_OPTION and v == template_guid),
-                0
-            )
+        if template_guid is not None and template_guid in options:
+            default_index = options.index(template_guid)
 
         def on_template_changed():
-            selected_guid = st.session_state["presetEntry"]
+            selected_guid = st.session_state.get(cur_tmpl_key)
             if selected_guid == NONE_OPTION:
                 st.session_state.templateId = None
             else:
@@ -717,14 +1366,13 @@ with st.expander("📂 Voreinstellungs Verwaltung", expanded=False):
             save_presets()
 
         st.selectbox(
-            "Vorlage",
+            "Vorlage für aktive Voreinstellung",
             options,
             index=default_index,
-            format_func=lambda x: "Deaktiviert" if x is NONE_OPTION else guid_to_obj[x]["name"],
-            key="presetEntry",
+            format_func=lambda x: "Deaktiviert" if x is NONE_OPTION else get_preset_name(x),
+            key=cur_tmpl_key,
             on_change=on_template_changed
         )
-
 def get_audio_mode_id():
     return next(k for k, v in AUDIO_MODES.items() if v == st.session_state.audioMode)
 def get_effect_mode_id():
@@ -751,190 +1399,167 @@ def ow_widget(content_lambda, checkbox_key, use_margin=True):
     else:
         content_lambda()
 
-with st.expander("Audio", expanded=False):
-    ow_widget(lambda: st.selectbox("Audiomodus", list(AUDIO_MODES.values()), key="audioMode", on_change=save_presets), "audioMode")
-    ow_widget(lambda: st.slider("Min. Lautstärke in dB", MIN_VOLUME_DB, MAX_VOLUME_DB, step=0.1, key="minFreqAmplitude", on_change=save_presets), "minFreqAmplitude")
-    ow_widget(lambda: st.slider("Max. Lautstärke in dB", MIN_VOLUME_DB, MAX_VOLUME_DB, step=0.1, key="maxFreqAmplitude", on_change=save_presets), "maxFreqAmplitude")
+if len(presets_in_current_group) > 0:
+    with st.expander("Audio", expanded=False):
+        ow_widget(lambda: st.selectbox("Audiomodus", list(AUDIO_MODES.values()), key="audioMode", on_change=save_presets), "audioMode")
+        ow_widget(lambda: st.slider("Min. Lautstärke in dB", MIN_VOLUME_DB, MAX_VOLUME_DB, step=0.1, key="minFreqAmplitude", on_change=save_presets), "minFreqAmplitude")
+        ow_widget(lambda: st.slider("Max. Lautstärke in dB", MIN_VOLUME_DB, MAX_VOLUME_DB, step=0.1, key="maxFreqAmplitude", on_change=save_presets), "maxFreqAmplitude")
 
-    if get_audio_mode_id() == 0:
-        ow_widget(lambda: st.slider("Vergleichswert Puffergröße", 1, 100, step=1, key="meanValueBufferSize", on_change=save_presets), "meanValueBufferSize")
-        ow_widget(lambda: st.slider("Vergleichswert Grenzwert", 0.01, 1.0, step=0.01, key="meanValueThreshold", on_change=save_presets), "meanValueThreshold")
+        if get_audio_mode_id() == 0:
+            ow_widget(lambda: st.slider("Vergleichswert Puffergröße", 1, 100, step=1, key="meanValueBufferSize", on_change=save_presets), "meanValueBufferSize")
+            ow_widget(lambda: st.slider("Vergleichswert Grenzwert", 0.01, 1.0, step=0.01, key="meanValueThreshold", on_change=save_presets), "meanValueThreshold")
 
-    if get_audio_mode_id() == 2:
-        ow_widget(lambda: st.slider("Einfluss von Pegelveränderung", 0.0, 1.0, step=0.01, key="energyInfluence", on_change=save_presets), "energyInfluence")
-        ow_widget(lambda: st.slider("Einfluss von Sprektrumsveränderung", 0.0, 1.0, step=0.01, key="fluxInfluence", on_change=save_presets), "fluxInfluence")
+        if get_audio_mode_id() == 2:
+            ow_widget(lambda: st.slider("Einfluss von Pegelveränderung", 0.0, 1.0, step=0.01, key="energyInfluence", on_change=save_presets), "energyInfluence")
+            ow_widget(lambda: st.slider("Einfluss von Sprektrumsveränderung", 0.0, 1.0, step=0.01, key="fluxInfluence", on_change=save_presets), "fluxInfluence")
 
-    ow_widget(lambda: st.slider("BPM Limit", -1, 999, step=1, key="bpmLimit", on_change=save_presets), "bpmLimit")
-    ow_widget(lambda: st.slider("Audiowert Skalierung", 0.01, 5.00, step=0.01, key="audioResponseCurve", on_change=save_presets), "audioResponseCurve")
-    ow_widget(lambda: st.slider("Min. Peakdauer in ms", 0, 999, step=1, key="audioPeakHoldTimeMs", on_change=save_presets), "audioPeakHoldTimeMs")
-    ow_widget(lambda: st.number_input("Min. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="minFreq", on_change=save_presets), "minFreq")
-    ow_widget(lambda: st.number_input("Max. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="maxFreq", on_change=save_presets), "maxFreq")
-    ow_widget(lambda: st.number_input("Audio Puffer Größe", min_value=2, max_value=50000, step=1, format="%d", key="fftSize", on_change=save_presets), "fftSize")
+        ow_widget(lambda: st.slider("BPM Limit", -1, 999, step=1, key="bpmLimit", on_change=save_presets), "bpmLimit")
+        ow_widget(lambda: st.slider("Audiowert Skalierung", 0.01, 5.00, step=0.01, key="audioResponseCurve", on_change=save_presets), "audioResponseCurve")
+        ow_widget(lambda: st.slider("Min. Peakdauer in ms", 0, 999, step=1, key="audioPeakHoldTimeMs", on_change=save_presets), "audioPeakHoldTimeMs")
+        ow_widget(lambda: st.number_input("Min. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="minFreq", on_change=save_presets), "minFreq")
+        ow_widget(lambda: st.number_input("Max. Frequenz in Hz", min_value=0, max_value=20000, step=1, format="%d", key="maxFreq", on_change=save_presets), "maxFreq")
+        ow_widget(lambda: st.number_input("Audio Puffer Größe", min_value=2, max_value=50000, step=1, format="%d", key="fftSize", on_change=save_presets), "fftSize")
 
-with st.expander("Effekt", expanded=False):
-    ow_widget(lambda: st.selectbox("Effektmodus", list(EFFECT_MODES.values()), key="effectMode", on_change=save_presets), "effectMode")
-    ow_widget(lambda: st.number_input("Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="effectOrigin", on_change=save_presets), "effectOrigin")
-    ow_widget(lambda: st.slider("Effekt Beschleunigung", 0.0, 5.0, step=0.01, key="acceleration", on_change=save_presets), "acceleration")
+    with st.expander("Effekt", expanded=False):
+        ow_widget(lambda: st.selectbox("Effektmodus", list(EFFECT_MODES.values()), key="effectMode", on_change=save_presets), "effectMode")
+        ow_widget(lambda: st.number_input("Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="effectOrigin", on_change=save_presets), "effectOrigin")
+        ow_widget(lambda: st.slider("Effekt Beschleunigung", 0.0, 5.0, step=0.01, key="acceleration", on_change=save_presets), "acceleration")
 
-    if get_effect_mode_id() in (2, 4, 9, 10, 11, 12, 13, 14):
-        ow_widget(lambda: st.slider("Effekt Geschwindigkeit", 1, 1000, key="speed", on_change=save_presets), "speed")
+        if get_effect_mode_id() in (2, 4, 9, 10, 11, 12, 13, 14):
+            ow_widget(lambda: st.slider("Effekt Geschwindigkeit", 1, 1000, key="speed", on_change=save_presets), "speed")
 
-    ow_widget(lambda: st.slider("Effekt Verstärkung", 0.1, 10.0, key="valueIncreaseFactor", on_change=save_presets), "valueIncreaseFactor")
+        ow_widget(lambda: st.slider("Effekt Verstärkung", 0.1, 10.0, key="valueIncreaseFactor", on_change=save_presets), "valueIncreaseFactor")
 
-    if get_effect_mode_id() == 3:
-        ow_widget(lambda: st.toggle("Statisches Spektrum", key="staticSpectrum", on_change=save_presets), "staticSpectrum", False)
-        ow_widget(lambda: st.slider("Spektrum Sektionen", 1, 50, step=1, key="spectrumSections", on_change=save_presets), "spectrumSections")
+        if get_effect_mode_id() == 3:
+            ow_widget(lambda: st.toggle("Statisches Spektrum", key="staticSpectrum", on_change=save_presets), "staticSpectrum", False)
+            ow_widget(lambda: st.slider("Spektrum Sektionen", 1, 50, step=1, key="spectrumSections", on_change=save_presets), "spectrumSections")
 
-    if get_effect_mode_id() in (4, 9, 12, 13, 14):
-        ow_widget(lambda: st.slider("Partikel Größe", 1, 1000, step=1, key="particleSize", on_change=save_presets), "particleSize")
+        if get_effect_mode_id() in (4, 9, 12, 13, 14):
+            ow_widget(lambda: st.slider("Partikel Größe", 1, 1000, step=1, key="particleSize", on_change=save_presets), "particleSize")
 
-    if get_effect_mode_id() in (2, 9, 13):
-        ow_widget(lambda: st.toggle("Abprallen", key="bouncyWave", on_change=save_presets), "bouncyWave", False)
+        if get_effect_mode_id() in (2, 9, 13):
+            ow_widget(lambda: st.toggle("Abprallen", key="bouncyWave", on_change=save_presets), "bouncyWave", False)
 
-    if get_effect_mode_id() == 9:
-        ow_widget(lambda: st.slider("Max. Wellenanzahl", 1, 10, step=1, key="maxWaves", on_change=save_presets), "maxWaves")
+        if get_effect_mode_id() == 9:
+            ow_widget(lambda: st.slider("Max. Wellenanzahl", 1, 10, step=1, key="maxWaves", on_change=save_presets), "maxWaves")
 
-    if get_effect_mode_id() in (2, 8, 14):
-        ow_widget(lambda: st.slider("Verblassung nach Zeit", -1.0, 1.0, step=0.001, key="fadeOverTime", on_change=save_presets), "fadeOverTime")
+        if get_effect_mode_id() in (2, 8, 14):
+            ow_widget(lambda: st.slider("Verblassung nach Zeit", -1.0, 1.0, step=0.001, key="fadeOverTime", on_change=save_presets), "fadeOverTime")
 
-    ow_widget(lambda: st.slider("Verblassung", 0.001, 0.999, step=0.001, key="fade", on_change=save_presets), "fade")
-    ow_widget(lambda: st.slider("Sättigung", 0.01, 1.0, step=0.01, key="saturate", on_change=save_presets), "saturate")
-    ow_widget(lambda: st.slider("Sättigungs Grenzwert", 0.0, 1.0, step=0.01, key="saturateThreshold", on_change=save_presets), "saturateThreshold")
+        ow_widget(lambda: st.slider("Verblassung", 0.001, 0.999, step=0.001, key="fade", on_change=save_presets), "fade")
+        ow_widget(lambda: st.slider("Sättigung", 0.01, 1.0, step=0.01, key="saturate", on_change=save_presets), "saturate")
+        ow_widget(lambda: st.slider("Sättigungs Grenzwert", 0.0, 1.0, step=0.01, key="saturateThreshold", on_change=save_presets), "saturateThreshold")
 
-with st.expander("Muster", expanded=False):
-    ow_widget(lambda: st.slider("Effekt Wiederholungen", 1, 50, step=1, key="effectRepeats", on_change=save_presets), "effectRepeats")
-    ow_widget(lambda: st.slider("Muster Teilungen", 0, 50, step=1, key="patternSplits", on_change=save_presets), "patternSplits")
-    ow_widget(lambda: st.slider("Jedes N'te Muster verdrehen", -1, 50, step=1, key="patternFlip", on_change=save_presets), "patternFlip")
-    ow_widget(lambda: st.number_input("Muster Verteilung", min_value=0, max_value=999999, step=1, format="%d", key="patternSpread", on_change=save_presets), "patternSpread")
-    ow_widget(lambda: st.number_input("Muster Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="patternCenter", on_change=save_presets), "patternCenter")
-    ow_widget(lambda: st.slider("Muster Größenveränderung", -5.00, 5.00, step=0.01, key="patternSectionSizeMod", on_change=save_presets), "patternSectionSizeMod")
+    with st.expander("Muster", expanded=False):
+        ow_widget(lambda: st.slider("Effekt Wiederholungen", 1, 50, step=1, key="effectRepeats", on_change=save_presets), "effectRepeats")
+        ow_widget(lambda: st.slider("Muster Teilungen", 0, 50, step=1, key="patternSplits", on_change=save_presets), "patternSplits")
+        ow_widget(lambda: st.slider("Jedes N'te Muster verdrehen", -1, 50, step=1, key="patternFlip", on_change=save_presets), "patternFlip")
+        ow_widget(lambda: st.number_input("Muster Verteilung", min_value=0, max_value=999999, step=1, format="%d", key="patternSpread", on_change=save_presets), "patternSpread")
+        ow_widget(lambda: st.number_input("Muster Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="patternCenter", on_change=save_presets), "patternCenter")
+        ow_widget(lambda: st.slider("Muster Größenveränderung", -5.00, 5.00, step=0.01, key="patternSectionSizeMod", on_change=save_presets), "patternSectionSizeMod")
 
-with st.expander("Sequenzierung", expanded=False):
-    filtered_values = [v for v in st.session_state.presets if v["id"] != st.session_state.preset_guid]
-    options = [NONE_OPTION] + [v["id"] for v in filtered_values]
-    if "nextEffectId" not in st.session_state:
-        st.session_state.nextEffectId = None
+    with st.expander("Sequenzierung", expanded=False):
+        filtered_values = [v for v in st.session_state.presets if v["id"] != st.session_state.preset_guid]
+        options = [NONE_OPTION] + [v["id"] for v in filtered_values]
+        if "nextEffectId" not in st.session_state:
+            st.session_state.nextEffectId = None
 
-    linked_guid = st.session_state.nextEffectId
+        cur_next_key = f"next_effect_select_{st.session_state.preset_guid}"
+        cur_preset_for_next = st.session_state.presets[st.session_state.preset_index]
+        linked_guid = cur_preset_for_next["values"].get("nextEffectId")
 
-    default_index = 0
-    if linked_guid is not None:
-        default_index = next(
-            (i for i, v in enumerate(options) if v is not NONE_OPTION and v == linked_guid),
-            0
+        default_index = 0
+        if linked_guid is not None and linked_guid in options:
+            default_index = options.index(linked_guid)
+
+        def on_next_effect_changed():
+            selected_guid = st.session_state.get(cur_next_key)
+            if selected_guid == NONE_OPTION:
+                st.session_state.nextEffectId = None
+            else:
+                st.session_state.nextEffectId = selected_guid
+
+            save_presets()
+
+        st.selectbox(
+            "Nächster Effekt",
+            options,
+            index=default_index,
+            format_func=lambda x: "Deaktiviert" if x is NONE_OPTION else get_preset_name(x),
+            key=cur_next_key,
+            on_change=on_next_effect_changed
         )
 
-    def on_next_effect_changed():
-        selected_guid = st.session_state["nextEffectEntry"]
-        if selected_guid == NONE_OPTION:
-            st.session_state.nextEffectId = None
-        else:
-            st.session_state.nextEffectId = selected_guid
-        
-        save_presets()
+        ow_widget(lambda: st.number_input("Effekt Dauer in ms", min_value=1, max_value=99999999, step=1, format="%d", key="effectDurationMs", on_change=save_presets), "effectDurationMs")
+        ow_widget(lambda: st.number_input("Effekt Übergangsdauer in ms", min_value=0, max_value=99999999, step=1, format="%d", key="effectTransitionDurationMs", on_change=save_presets), "effectTransitionDurationMs")
+        ow_widget(lambda: st.number_input("Übergangs Vorlaufzeit in ms", min_value=0, max_value=99999999, step=1, format="%d", key="effectTransitionWarmupDuration", on_change=save_presets), "effectTransitionWarmupDuration")
+        ow_widget(lambda: st.toggle("Effekt nach Übergang zurücksetzen", key="resetEffectAfterTransition", on_change=save_presets), "resetEffectAfterTransition", False)
 
-    st.selectbox(
-        "Nächster Effekt",
-        options,
-        index=default_index,
-        format_func=lambda x: "Deaktiviert" if x is NONE_OPTION else guid_to_obj[x]["name"],
-        key="nextEffectEntry",
-        on_change=on_next_effect_changed
-    )
+    with st.expander("Farben", expanded=False):
+        ow_widget(lambda: st.selectbox("Farbmodus", list(COLOR_MODES.values()), key="colorMode", on_change=save_presets), "colorMode")
+        ow_widget(lambda: st.slider("Helligkeit", 0.0, 5.0, step=0.01, key="brightness", on_change=save_presets), "brightness")
+        ow_widget(lambda: st.slider("Gamma", 0.0, 5.0, step=0.01, key="gamma", on_change=save_presets), "gamma")
+        ow_widget(lambda: st.slider("Farbverstärkung", 0.1, 20.0, key="colorIncreaseFactor", on_change=save_presets), "colorIncreaseFactor")
+        ow_widget(lambda: st.slider("Farbverlauf", 0.00, 0.50, key="colorTransition", on_change=save_presets), "colorTransition")
 
-    ow_widget(lambda: st.number_input("Effekt Dauer in ms", min_value=1, max_value=99999999, step=1, format="%d", key="effectDurationMs", on_change=save_presets), "effectDurationMs")
-    ow_widget(lambda: st.number_input("Effekt Übergangsdauer in ms", min_value=0, max_value=99999999, step=1, format="%d", key="effectTransitionDurationMs", on_change=save_presets), "effectTransitionDurationMs")
-    ow_widget(lambda: st.number_input("Übergangs Vorlaufzeit in ms", min_value=0, max_value=99999999, step=1, format="%d", key="effectTransitionWarmupDuration", on_change=save_presets), "effectTransitionWarmupDuration")
-    ow_widget(lambda: st.toggle("Effekt nach Übergang zurücksetzen", key="resetEffectAfterTransition", on_change=save_presets), "resetEffectAfterTransition", False)
+        if get_color_mode_id() not in [0, 6, 7, 8]:
+            ow_widget(lambda: st.slider("Wert / Farb Verschmierung", 0.00, 1.00, step=0.01, key="valueColorBias", on_change=save_presets), "valueColorBias")
+            ow_widget(lambda: st.toggle("Transparenz aus Wert", key="getAlphaFromValue", on_change=save_presets), "getAlphaFromValue", False)
 
-with st.expander("Farben", expanded=False):
-    ow_widget(lambda: st.selectbox("Farbmodus", list(COLOR_MODES.values()), key="colorMode", on_change=save_presets), "colorMode")
-    ow_widget(lambda: st.slider("Helligkeit", 0.0, 5.0, step=0.01, key="brightness", on_change=save_presets), "brightness")
-    ow_widget(lambda: st.slider("Gamma", 0.0, 5.0, step=0.01, key="gamma", on_change=save_presets), "gamma")
-    ow_widget(lambda: st.slider("Farbverstärkung", 0.1, 20.0, key="colorIncreaseFactor", on_change=save_presets), "colorIncreaseFactor")
-    ow_widget(lambda: st.slider("Farbverlauf", 0.00, 0.50, key="colorTransition", on_change=save_presets), "colorTransition")
+        if get_color_mode_id() in [7, 8]:
+            ow_widget(lambda: st.slider("Farbzyklus Geschwindigkeit", 0.00, 5.00, step=0.01, key="colorCycleSpeed", on_change=save_presets), "colorCycleSpeed")
 
-    if get_color_mode_id() not in [0, 6, 7, 8]:
-        ow_widget(lambda: st.slider("Wert / Farb Verschmierung", 0.00, 1.00, step=0.01, key="valueColorBias", on_change=save_presets), "valueColorBias")
-        ow_widget(lambda: st.toggle("Transparenz aus Wert", key="getAlphaFromValue", on_change=save_presets), "getAlphaFromValue", False)
+        if get_color_mode_id() == 4:
+            ow_widget(lambda: st.number_input("Farbwellen Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="colorWaveOrigin", on_change=save_presets), "colorWaveOrigin")
+            ow_widget(lambda: st.number_input("Farbwellen Größe", min_value=1, max_value=999999, step=1, format="%d", key="colorWaveSize", on_change=save_presets), "colorWaveSize")
+            ow_widget(lambda: st.slider("Farbwellen Geschwindigkeit", 1, 1000, key="colorWaveSpeed", on_change=save_presets), "colorWaveSpeed")
+            ow_widget(lambda: st.toggle("Farbwellen Richtung (nach Außen / Innen)", key="colorWaveInwards", on_change=save_presets), "colorWaveInwards", False)
 
-    if get_color_mode_id() in [7, 8]:
-        ow_widget(lambda: st.slider("Farbzyklus Geschwindigkeit", 0.00, 5.00, step=0.01, key="colorCycleSpeed", on_change=save_presets), "colorCycleSpeed")
+        ow_widget(lambda: st.slider("Zufallsfarben Faktor", 0.00, 1.00, step=0.01, key="noiseAmount", on_change=save_presets), "noiseAmount")
+        ow_widget(lambda: st.slider("Zufallsfarben Glättung", 0.00, 1.00, step=0.01, key="noiseSmoothing", on_change=save_presets), "noiseSmoothing")
+        ow_widget(lambda: st.toggle("Farbüberfluss", key="colorOverflow", on_change=save_presets), "colorOverflow", False)
+        ow_widget(lambda: st.toggle("Regenbogen Farben", key="useRainbow", on_change=save_presets), "useRainbow", False)
+        ow_widget(lambda: st.button("➕ Farbe hinzufügen", on_click=cb_add_color), "colors", False)
 
-    if get_color_mode_id() == 4:
-        ow_widget(lambda: st.number_input("Farbwellen Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="colorWaveOrigin", on_change=save_presets), "colorWaveOrigin")
-        ow_widget(lambda: st.number_input("Farbwellen Größe", min_value=1, max_value=999999, step=1, format="%d", key="colorWaveSize", on_change=save_presets), "colorWaveSize")
-        ow_widget(lambda: st.slider("Farbwellen Geschwindigkeit", 1, 1000, key="colorWaveSpeed", on_change=save_presets), "colorWaveSpeed")
-        ow_widget(lambda: st.toggle("Farbwellen Richtung (nach Außen / Innen)", key="colorWaveInwards", on_change=save_presets), "colorWaveInwards", False)
-    
-    ow_widget(lambda: st.slider("Zufallsfarben Faktor", 0.00, 1.00, step=0.01, key="noiseAmount", on_change=save_presets), "noiseAmount")
-    ow_widget(lambda: st.slider("Zufallsfarben Glättung", 0.00, 1.00, step=0.01, key="noiseSmoothing", on_change=save_presets), "noiseSmoothing")
-    ow_widget(lambda: st.toggle("Farbüberfluss", key="colorOverflow", on_change=save_presets), "colorOverflow", False)
-    ow_widget(lambda: st.toggle("Regenbogen Farben", key="useRainbow", on_change=save_presets), "useRainbow", False)
-    ow_widget(lambda: st.button("➕ Farbe hinzufügen", on_click=cb_add_color), "colors", False)
+        for i, c in enumerate(st.session_state.colors):
+            label = "Hintergrund Farbe" if i == 0 else f"Farbe {i}"
 
-    st.markdown("""
-    <style>
-    div[class*="st-key-mv_up_"],
-    div[class*="st-key-mv_down_"],
-    div[class*="st-key-rm_col_"] {
-        width: auto !important;
-        min-width: 0 !important;
-    }
-    div[class*="st-key-mv_up_"] button,
-    div[class*="st-key-mv_down_"] button,
-    div[class*="st-key-rm_col_"] button {
-        width: 38px !important;
-        height: 38px !important;
-        min-width: 38px !important;
-        min-height: 38px !important;
-        padding: 0 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+            if f"color_{i}" not in st.session_state:
+                st.session_state[f"color_{i}"] = c["color"]
+            if f"threshold_{i}" not in st.session_state:
+                st.session_state[f"threshold_{i}"] = c["threshold"]
 
-    for i, c in enumerate(st.session_state.colors):
-        label = "Hintergrund Farbe" if i == 0 else f"Farbe {i}"
-    
-        if f"color_{i}" not in st.session_state:
-            st.session_state[f"color_{i}"] = c["color"]
-        if f"threshold_{i}" not in st.session_state:
-            st.session_state[f"threshold_{i}"] = c["threshold"]
+            col_color, col_actions = st.columns([1, 1], vertical_alignment="bottom", wrap=False)
+            with col_color:
+                st.color_picker(
+                    label,
+                    key=f"color_{i}",
+                    on_change=save_presets
+                )
+            with col_actions:
+                has_actions = i > 0 and len(st.session_state.colors) > 2
+                if has_actions:
+                    with st.container(horizontal=True, horizontal_alignment="right", vertical_alignment="center"):
+                        if i > 1:
+                            st.button("▲", key=f"mv_up_{i}", on_click=move_color, args=(i, -1))
+                        if i > 0 and i < len(st.session_state.colors) - 1:
+                            st.button("▼", key=f"mv_down_{i}", on_click=move_color, args=(i, 1))
+                        if i > 0 and len(st.session_state.colors) > 2:
+                            st.button("❌", key=f"rm_col_{i}", on_click=remove_color, args=(i,))
 
-        col_color, col_actions = st.columns([1, 1], vertical_alignment="bottom", wrap=False)
-        with col_color:
-            st.color_picker(
-                label,
-                key=f"color_{i}",
+            if i >= len(st.session_state.colors) - 1:
+                st.session_state[f"threshold_{i}"] = 1.0
+
+            st.slider(
+                "Grenzwert",
+                min_value=0.00,
+                max_value=1.00,
+                step=0.01,
+                key=f"threshold_{i}",
+                disabled=(i >= len(st.session_state.colors) - 1),
+                label_visibility="visible",
                 on_change=save_presets
             )
-        with col_actions:
-            has_actions = i > 0 and len(st.session_state.colors) > 2
-            if has_actions:
-                with st.container(horizontal=True, horizontal_alignment="right", vertical_alignment="center"):
-                    if i > 1:
-                        st.button("▲", key=f"mv_up_{i}", on_click=move_color, args=(i, -1))
-                    if i > 0 and i < len(st.session_state.colors) - 1:
-                        st.button("▼", key=f"mv_down_{i}", on_click=move_color, args=(i, 1))
-                    if i > 0 and len(st.session_state.colors) > 2:
-                        st.button("❌", key=f"rm_col_{i}", on_click=remove_color, args=(i,))
-
-        if i >= len(st.session_state.colors) - 1:
-            st.session_state[f"threshold_{i}"] = 1.0
-
-        st.slider(
-            "Grenzwert",
-            min_value=0.00,
-            max_value=1.00,
-            step=0.01,
-            key=f"threshold_{i}",
-            disabled=(i >= len(st.session_state.colors) - 1),
-            label_visibility="visible",
-            on_change=save_presets
-        )
 
 with st.expander("Globale Einstellungen", expanded=False):
     st.number_input("FPS", min_value=1, max_value=400, step=1, format="%d", key="fps", on_change=save_static_config)
