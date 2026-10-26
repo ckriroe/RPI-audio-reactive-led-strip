@@ -11,7 +11,7 @@
   "maxFreqAmplitudeDecayRate": 0.002,
   "ledUpdateFrequency": 1200000,
   "bounceLayers": 1,
-  "maxEffectSpeed": 600,
+  "maxEffectSpeed": 1000,
   "externalModeRelayGpio": 5,
   "invalidFrameSleepTime": 2000,
   "printFrameTimes": false,

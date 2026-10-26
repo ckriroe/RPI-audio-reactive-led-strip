@@ -123,7 +123,7 @@ STATIC_DEFAULTS = {
     "maxFreqAmplitudeDecayRate": 0.002,
     "ledUpdateFrequency": 800000,
     "bounceLayers": 1,
-    "maxEffectSpeed": 600,
+    "maxEffectSpeed": 1000,
     "externalModeRelayGpio": 5,
     "invalidFrameSleepTime": 2000,
     "printFrameTimes": False,
@@ -747,7 +747,7 @@ with st.expander("Effekt", expanded=False):
     ow_widget(lambda: st.slider("Effekt Beschleunigung", 0.0, 5.0, step=0.01, key="acceleration", on_change=save_presets), "acceleration")
 
     if get_effect_mode_id() in (2, 4):
-        ow_widget(lambda: st.slider("Effekt Geschwindigkeit", 1, 600, key="speed", on_change=save_presets), "speed")
+        ow_widget(lambda: st.slider("Effekt Geschwindigkeit", 1, 1000, key="speed", on_change=save_presets), "speed")
 
     ow_widget(lambda: st.slider("Effekt Verstärkung", 0.1, 10.0, key="valueIncreaseFactor", on_change=save_presets), "valueIncreaseFactor")
 
@@ -828,7 +828,7 @@ with st.expander("Farben", expanded=False):
     if get_color_mode_id() == 4:
         ow_widget(lambda: st.number_input("Farbwellen Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="colorWaveOrigin", on_change=save_presets), "colorWaveOrigin")
         ow_widget(lambda: st.number_input("Farbwellen Größe", min_value=1, max_value=999999, step=1, format="%d", key="colorWaveSize", on_change=save_presets), "colorWaveSize")
-        ow_widget(lambda: st.slider("Farbwellen Geschwindigkeit", 1, 600, key="colorWaveSpeed", on_change=save_presets), "colorWaveSpeed")
+        ow_widget(lambda: st.slider("Farbwellen Geschwindigkeit", 1, 1000, key="colorWaveSpeed", on_change=save_presets), "colorWaveSpeed")
         ow_widget(lambda: st.toggle("Farbwellen Richtung (nach Außen / Innen)", key="colorWaveInwards", on_change=save_presets), "colorWaveInwards", False)
     
     ow_widget(lambda: st.slider("Zufallsfarben Faktor", 0.00, 1.00, step=0.01, key="noiseAmount", on_change=save_presets), "noiseAmount")
