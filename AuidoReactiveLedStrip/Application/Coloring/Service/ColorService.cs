@@ -1,4 +1,4 @@
-﻿using Application.Coloring.ColorCorrection;
+using Application.Coloring.ColorCorrection;
 using Application.Coloring.Mode;
 using Application.Coloring.Sanitizing;
 using Application.Domain;
@@ -16,6 +16,9 @@ namespace Application.Coloring.Service
         private readonly DistanceToBorderColorMode distanceToBorderColorMode;
         private readonly ColorWaveColorMode colorWaveColorMode;
         private readonly ColorIslandColorMode colorIslandColorMode;
+        private readonly ColorCycleOnBlankColorMode colorCycleOnBlankColorMode;
+        private readonly ColorCycleByTimeColorMode colorCycleByTimeColorMode;
+        private readonly ColorCycleByAudioColorMode colorCycleByAudioColorMode;
 
         private readonly GammaCorrector gammaCorrector;
         private readonly BrightnessAdjuster brightnessAdjuster;
@@ -34,6 +37,9 @@ namespace Application.Coloring.Service
             DistanceToBorderColorMode distanceToBorderColorMode,
             ColorWaveColorMode colorWaveColorMode,
             ColorIslandColorMode colorIslandColorMode,
+            ColorCycleOnBlankColorMode colorCycleOnBlankColorMode,
+            ColorCycleByTimeColorMode colorCycleByTimeColorMode,
+            ColorCycleByAudioColorMode colorCycleByAudioColorMode,
             GammaCorrector gammaCorrector,
             BrightnessAdjuster brightnessAdjuster
         )
@@ -45,6 +51,9 @@ namespace Application.Coloring.Service
             this.distanceToBorderColorMode = distanceToBorderColorMode;
             this.colorWaveColorMode = colorWaveColorMode;
             this.colorIslandColorMode = colorIslandColorMode;
+            this.colorCycleOnBlankColorMode = colorCycleOnBlankColorMode;
+            this.colorCycleByTimeColorMode = colorCycleByTimeColorMode;
+            this.colorCycleByAudioColorMode = colorCycleByAudioColorMode;
             this.gammaCorrector = gammaCorrector;
             this.brightnessAdjuster = brightnessAdjuster;
         }
@@ -128,6 +137,15 @@ namespace Application.Coloring.Service
                     break;
                 case ColorMode.ColorWave:
                     this.currentColorMode = this.colorWaveColorMode;
+                    break;
+                case ColorMode.ColorCycleOnBlank:
+                    this.currentColorMode = this.colorCycleOnBlankColorMode;
+                    break;
+                case ColorMode.ColorCycleByTime:
+                    this.currentColorMode = this.colorCycleByTimeColorMode;
+                    break;
+                case ColorMode.ColorCycleByAudio:
+                    this.currentColorMode = this.colorCycleByAudioColorMode;
                     break;
                 case ColorMode.ColorIslands:
                     this.currentColorMode = this.colorIslandColorMode;

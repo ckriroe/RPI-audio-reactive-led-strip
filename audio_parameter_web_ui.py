@@ -53,7 +53,10 @@ COLOR_MODES = {
     2: "Distanz zur Mitte",
     3: "Distanz zum Rand",
     4: "Farbwelle",
-    5: "Farbinseln"
+    5: "Farbinseln",
+    6: "Farbzyklus (Leerer Streifen)",
+    7: "Farbzyklus (Zeit)",
+    8: "Farbzyklus (Audio)"
 }
 
 DYNAMIC_DEFAULTS = {
@@ -83,6 +86,7 @@ DYNAMIC_DEFAULTS = {
     "colorIncreaseFactor": 1.0,
     "valueIncreaseFactor": 1.0,
     "colorTransition": 0.25,
+    "colorCycleSpeed": 1.0,
     "valueColorBias": 0.0,
     "getAlphaFromValue": False,
     "colorOverflow": False,
@@ -306,6 +310,7 @@ def get_current_preset_values_from_state(get_for_template):
     set_value_from_state(stateObj, get_for_template, template_values, "colorIncreaseFactor")
     set_value_from_state(stateObj, get_for_template, template_values, "valueIncreaseFactor")
     set_value_from_state(stateObj, get_for_template, template_values, "colorTransition")
+    set_value_from_state(stateObj, get_for_template, template_values, "colorCycleSpeed")
     set_value_from_state(stateObj, get_for_template, template_values, "valueColorBias")
     set_value_from_state(stateObj, get_for_template, template_values, "colorWaveOrigin")
     set_value_from_state(stateObj, get_for_template, template_values, "colorWaveSpeed")
@@ -402,6 +407,7 @@ def update_session_state_from_preset(preset_data):
     update_session_value_from_preset(preset_values, template_values, "colorIncreaseFactor")
     update_session_value_from_preset(preset_values, template_values, "valueIncreaseFactor")
     update_session_value_from_preset(preset_values, template_values, "colorTransition")
+    update_session_value_from_preset(preset_values, template_values, "colorCycleSpeed")
     update_session_value_from_preset(preset_values, template_values, "valueColorBias")
     update_session_value_from_preset(preset_values, template_values, "getAlphaFromValue")
     update_session_value_from_preset(preset_values, template_values, "colorOverflow")
@@ -833,9 +839,12 @@ with st.expander("Farben", expanded=False):
     ow_widget(lambda: st.slider("Farbverstärkung", 0.1, 20.0, key="colorIncreaseFactor", on_change=save_presets), "colorIncreaseFactor")
     ow_widget(lambda: st.slider("Farbverlauf", 0.00, 0.50, key="colorTransition", on_change=save_presets), "colorTransition")
 
-    if get_color_mode_id() != 0:
+    if get_color_mode_id() not in [0, 6, 7, 8]:
         ow_widget(lambda: st.slider("Wert / Farb Verschmierung", 0.00, 1.00, step=0.01, key="valueColorBias", on_change=save_presets), "valueColorBias")
         ow_widget(lambda: st.toggle("Transparenz aus Wert", key="getAlphaFromValue", on_change=save_presets), "getAlphaFromValue", False)
+
+    if get_color_mode_id() in [7, 8]:
+        ow_widget(lambda: st.slider("Farbzyklus Geschwindigkeit", 0.00, 5.00, step=0.01, key="colorCycleSpeed", on_change=save_presets), "colorCycleSpeed")
 
     if get_color_mode_id() == 4:
         ow_widget(lambda: st.number_input("Farbwellen Zentrum", min_value=0, max_value=999999, step=1, format="%d", key="colorWaveOrigin", on_change=save_presets), "colorWaveOrigin")

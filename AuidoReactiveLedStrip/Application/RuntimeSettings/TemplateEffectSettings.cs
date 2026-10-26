@@ -1,4 +1,4 @@
-﻿using Application.Domain;
+using Application.Domain;
 using System.Collections.Immutable;
 
 namespace Application.RuntimeSettings
@@ -50,6 +50,8 @@ namespace Application.RuntimeSettings
         public float? ValueIncreaseFactor { get; set; }
 
         public float? ColorTransition { get; set; }
+
+        public float? ColorCycleSpeed { get; set; }
 
         public float? ValueColorBias { get; set; }
 

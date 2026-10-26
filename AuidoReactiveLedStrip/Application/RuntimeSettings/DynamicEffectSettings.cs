@@ -1,4 +1,4 @@
-﻿using Application.Domain;
+using Application.Domain;
 using System.Drawing;
 
 namespace Application.RuntimeSettings
@@ -50,6 +50,8 @@ namespace Application.RuntimeSettings
         public float ValueIncreaseFactor { get; set; }
 
         public float ColorTransition { get; set; }
+
+        public float ColorCycleSpeed { get; set; } = 1.0f;
 
         public float ValueColorBias { get; set; }
 
@@ -141,6 +143,7 @@ namespace Application.RuntimeSettings
                    this.ColorIncreaseFactor == settings.ColorIncreaseFactor &&
                    this.ValueIncreaseFactor == settings.ValueIncreaseFactor &&
                    this.ColorTransition == settings.ColorTransition &&
+                   this.ColorCycleSpeed == settings.ColorCycleSpeed &&
                    this.ValueColorBias == settings.ValueColorBias &&
                    this.ColorWaveOrigin == settings.ColorWaveOrigin &&
                    this.ColorWaveSpeed == settings.ColorWaveSpeed &&
@@ -205,6 +208,7 @@ namespace Application.RuntimeSettings
             hash.Add(this.ColorIncreaseFactor);
             hash.Add(this.ValueIncreaseFactor);
             hash.Add(this.ColorTransition);
+            hash.Add(this.ColorCycleSpeed);
             hash.Add(this.ValueColorBias);
             hash.Add(this.ColorWaveOrigin);
             hash.Add(this.ColorWaveSpeed);

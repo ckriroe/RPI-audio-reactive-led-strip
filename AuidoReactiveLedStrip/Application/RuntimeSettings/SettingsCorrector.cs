@@ -45,6 +45,7 @@ namespace Application.RuntimeSettings
                 ColorIncreaseFactor                 = GetTemplateVal(tes, temp, t => t.ColorIncreaseFactor),
                 ValueIncreaseFactor                 = GetTemplateVal(tes, temp, t => t.ValueIncreaseFactor),
                 ColorTransition                     = GetTemplateVal(tes, temp, t => t.ColorTransition),
+                ColorCycleSpeed                     = GetTemplateVal(tes, temp, t => t.ColorCycleSpeed, 1.0f),
                 ValueColorBias                      = GetTemplateVal(tes, temp, t => t.ValueColorBias),
                 ColorWaveOrigin                     = GetTemplateVal(tes, temp, t => t.ColorWaveOrigin),
                 ColorWaveSpeed                      = GetTemplateVal(tes, temp, t => t.ColorWaveSpeed),
@@ -99,6 +100,7 @@ namespace Application.RuntimeSettings
 
         private static void CorrectDynamicEffectSettings(DynamicEffectSettings dynamicSettings, StaticSettings staticSettings)
         {
+            dynamicSettings.ColorCycleSpeed = Math.Clamp(dynamicSettings.ColorCycleSpeed, 0.0f, 5.0f);
             dynamicSettings.CalculatedLedCount = Math.Max(2, staticSettings.LedCount / dynamicSettings.EffectRepeats);
 
             dynamicSettings.EffectOrigin = Math.Min(dynamicSettings.CalculatedLedCount - 1, dynamicSettings.EffectOrigin / dynamicSettings.EffectRepeats);

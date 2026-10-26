@@ -69,6 +69,9 @@ var builder = Host.CreateDefaultBuilder(args)
         services.AddTransient<DistanceToBorderColorMode>();
         services.AddTransient<ColorWaveColorMode>();
         services.AddTransient<ColorIslandColorMode>();
+        services.AddTransient<ColorCycleOnBlankColorMode>();
+        services.AddTransient<ColorCycleByTimeColorMode>();
+        services.AddTransient<ColorCycleByAudioColorMode>();
         services.AddTransient<BrightnessAdjuster>();
         services.AddTransient<GammaCorrector>();
         services.AddTransient<INoiseGenerator, NoiseGenerator>();

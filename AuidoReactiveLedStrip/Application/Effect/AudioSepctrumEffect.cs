@@ -122,6 +122,13 @@ namespace Application.Effect
                 prevStrip.LedPixels[i].Value = value;
             }
 
+            float sum = 0.0f;
+            for (int i = 0; i < length; i++)
+            {
+                sum += prevStrip.LedPixels[i].Value;
+            }
+            prevStrip.CurrentAudioValue = length > 0 ? sum / length : 0.0f;
+
             return prevStrip;
         }
     }

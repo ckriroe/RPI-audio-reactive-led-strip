@@ -1,4 +1,4 @@
-﻿using Application.Domain;
+using Application.Domain;
 using Application.RuntimeSettings;
 using Application.Util;
 
@@ -29,10 +29,9 @@ namespace Application.Effect
 
             if (steps == 0 || center >= n)
             {
-                if (prevStrip != null)
-                    return prevStrip;
-                else
-                    return LedHelper.CreateEmptyStrip(length);
+                prevStrip ??= LedHelper.CreateEmptyStrip(length);
+                prevStrip.CurrentAudioValue = newValue;
+                return prevStrip;
             }
 
             if (this.prevWaveStrip.Length != n)
@@ -55,10 +54,14 @@ namespace Application.Effect
 
             this.prevWaveStrip = newStrip;
 
+            LedStrip resultStrip;
             if (bounceLayers == 0)
-                return new LedStrip { LedPixels = newStrip };
+                resultStrip = new LedStrip { LedPixels = newStrip };
             else 
-                return CreateBouncedWaveStrip(length, bounceLayers, newStrip);
+                resultStrip = CreateBouncedWaveStrip(length, bounceLayers, newStrip);
+
+            resultStrip.CurrentAudioValue = newValue;
+            return resultStrip;
         }
 
         public void Reset()

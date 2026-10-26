@@ -1,4 +1,4 @@
-﻿using Application.Domain;
+using Application.Domain;
 using Application.Util;
 
 namespace Application.Effect
@@ -8,18 +8,15 @@ namespace Application.Effect
         public override LedStrip? RenderEffekt(LedStrip? prevStrip, int length)
         {
             float value = base.GetCurrentAudioValue();
-            
-            if (prevStrip != null)
-            {
-                foreach (var pixel in prevStrip.LedPixels)
-                {
-                    pixel.Value = value;
-                }
+            prevStrip ??= LedHelper.CreateEmptyStrip(length);
+            prevStrip.CurrentAudioValue = value;
 
-                return prevStrip;
+            foreach (var pixel in prevStrip.LedPixels)
+            {
+                pixel.Value = value;
             }
 
-            return LedHelper.CreateFilledStrip(length, value);
+            return prevStrip;
         }
     }
 }

@@ -77,6 +77,7 @@ namespace Application.Effect
             }
 
             float audioValue = base.GetCurrentAudioValue();
+            prevStrip.CurrentAudioValue = audioValue;
             long currentTicksMs = Environment.TickCount;
 
             float audioDelta = audioValue - this.lastAudioValue;

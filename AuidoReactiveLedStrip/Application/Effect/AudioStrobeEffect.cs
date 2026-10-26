@@ -26,6 +26,7 @@ namespace Application.Effect
                 prevStrip = LedHelper.CreateEmptyStrip(length);
 
             float audioValue = base.GetCurrentAudioValue();
+            prevStrip.CurrentAudioValue = audioValue;
             int framesPerSecond = Math.Max(1, staticSettings.Fps);
 
             float maxStrobeRate = Math.Clamp(dynamicSettings.Speed / SpeedToRateDivisor, MinStrobeRateHz, framesPerSecond * MaxStrobeFpsMultiplier);

@@ -1,4 +1,4 @@
-﻿using Application.Domain;
+using Application.Domain;
 using Application.RuntimeSettings;
 using Application.Util;
 
@@ -16,6 +16,7 @@ namespace Application.Effect
             float value = base.GetCurrentAudioValue();
 
             prevStrip ??= LedHelper.CreateEmptyStrip(length);
+            prevStrip.CurrentAudioValue = value;
             var prevPixels = prevStrip.LedPixels;
 
             for (int i = 0; i < length; i++)

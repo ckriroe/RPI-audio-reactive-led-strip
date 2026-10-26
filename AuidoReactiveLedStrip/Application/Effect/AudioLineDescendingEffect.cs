@@ -1,4 +1,4 @@
-﻿using Application.Audio.Service;
+using Application.Audio.Service;
 using Application.Domain;
 using Application.RuntimeSettings;
 using Application.Util;
@@ -17,6 +17,7 @@ namespace Application.Effect
 
             int n = length;
             prevStrip ??= LedHelper.CreateEmptyStrip(length);
+            prevStrip.CurrentAudioValue = value;
             var ledPixels = prevStrip.LedPixels;
 
             int center = dynamicSettings.EffectOrigin;

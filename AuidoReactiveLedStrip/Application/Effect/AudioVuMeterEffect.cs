@@ -39,6 +39,7 @@ namespace Application.Effect
                 prevStrip = LedHelper.CreateEmptyStrip(length);
 
             float audioValue = MathHelper.Clamp(base.GetCurrentAudioValue(), 0.0f, 1.0f);
+            prevStrip.CurrentAudioValue = audioValue;
             int origin = Math.Clamp(dynamicSettings.EffectOrigin, 0, length - 1);
             int peakSize = Math.Max(1, dynamicSettings.ParticleSize);
             int halfPeak = peakSize / 2;
