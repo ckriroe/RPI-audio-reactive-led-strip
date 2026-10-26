@@ -1,4 +1,4 @@
-﻿using Application.Application.Lifetime;
+using Application.Application.Lifetime;
 using Application.Application.Orchestration;
 using Application.Application.Service;
 using Application.Audio.FftTransformer;
@@ -84,6 +84,12 @@ var builder = Host.CreateDefaultBuilder(args)
         services.AddTransient<GpioExternalEffect>();
         services.AddTransient<StaticAscendingValueEffect>();
         services.AddTransient<StaticValueOneEffect>();
+        services.AddTransient<AudioWaterSimulationEffect>();
+        services.AddTransient<AudioStrobeEffect>();
+        services.AddTransient<AmbientBreathingEffect>();
+        services.AddTransient<FireSimulationEffect>();
+        services.AddTransient<MeteorEffect>();
+        services.AddTransient<AudioVuMeterEffect>();
         services.AddTransient<IEffectService, EffectService>();
 
         services.AddTransient<AudioFftDataProvider>();

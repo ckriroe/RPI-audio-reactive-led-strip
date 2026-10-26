@@ -1,4 +1,4 @@
-﻿namespace Application.Domain
+namespace Application.Domain
 {
     public enum EffectMode
     {
@@ -10,6 +10,12 @@
         StaticAscending = 5,
         StaticValueOne = 6,
         External = 7,
-        AudioLineDescending = 8
+        AudioLineDescending = 8,
+        AudioWaterSimulation = 9,
+        AudioStrobe = 10,
+        AmbientBreathing = 11,
+        FireSimulation = 12,
+        Meteor = 13,
+        AudioVuMeter = 14
     }
 }

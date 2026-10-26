@@ -97,6 +97,8 @@ namespace Application.RuntimeSettings
 
         public int? AudioPeakHoldTimeMs { get; set; }
 
+        public int? MaxWaves { get; set; }
+
         public Guid? NextEffectId { get; set; }
 
         public long? EffectDurationMs { get; set; }

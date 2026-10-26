@@ -97,6 +97,8 @@ namespace Application.RuntimeSettings
 
         public int AudioPeakHoldTimeMs { get; set; }
 
+        public int MaxWaves { get; set; }
+
         public int CalculatedLedCount { get; set; }
 
         public Guid? NextEffectId { get; set; }
@@ -162,6 +164,7 @@ namespace Application.RuntimeSettings
                    this.BpmLimit == settings.BpmLimit &&
                    this.AudioResponseCurve == settings.AudioResponseCurve &&
                    this.AudioPeakHoldTimeMs == settings.AudioPeakHoldTimeMs &&
+                   this.MaxWaves == settings.MaxWaves &&
                    this.CalculatedLedCount == settings.CalculatedLedCount &&
                    EqualityComparer<Guid?>.Default.Equals(this.NextEffectId, settings.NextEffectId) &&
                    this.EffectDurationMs == settings.EffectDurationMs &&
@@ -225,6 +228,7 @@ namespace Application.RuntimeSettings
             hash.Add(this.BpmLimit);
             hash.Add(this.AudioResponseCurve);
             hash.Add(this.AudioPeakHoldTimeMs);
+            hash.Add(this.MaxWaves);
             hash.Add(this.CalculatedLedCount);
             hash.Add(this.NextEffectId);
             hash.Add(this.EffectDurationMs);

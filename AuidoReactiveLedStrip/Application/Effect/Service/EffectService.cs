@@ -1,4 +1,4 @@
-﻿using Application.Audio.Service;
+using Application.Audio.Service;
 using Application.Domain;
 using Application.RuntimeSettings;
 
@@ -15,6 +15,13 @@ namespace Application.Effect.Service
         private readonly StaticAscendingValueEffect staticAscendingValueEffect;
         private readonly StaticValueOneEffect staticValueOneEffect;
         private readonly AudioLineDescendingEffect audioLineDescendingEffect;
+        private readonly AudioWaterSimulationEffect audioWaterSimulationEffect;
+        private readonly AudioStrobeEffect audioStrobeEffect;
+
+        private readonly AmbientBreathingEffect ambientBreathingEffect;
+        private readonly FireSimulationEffect fireSimulationEffect;
+        private readonly MeteorEffect meteorEffect;
+        private readonly AudioVuMeterEffect audioVuMeterEffect;
 
         private EffectMode? currentEffectMode = null;
         private IEffect? currentEffect = null;
@@ -30,7 +37,14 @@ namespace Application.Effect.Service
             GpioExternalEffect externalEffect,
             StaticAscendingValueEffect staticAscendingValueEffect,
             StaticValueOneEffect staticValueOneEffect,
-            AudioLineDescendingEffect audioLineDescendingEffect
+            AudioLineDescendingEffect audioLineDescendingEffect,
+            AudioWaterSimulationEffect audioWaterSimulationEffect,
+            AudioStrobeEffect audioStrobeEffect,
+
+            AmbientBreathingEffect ambientBreathingEffect,
+            FireSimulationEffect fireSimulationEffect,
+            MeteorEffect meteorEffect,
+            AudioVuMeterEffect audioVuMeterEffect
         )
         {
             this.audioLineEffect = audioLineEffect;
@@ -42,6 +56,13 @@ namespace Application.Effect.Service
             this.staticAscendingValueEffect = staticAscendingValueEffect;
             this.staticValueOneEffect = staticValueOneEffect;
             this.audioLineDescendingEffect = audioLineDescendingEffect;
+            this.audioWaterSimulationEffect = audioWaterSimulationEffect;
+            this.audioStrobeEffect = audioStrobeEffect;
+
+            this.ambientBreathingEffect = ambientBreathingEffect;
+            this.fireSimulationEffect = fireSimulationEffect;
+            this.meteorEffect = meteorEffect;
+            this.audioVuMeterEffect = audioVuMeterEffect;
         }
 
         public void ApplySettings(IAudioService affectedAudioService, StaticSettings staticSettings, DynamicEffectSettings dynamicSettings)
@@ -56,6 +77,13 @@ namespace Application.Effect.Service
             this.staticAscendingValueEffect.ApplySettings(affectedAudioService, staticSettings, dynamicSettings);
             this.staticValueOneEffect.ApplySettings(affectedAudioService, staticSettings, dynamicSettings);
             this.audioLineDescendingEffect.ApplySettings(affectedAudioService, staticSettings, dynamicSettings);
+            this.audioWaterSimulationEffect.ApplySettings(affectedAudioService, staticSettings, dynamicSettings);
+            this.audioStrobeEffect.ApplySettings(affectedAudioService, staticSettings, dynamicSettings);
+
+            this.ambientBreathingEffect.ApplySettings(affectedAudioService, staticSettings, dynamicSettings);
+            this.fireSimulationEffect.ApplySettings(affectedAudioService, staticSettings, dynamicSettings);
+            this.meteorEffect.ApplySettings(affectedAudioService, staticSettings, dynamicSettings);
+            this.audioVuMeterEffect.ApplySettings(affectedAudioService, staticSettings, dynamicSettings);
 
             this.SetEffectMode(dynamicSettings.EffectMode);
             affectedAudioService.SetAudioMode(this.GetRequiredAudioMode());
@@ -83,6 +111,7 @@ namespace Application.Effect.Service
         {
             this.prevLedStrip = null;
             this.audioWaveEffect.Reset();
+            this.audioWaterSimulationEffect.Reset();
         }
 
         private AudioServiceMode GetRequiredAudioMode()
@@ -146,6 +175,24 @@ namespace Application.Effect.Service
                     break;
                 case EffectMode.AudioLineDescending:
                     this.currentEffect = this.audioLineDescendingEffect;
+                    break;
+                case EffectMode.AudioWaterSimulation:
+                    this.currentEffect = this.audioWaterSimulationEffect;
+                    break;
+                case EffectMode.AudioStrobe:
+                    this.currentEffect = this.audioStrobeEffect;
+                    break;
+                case EffectMode.AmbientBreathing:
+                    this.currentEffect = this.ambientBreathingEffect;
+                    break;
+                case EffectMode.FireSimulation:
+                    this.currentEffect = this.fireSimulationEffect;
+                    break;
+                case EffectMode.Meteor:
+                    this.currentEffect = this.meteorEffect;
+                    break;
+                case EffectMode.AudioVuMeter:
+                    this.currentEffect = this.audioVuMeterEffect;
                     break;
             }
 

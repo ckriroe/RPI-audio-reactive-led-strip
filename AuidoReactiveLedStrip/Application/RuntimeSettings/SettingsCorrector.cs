@@ -68,6 +68,7 @@ namespace Application.RuntimeSettings
                 BpmLimit                            = GetTemplateVal(tes, temp, t => t.BpmLimit, -1),
                 AudioResponseCurve                  = GetTemplateVal(tes, temp, t => t.AudioResponseCurve, 1.0f),
                 AudioPeakHoldTimeMs                 = GetTemplateVal(tes, temp, t => t.AudioPeakHoldTimeMs),
+                MaxWaves                            = GetTemplateVal(tes, temp, t => t.MaxWaves, 4),
                 NextEffectId                        = tes.NextEffectId,
                 EffectDurationMs                    = GetTemplateVal(tes, temp, t => t.EffectDurationMs),
                 EffectTransitionDurationMs          = GetTemplateVal(tes, temp, t => t.EffectTransitionDurationMs),
@@ -113,6 +114,9 @@ namespace Application.RuntimeSettings
                 dynamicSettings.MaxFreq = dynamicSettings.MinFreq;
 
             dynamicSettings.SpectrumSections = Math.Min(dynamicSettings.CalculatedLedCount, dynamicSettings.SpectrumSections);
+
+            if (dynamicSettings.MaxWaves <= 0)
+                dynamicSettings.MaxWaves = 4;
 
             if (dynamicSettings.MinFreqAmplitude < AudioUtil.MinDb || dynamicSettings.MinFreqAmplitude > AudioUtil.MaxDb)
             {
