@@ -555,6 +555,21 @@ def remove_color(index):
 
     save_presets()
 
+def move_color(index, direction):
+    new_index = index + direction
+    if index <= 0 or new_index <= 0 or index >= len(st.session_state.colors) or new_index >= len(st.session_state.colors):
+        return
+
+    sync_widgets_to_colors_list()
+    st.session_state.colors[index]["color"], st.session_state.colors[new_index]["color"] = (
+        st.session_state.colors[new_index]["color"],
+        st.session_state.colors[index]["color"],
+    )
+    st.session_state[f"color_{index}"] = st.session_state.colors[index]["color"]
+    st.session_state[f"color_{new_index}"] = st.session_state.colors[new_index]["color"]
+
+    save_presets()
+
 app_version = load_version()
 app_title = f"RPISC Einstellungen {app_version}" if app_version else "RPISC Einstellungen"
 
@@ -858,6 +873,29 @@ with st.expander("Farben", expanded=False):
     ow_widget(lambda: st.toggle("Regenbogen Farben", key="useRainbow", on_change=save_presets), "useRainbow", False)
     ow_widget(lambda: st.button("➕ Farbe hinzufügen", on_click=cb_add_color), "colors", False)
 
+    st.markdown("""
+    <style>
+    div[class*="st-key-mv_up_"],
+    div[class*="st-key-mv_down_"],
+    div[class*="st-key-rm_col_"] {
+        width: auto !important;
+        min-width: 0 !important;
+    }
+    div[class*="st-key-mv_up_"] button,
+    div[class*="st-key-mv_down_"] button,
+    div[class*="st-key-rm_col_"] button {
+        width: 38px !important;
+        height: 38px !important;
+        min-width: 38px !important;
+        min-height: 38px !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     for i, c in enumerate(st.session_state.colors):
         label = "Hintergrund Farbe" if i == 0 else f"Farbe {i}"
     
@@ -865,33 +903,38 @@ with st.expander("Farben", expanded=False):
             st.session_state[f"color_{i}"] = c["color"]
         if f"threshold_{i}" not in st.session_state:
             st.session_state[f"threshold_{i}"] = c["threshold"]
-        
 
-        col_color, col_threshold = st.columns([1, 2])
+        col_color, col_actions = st.columns([1, 1], vertical_alignment="bottom", wrap=False)
         with col_color:
-            with st.container(horizontal=True, vertical_alignment="center", horizontal_alignment="distribute"):
-                st.color_picker(
-                    label,
-                    key=f"color_{i}",
-                    on_change=save_presets
-                )
-        with col_threshold:
-            if i >= len(st.session_state.colors) - 1:
-                st.session_state[f"threshold_{i}"] = 1.0
+            st.color_picker(
+                label,
+                key=f"color_{i}",
+                on_change=save_presets
+            )
+        with col_actions:
+            has_actions = i > 0 and len(st.session_state.colors) > 2
+            if has_actions:
+                with st.container(horizontal=True, horizontal_alignment="right", vertical_alignment="center"):
+                    if i > 1:
+                        st.button("▲", key=f"mv_up_{i}", on_click=move_color, args=(i, -1))
+                    if i > 0 and i < len(st.session_state.colors) - 1:
+                        st.button("▼", key=f"mv_down_{i}", on_click=move_color, args=(i, 1))
+                    if i > 0 and len(st.session_state.colors) > 2:
+                        st.button("❌", key=f"rm_col_{i}", on_click=remove_color, args=(i,))
 
-            with st.container(horizontal=True, vertical_alignment="center", horizontal_alignment="distribute"):
-                st.slider(
-                    "Grenzwert",
-                    min_value=0.00,
-                    max_value=1.00,
-                    step=0.01,
-                    key=f"threshold_{i}",
-                    disabled=(i >= len(st.session_state.colors) - 1),
-                    label_visibility="visible",
-                    on_change=save_presets
-                )
-                if i > 1:
-                    st.button("❌", disabled=(len(st.session_state.colors) <= 2), key=f"rm_col_{i}", on_click=remove_color, args=(i,))
+        if i >= len(st.session_state.colors) - 1:
+            st.session_state[f"threshold_{i}"] = 1.0
+
+        st.slider(
+            "Grenzwert",
+            min_value=0.00,
+            max_value=1.00,
+            step=0.01,
+            key=f"threshold_{i}",
+            disabled=(i >= len(st.session_state.colors) - 1),
+            label_visibility="visible",
+            on_change=save_presets
+        )
 
 with st.expander("Globale Einstellungen", expanded=False):
     st.number_input("FPS", min_value=1, max_value=400, step=1, format="%d", key="fps", on_change=save_static_config)
