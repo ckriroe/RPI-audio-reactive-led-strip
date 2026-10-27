@@ -74,6 +74,16 @@ foreach ($file in $filesToCopy) {
     Copy-Item $file $destination -Force
 }
 
+$directoriesToCopy = @(
+    "..\..\web_ui"
+)
+
+foreach ($dir in $directoriesToCopy) {
+    if (Test-Path $dir) {
+        Copy-Item $dir $publishDir -Recurse -Force
+    }
+}
+
 # ===== PACKAGE =====
 Write-Host "Creating archive..."
 $zipName = "app.zip"
