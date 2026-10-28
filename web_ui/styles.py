@@ -120,7 +120,7 @@ div[data-testid="stHorizontalBlock"]:has([class*="st-key-btn_shutdown"]) > div[d
     min-width: 0 !important;
     width: auto !important;
 }
-div[data-testid="stHorizontalBlock"]:has([class*="st-key-btn_shutdown"]) > div[data-testid="stColumn"]:last-child,
+div[data-testid="stHorizontalBlock"]:has([class*="st-key-btn_shutdown"]) > div[data-testid="stColumn"]:not(:first-child),
 div[data-testid="stColumn"]:has([class*="st-key-btn_shutdown"]) {
     flex: 0 0 auto !important;
     width: auto !important;

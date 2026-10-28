@@ -10,12 +10,21 @@ from web_ui.preset_service import (
     copy_preset_by_id,
 )
 from web_ui.system_service import is_raspberry_pi, shutdown_system
+from web_ui.backup_service import create_backup_zip, restore_backup_zip
+from web_ui.storage import load_presets, load_static_settings
+from web_ui.state_sync import (
+    update_session_state_from_preset,
+    update_session_state_from_static_settings,
+)
 
 
 def on_dialog_dismiss():
     st.session_state.active_dialog = None
     st.session_state.popover_ver = st.session_state.get("popover_ver", 0) + 1
     st.session_state.pop("dlg_create_grp_name", None)
+    st.session_state.pop("backup_data", None)
+    st.session_state.pop("backup_filename", None)
+    st.session_state.pop("import_backup_error", None)
 
 
 @st.dialog("Neue Gruppe erstellen", on_dismiss=on_dialog_dismiss)
@@ -178,6 +187,98 @@ def dialog_shutdown():
                 st.rerun()
 
 
+@st.dialog("Backup erstellen", on_dismiss=on_dialog_dismiss)
+def dialog_create_backup():
+    st.write("Erstelle ein Backup der aktuellen Einstellungen.")
+
+    if "backup_data" not in st.session_state or st.session_state.get("backup_dialog_ver") != st.session_state.get("popover_ver"):
+        zip_bytes, filename = create_backup_zip()
+        st.session_state.backup_data = zip_bytes
+        st.session_state.backup_filename = filename
+        st.session_state.backup_dialog_ver = st.session_state.get("popover_ver")
+    else:
+        zip_bytes = st.session_state.backup_data
+        filename = st.session_state.backup_filename
+
+    st.info(f"Dateiname: **{filename}**")
+
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("Schließen", key="dlg_create_backup_close", use_container_width=True):
+            st.session_state.pop("backup_data", None)
+            st.session_state.pop("backup_filename", None)
+            st.session_state.active_dialog = None
+            st.rerun()
+    with col2:
+        if st.download_button(
+            label="💾 Herunterladen",
+            data=zip_bytes,
+            file_name=filename,
+            mime="application/zip",
+            key="dlg_create_backup_download",
+            type="primary",
+            use_container_width=True,
+        ):
+            st.session_state.toast_message = ("Backup erfolgreich erstellt!", "💾")
+            st.session_state.pop("backup_data", None)
+            st.session_state.pop("backup_filename", None)
+            st.session_state.active_dialog = None
+            st.session_state.popover_ver = st.session_state.get("popover_ver", 0) + 1
+            st.rerun()
+
+
+@st.dialog("Backup importieren", on_dismiss=on_dialog_dismiss)
+def dialog_import_backup():
+    st.write("Wähle eine Backup-ZIP-Datei aus, um die Einstellungen wiederherzustellen.")
+    st.warning("⚠️ Die aktuellen Einstellungen werden vollständig überschrieben!")
+
+    uploaded_file = st.file_uploader(
+        "ZIP-Datei auswählen",
+        type=["zip"],
+        accept_multiple_files=False,
+        key="dlg_import_backup_uploader",
+    )
+
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("Abbrechen", key="dlg_import_backup_cancel", use_container_width=True):
+            st.session_state.pop("import_backup_error", None)
+            st.session_state.active_dialog = None
+            st.rerun()
+    with col2:
+        is_disabled = (uploaded_file is None)
+        if st.button("Wiederherstellen", key="dlg_import_backup_submit", type="primary", disabled=is_disabled, use_container_width=True):
+            success, err_msg = restore_backup_zip(uploaded_file)
+            if success:
+                st.session_state.pop("import_backup_error", None)
+                st.session_state.active_dialog = None
+                st.session_state.toast_message = ("Backup erfolgreich wiederhergestellt!", "✅")
+
+                preset_data = load_presets()
+                st.session_state.presets = preset_data["presets"]
+                st.session_state.groups = preset_data.get("groups", [])
+                st.session_state.preset_guid = preset_data["selectedPresetId"]
+                preset_index = 0
+                for i in range(len(st.session_state.presets)):
+                    if st.session_state.presets[i]["id"] == st.session_state.preset_guid:
+                        preset_index = i
+                        break
+                st.session_state.preset_index = preset_index
+                update_session_state_from_preset(st.session_state.presets[preset_index])
+
+                static_data = load_static_settings()
+                st.session_state.static_settings = static_data
+                update_session_state_from_static_settings(static_data)
+
+                st.session_state.popover_ver = st.session_state.get("popover_ver", 0) + 1
+                st.rerun()
+            else:
+                st.session_state.import_backup_error = f"Fehler beim Wiederherstellen: {err_msg}"
+
+    if st.session_state.get("import_backup_error"):
+        st.error(st.session_state.import_backup_error)
+
+
 def trigger_dialog(dlg_type, item_id=None):
     st.session_state.popover_ver = st.session_state.get("popover_ver", 0) + 1
     st.session_state.active_dialog = {"type": dlg_type, "id": item_id}
@@ -205,3 +306,7 @@ def render_active_dialog():
             dialog_copy_preset(did)
         elif dtype == "shutdown":
             dialog_shutdown()
+        elif dtype == "create_backup":
+            dialog_create_backup()
+        elif dtype == "import_backup":
+            dialog_import_backup()

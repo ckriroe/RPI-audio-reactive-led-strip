@@ -14,14 +14,20 @@ from web_ui.migrations import migrate_presets
 
 
 def load_version():
-    if os.path.exists(VERSION_FILE):
-        try:
-            with open(VERSION_FILE, "r", encoding="utf-8") as f:
-                ver = f.read().strip()
-                if ver:
-                    return ver
-        except Exception:
-            pass
+    candidates = [
+        VERSION_FILE,
+        os.path.join("AuidoReactiveLedStrip", "Application", "version.txt"),
+        os.path.join(os.path.dirname(__file__), "..", "AuidoReactiveLedStrip", "Application", "version.txt"),
+    ]
+    for path in candidates:
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    ver = f.read().strip()
+                    if ver:
+                        return ver
+            except Exception:
+                pass
     return None
 
 
