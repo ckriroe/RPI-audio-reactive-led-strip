@@ -52,7 +52,7 @@ def set_value_from_state2(stateObj, get_for_template, template_values, preset_ke
     if st.session_state.get("templateId") is not None:
         if st.session_state.get(preset_key + "_ow") is True:
             if get_for_template is True:
-                stateObj[preset_key] = template_values[preset_key]
+                stateObj[preset_key] = template_values.get(preset_key, DYNAMIC_DEFAULTS.get(preset_key))
             else:
                 stateObj[preset_key] = st.session_state[session_key]
         elif get_for_template is True:
@@ -190,9 +190,19 @@ def update_session_state_from_preset(preset_data):
     template_values = None
     templateId = preset_values.get("templateId")
     if templateId is not None:
-        template_values = next((pre["values"] for pre in st.session_state.presets if pre["id"] == templateId), None)
+        template_preset = next((pre for pre in st.session_state.presets if pre["id"] == templateId), None)
+        if template_preset is not None and templateId != preset_data["id"] and template_preset["values"].get("templateId") is None:
+            template_values = template_preset["values"]
+        else:
+            preset_values["templateId"] = None
+            templateId = None
 
-    st.session_state.templateId = preset_values.get("templateId", DYNAMIC_DEFAULTS["templateId"])
+    st.session_state.templateId = templateId
+
+    if template_values is None:
+        for k in DYNAMIC_DEFAULTS.keys():
+            if k != "templateId":
+                st.session_state[k + "_ow"] = False
 
     update_session_value_from_preset2(preset_values, template_values, "colors", "colorsRaw")
 
@@ -267,16 +277,45 @@ def update_session_state_from_static_settings(static_settings_data):
 
 
 def save_presets():
-    current_values = get_current_preset_values_from_state(False)
-
     idx = st.session_state.preset_index
-    st.session_state.presets[idx]["values"] = current_values
-
+    cur_p = st.session_state.presets[idx]
     templateId = st.session_state.get("templateId")
+    template_preset = None
     if templateId is not None:
-        templateIndex = next((i for i, pre in enumerate(st.session_state.presets) if pre["id"] == templateId), None)
-        if templateIndex is not None:
-            st.session_state.presets[templateIndex]["values"] = get_current_preset_values_from_state(True)
+        template_preset = next((pre for pre in st.session_state.presets if pre["id"] == templateId), None)
+
+    if template_preset is not None:
+        template_values = template_preset["values"]
+        cur_values = cur_p["values"]
+        for k in DYNAMIC_DEFAULTS.keys():
+            if k == "templateId" or k == "nextEffectId":
+                continue
+            if k in cur_values and not st.session_state.get(k + "_ow", False):
+                cur_values.pop(k, None)
+                tmpl_val = template_values.get(k, DYNAMIC_DEFAULTS.get(k))
+                if k == "colors":
+                    st.session_state.colors = copy.deepcopy(tmpl_val if tmpl_val is not None else DYNAMIC_DEFAULTS["colors"])
+                    st.session_state.colorsRaw = copy.deepcopy(st.session_state.colors)
+                    for ci, c in enumerate(st.session_state.colors):
+                        st.session_state[f"color_{ci}"] = c["color"]
+                        st.session_state[f"threshold_{ci}"] = c["threshold"]
+                elif k == "audioMode":
+                    st.session_state.audioModeValue = tmpl_val
+                    st.session_state.audioMode = AUDIO_MODES.get(tmpl_val, AUDIO_MODES[0])
+                elif k == "effectMode":
+                    st.session_state.effectModeValue = tmpl_val
+                    st.session_state.effectMode = EFFECT_MODES.get(tmpl_val, EFFECT_MODES[0])
+                elif k == "colorMode":
+                    st.session_state.colorModeValue = tmpl_val
+                    st.session_state.colorMode = COLOR_MODES.get(tmpl_val, COLOR_MODES[0])
+                else:
+                    st.session_state[k] = tmpl_val
+
+    current_values = get_current_preset_values_from_state(False)
+    cur_p["values"] = current_values
+
+    if template_preset is not None:
+        template_preset["values"] = get_current_preset_values_from_state(True)
 
     write_presets_to_disk()
 

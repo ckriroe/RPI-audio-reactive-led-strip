@@ -11,6 +11,16 @@ namespace Application.RuntimeSettings
 
             foreach (Preset preset in dynamicPresetSettings.Presets)
             {
+                if (preset.TemplateEffectSettings.TemplateId != null)
+                {
+                    Guid tid = preset.TemplateEffectSettings.TemplateId.Value;
+                    Preset? target = dynamicPresetSettings.Presets.FirstOrDefault(p => p.Id == tid);
+                    if (tid == preset.Id || target == null || target.TemplateEffectSettings.TemplateId != null)
+                    {
+                        preset.TemplateEffectSettings.TemplateId = null;
+                    }
+                }
+
                 preset.EffectSettings = ResolveEffectSettings(dynamicPresetSettings, preset.TemplateEffectSettings);
                 CorrectDynamicEffectSettings(preset.EffectSettings, staticSettings);
 
@@ -24,8 +34,12 @@ namespace Application.RuntimeSettings
 
         private static DynamicEffectSettings ResolveEffectSettings(DynamicPresetSettings dynamicPresetSettings, TemplateEffectSettings tes)
         {
-            TemplateEffectSettings? temp = tes.TemplateId != null ?
-                dynamicPresetSettings.Presets.FirstOrDefault(p => p.Id == tes.TemplateId)?.TemplateEffectSettings
+            Preset? tempPreset = tes.TemplateId != null ?
+                dynamicPresetSettings.Presets.FirstOrDefault(p => p.Id == tes.TemplateId)
+                : null;
+
+            TemplateEffectSettings? temp = (tempPreset != null && tempPreset.TemplateEffectSettings.TemplateId == null) ?
+                tempPreset.TemplateEffectSettings
                 : null;
 
             return new DynamicEffectSettings()

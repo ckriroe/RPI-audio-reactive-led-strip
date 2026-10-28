@@ -3,7 +3,11 @@ import copy
 import streamlit as st
 from web_ui.constants import GLOBAL_GROUP_ID, NONE_OPTION, DYNAMIC_DEFAULTS
 from web_ui.storage import write_presets_to_disk
-from web_ui.state_sync import save_presets
+from web_ui.state_sync import (
+    save_presets,
+    get_current_preset_values_from_state,
+    update_session_state_from_preset,
+)
 from web_ui.dialogs import trigger_dialog
 from web_ui.preset_service import (
     get_presets_in_group,
@@ -266,10 +270,24 @@ def render_preset_manager():
                 selected_guid = st.session_state.get(cur_tmpl_key)
                 if selected_guid == NONE_OPTION:
                     st.session_state.templateId = None
+                    cur_p["values"]["templateId"] = None
+                    cur_p["values"] = get_current_preset_values_from_state(False)
+                    for k in DYNAMIC_DEFAULTS.keys():
+                        if k != "templateId":
+                            st.session_state[k + "_ow"] = False
+                    write_presets_to_disk()
                 else:
                     st.session_state.templateId = selected_guid
-
-                save_presets()
+                    cur_p["values"]["templateId"] = selected_guid
+                    new_values = {"templateId": selected_guid}
+                    for k in DYNAMIC_DEFAULTS.keys():
+                        if k != "templateId" and st.session_state.get(k + "_ow") is True:
+                            if k in cur_p["values"]:
+                                new_values[k] = cur_p["values"][k]
+                    cur_p["values"] = new_values
+                    update_session_state_from_preset(cur_p)
+                    write_presets_to_disk()
+                st.rerun()
 
             st.selectbox(
                 "Vorlage für aktive Voreinstellung",

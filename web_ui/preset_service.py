@@ -191,8 +191,10 @@ def delete_preset_by_id(preset_id):
             st.session_state.pop(f"next_effect_select_{pre['id']}", None)
         if preVals.get("templateId") == removed_preset["id"]:
             apply_settings_from_template(removed_preset["values"], preVals)
+            st.session_state.pop(f"template_select_{pre['id']}", None)
 
     st.session_state.pop(f"next_effect_select_{removed_preset['id']}", None)
+    st.session_state.pop(f"template_select_{removed_preset['id']}", None)
     if st.session_state.get("nextEffectId") == removed_preset["id"]:
         st.session_state.nextEffectId = None
 
@@ -247,9 +249,11 @@ def delete_group_by_id(group_id):
                     apply_settings_from_template(tmpl["values"], preVals)
                 else:
                     preVals["templateId"] = None
+                st.session_state.pop(f"template_select_{pre['id']}", None)
 
     for del_id in to_delete_ids:
         st.session_state.pop(f"next_effect_select_{del_id}", None)
+        st.session_state.pop(f"template_select_{del_id}", None)
 
     if st.session_state.get("nextEffectId") in to_delete_ids:
         st.session_state.nextEffectId = None

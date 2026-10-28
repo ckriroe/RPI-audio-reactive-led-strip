@@ -29,6 +29,21 @@ def migrate_frequency_amplitudes(jsn: dict) -> None:
             vals["maxFreqAmplitude"] = MAX_VOLUME_DB
 
 
+def migrate_template_ids(jsn: dict) -> None:
+    presets = jsn.get("presets", [])
+    preset_ids = {p["id"] for p in presets if "id" in p}
+    template_map = {p["id"]: p.get("values", {}).get("templateId") for p in presets if "id" in p}
+
+    for preset in presets:
+        vals = preset.get("values", {})
+        tid = vals.get("templateId")
+        if tid is not None:
+            if tid == preset.get("id") or tid not in preset_ids:
+                vals["templateId"] = None
+            elif template_map.get(tid) is not None:
+                vals["templateId"] = None
+
+
 def migrate_presets(jsn: dict) -> dict:
     """Migrates preset configuration data to the current schema format."""
     if not isinstance(jsn, dict):
@@ -37,5 +52,6 @@ def migrate_presets(jsn: dict) -> dict:
     migrate_groups(jsn)
     migrate_preset_group_ids(jsn)
     migrate_frequency_amplitudes(jsn)
+    migrate_template_ids(jsn)
 
     return jsn
