@@ -9,6 +9,7 @@ from web_ui.preset_service import (
     delete_preset_by_id,
     copy_preset_by_id,
 )
+from web_ui.system_service import is_raspberry_pi, shutdown_system
 
 
 def on_dialog_dismiss():
@@ -153,6 +154,30 @@ def dialog_copy_preset(preset_id, preset_name=None):
             copy_preset_by_id(preset_id, name_clean)
 
 
+@st.dialog("System herunterfahren", on_dismiss=on_dialog_dismiss)
+def dialog_shutdown():
+    st.write("Möchtest du das System wirklich herunterfahren?")
+    on_rpi = is_raspberry_pi()
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("Abbrechen", key="dlg_shutdown_cancel", use_container_width=True):
+            st.session_state.active_dialog = None
+            st.rerun()
+    with col2:
+        if st.button("Ja, herunterfahren", key="dlg_shutdown_submit", type="primary", use_container_width=True):
+            if on_rpi:
+                success, msg = shutdown_system()
+                if success:
+                    st.session_state.is_shutting_down = True
+                    st.session_state.active_dialog = None
+                    st.rerun()
+                else:
+                    st.error(msg)
+            else:
+                st.session_state.active_dialog = None
+                st.rerun()
+
+
 def trigger_dialog(dlg_type, item_id=None):
     st.session_state.popover_ver = st.session_state.get("popover_ver", 0) + 1
     st.session_state.active_dialog = {"type": dlg_type, "id": item_id}
@@ -178,3 +203,5 @@ def render_active_dialog():
             dialog_delete_preset(did)
         elif dtype == "copy_preset":
             dialog_copy_preset(did)
+        elif dtype == "shutdown":
+            dialog_shutdown()

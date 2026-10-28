@@ -24,7 +24,7 @@ from web_ui.sections import (
 )
 
 app_version = load_version()
-app_title = f"RPISC Einstellungen {app_version}" if app_version else "RPISC Einstellungen"
+app_title = f"RPISC {app_version}" if app_version else "RPISC Einstellungen"
 
 st.set_page_config(page_title=app_title, page_icon="🎛️", layout="centered")
 

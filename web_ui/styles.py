@@ -74,6 +74,7 @@ div[class*="st-key-btn_pre_sel_"] button,
 div[class*="st-key-mv_up_"] button,
 div[class*="st-key-mv_down_"] button,
 div[class*="st-key-rm_col_"] button,
+div[class*="st-key-btn_shutdown"] button,
 button[data-testid="stPopoverButton"] {
     width: 38px !important;
     height: 38px !important;
@@ -92,6 +93,42 @@ button[data-testid="stPopoverButton"] svg {
 }
 button[data-testid="stPopoverButton"] [data-testid="stMarkdownContainer"] {
     display: none !important;
+}
+
+/* Shutdown button styling */
+div[class*="st-key-btn_shutdown"] button {
+    font-size: 1.25rem !important;
+    color: #ff4b4b !important;
+    border-color: rgba(255, 75, 75, 0.4) !important;
+}
+div[class*="st-key-btn_shutdown"] button:hover {
+    color: #ffffff !important;
+    background-color: #ff4b4b !important;
+    border-color: #ff4b4b !important;
+}
+
+/* Header row: title takes all free space, shutdown button takes 38px aligned to right */
+div[data-testid="stHorizontalBlock"]:has([class*="st-key-btn_shutdown"]) {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    width: 100% !important;
+    margin-bottom: 0.5rem !important;
+}
+div[data-testid="stHorizontalBlock"]:has([class*="st-key-btn_shutdown"]) > div[data-testid="stColumn"]:first-child {
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
+    width: auto !important;
+}
+div[data-testid="stHorizontalBlock"]:has([class*="st-key-btn_shutdown"]) > div[data-testid="stColumn"]:last-child,
+div[data-testid="stColumn"]:has([class*="st-key-btn_shutdown"]) {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: 38px !important;
+}
+div[data-testid="stHorizontalBlock"]:has([class*="st-key-btn_shutdown"]) h1 {
+    margin: 0 !important;
+    padding: 0 !important;
 }
 
 /* Group selector row: group selectbox takes all free space, button column takes exactly 38px */
