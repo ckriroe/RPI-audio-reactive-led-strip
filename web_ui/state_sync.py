@@ -68,9 +68,9 @@ def set_value_from_state(stateObj, get_for_template, template_values, key):
 def set_none_templateable_value_from_state(stateObj, get_for_template, template_values, key):
     if get_for_template is True:
         if template_values is not None:
-            stateObj[key] = template_values[key]
+            stateObj[key] = template_values.get(key, DYNAMIC_DEFAULTS.get(key))
     else:
-        stateObj[key] = st.session_state[key]
+        stateObj[key] = st.session_state.get(key, DYNAMIC_DEFAULTS.get(key))
 
 
 def get_current_preset_values_from_state(get_for_template):
@@ -172,6 +172,11 @@ def update_session_value_from_preset(preset_values, template_values, key):
 
 def update_session_none_templateable_value_from_preset(preset_values, key):
     preset_value = preset_values.get(key)
+    if key == "nextEffectId" and preset_value is not None:
+        all_ids = {p["id"] for p in st.session_state.presets} if "presets" in st.session_state else set()
+        if preset_value == st.session_state.get("preset_guid") or preset_value not in all_ids:
+            preset_value = None
+            preset_values["nextEffectId"] = None
     if preset_value is None:
         preset_value = DYNAMIC_DEFAULTS[key]
 

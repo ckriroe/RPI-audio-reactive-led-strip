@@ -14,10 +14,17 @@ def render_sequence_section():
         cur_next_key = f"next_effect_select_{st.session_state.preset_guid}"
         cur_preset_for_next = st.session_state.presets[st.session_state.preset_index]
         linked_guid = cur_preset_for_next["values"].get("nextEffectId")
+        if linked_guid is not None and linked_guid not in options:
+            linked_guid = None
+            cur_preset_for_next["values"]["nextEffectId"] = None
+            st.session_state.nextEffectId = None
 
         default_index = 0
         if linked_guid is not None and linked_guid in options:
             default_index = options.index(linked_guid)
+
+        if cur_next_key in st.session_state and st.session_state[cur_next_key] not in options:
+            st.session_state[cur_next_key] = options[default_index]
 
         def on_next_effect_changed():
             selected_guid = st.session_state.get(cur_next_key)

@@ -7,10 +7,18 @@ namespace Application.RuntimeSettings
     {
         public static void CorrectDynamicPresetSettings(DynamicPresetSettings dynamicPresetSettings, StaticSettings staticSettings)
         {
+            HashSet<Guid> existingIds = dynamicPresetSettings.Presets.Select(p => p.Id).ToHashSet();
+
             foreach (Preset preset in dynamicPresetSettings.Presets)
             {
                 preset.EffectSettings = ResolveEffectSettings(dynamicPresetSettings, preset.TemplateEffectSettings);
                 CorrectDynamicEffectSettings(preset.EffectSettings, staticSettings);
+
+                if (preset.EffectSettings.NextEffectId != null &&
+                    (preset.EffectSettings.NextEffectId == preset.Id || !existingIds.Contains(preset.EffectSettings.NextEffectId.Value)))
+                {
+                    preset.EffectSettings.NextEffectId = null;
+                }
             }
         }
 
@@ -134,6 +142,10 @@ namespace Application.RuntimeSettings
             {
                 dynamicSettings.MaxFreqAmplitude = dynamicSettings.MinFreqAmplitude;
             }
+
+            dynamicSettings.EffectDurationMs = Math.Max(1, dynamicSettings.EffectDurationMs);
+            dynamicSettings.EffectTransitionDurationMs = Math.Max(0, dynamicSettings.EffectTransitionDurationMs);
+            dynamicSettings.EffectTransitionWarmupDuration = Math.Clamp(dynamicSettings.EffectTransitionWarmupDuration, 0, dynamicSettings.EffectDurationMs);
 
             List<ColorSetting> correctedColorSettings = [];
             float lastThreshold = 0.0f;

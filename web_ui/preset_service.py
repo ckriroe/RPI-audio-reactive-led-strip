@@ -82,8 +82,7 @@ def select_preset_by_id(preset_id):
 
 
 def copy_preset_by_id(preset_id, new_name=None):
-    if preset_id == st.session_state.preset_guid:
-        save_presets()
+    save_presets()
 
     idx = next((i for i, p in enumerate(st.session_state.presets) if p["id"] == preset_id), None)
     if idx is None:
@@ -148,6 +147,7 @@ def unassign_preset(preset_id):
     preset = next((p for p in st.session_state.presets if p["id"] == preset_id), None)
     if not preset or preset["id"] == st.session_state.presets[0]["id"]:
         return
+
     cur_group = preset.get("groupId")
     if not cur_group or cur_group == GLOBAL_GROUP_ID:
         return
@@ -188,8 +188,13 @@ def delete_preset_by_id(preset_id):
         preVals = pre["values"]
         if preVals.get("nextEffectId") == removed_preset["id"]:
             preVals["nextEffectId"] = None
+            st.session_state.pop(f"next_effect_select_{pre['id']}", None)
         if preVals.get("templateId") == removed_preset["id"]:
             apply_settings_from_template(removed_preset["values"], preVals)
+
+    st.session_state.pop(f"next_effect_select_{removed_preset['id']}", None)
+    if st.session_state.get("nextEffectId") == removed_preset["id"]:
+        st.session_state.nextEffectId = None
 
     if st.session_state.preset_guid == preset_id:
         remaining_in_group = get_presets_in_group(st.session_state.active_group_id)
@@ -235,12 +240,19 @@ def delete_group_by_id(group_id):
             preVals = pre["values"]
             if preVals.get("nextEffectId") in to_delete_ids:
                 preVals["nextEffectId"] = None
+                st.session_state.pop(f"next_effect_select_{pre['id']}", None)
             if preVals.get("templateId") in to_delete_ids:
                 tmpl = next((p for p in to_delete if p["id"] == preVals.get("templateId")), None)
                 if tmpl:
                     apply_settings_from_template(tmpl["values"], preVals)
                 else:
                     preVals["templateId"] = None
+
+    for del_id in to_delete_ids:
+        st.session_state.pop(f"next_effect_select_{del_id}", None)
+
+    if st.session_state.get("nextEffectId") in to_delete_ids:
+        st.session_state.nextEffectId = None
 
     current_options = [GLOBAL_GROUP_ID] + [g["id"] for g in st.session_state.groups]
     prev_group_id = GLOBAL_GROUP_ID
