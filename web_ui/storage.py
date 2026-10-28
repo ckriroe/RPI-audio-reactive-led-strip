@@ -7,11 +7,10 @@ from web_ui.constants import (
     STATIC_CONFIG_FILE,
     PRESETS_FILE,
     VERSION_FILE,
-    MIN_VOLUME_DB,
-    MAX_VOLUME_DB,
     DYNAMIC_DEFAULTS,
     STATIC_DEFAULTS,
 )
+from web_ui.migrations import migrate_presets
 
 
 def load_version():
@@ -31,18 +30,7 @@ def load_presets():
         print("Loading preset file...\n")
         with open(PRESETS_FILE, "r", encoding="utf-8") as f:
             jsn = json.load(f)
-            if "groups" not in jsn:
-                jsn["groups"] = []
-            for preset in jsn.get("presets", []):
-                if "groupId" not in preset:
-                    preset["groupId"] = None
-                vals = preset.get("values", {})
-                if "minFreqAmplitude" in vals and (vals["minFreqAmplitude"] < MIN_VOLUME_DB or vals["minFreqAmplitude"] > MAX_VOLUME_DB):
-                    vals["minFreqAmplitude"] = MIN_VOLUME_DB
-                if "maxFreqAmplitude" in vals and (vals["maxFreqAmplitude"] < MIN_VOLUME_DB or vals["maxFreqAmplitude"] > MAX_VOLUME_DB):
-                    vals["maxFreqAmplitude"] = MAX_VOLUME_DB
-            if jsn.get("presets") and len(jsn["presets"]) > 0:
-                jsn["presets"][0]["groupId"] = None
+            jsn = migrate_presets(jsn)
             print("Preset file loaded:\n", jsn, "\n")
             return jsn
     else:
