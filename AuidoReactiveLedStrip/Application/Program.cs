@@ -31,17 +31,31 @@ using Microsoft.Extensions.Options;
 var builder = Host.CreateDefaultBuilder(args)
     .ConfigureAppConfiguration((hostingContext, config) =>
     {
-        config.AddJsonFile(
-            "static_settings.json",
-            optional: false,
-            reloadOnChange: true
-        );
+        config.AddJsonFile(source =>
+        {
+            source.Path = "static_settings.json";
+            source.Optional = false;
+            source.ReloadOnChange = true;
+            source.ReloadDelay = 100;
+            source.OnLoadException = ctx =>
+            {
+                Console.WriteLine($"[Config] Error reloading static_settings.json: {ctx.Exception.Message}");
+                ctx.Ignore = true;
+            };
+        });
 
-        config.AddJsonFile(
-            "presets.json",
-            optional: false,
-            reloadOnChange: true
-        );
+        config.AddJsonFile(source =>
+        {
+            source.Path = "presets.json";
+            source.Optional = false;
+            source.ReloadOnChange = true;
+            source.ReloadDelay = 100;
+            source.OnLoadException = ctx =>
+            {
+                Console.WriteLine($"[Config] Error reloading presets.json: {ctx.Exception.Message}");
+                ctx.Ignore = true;
+            };
+        });
     })
     .ConfigureServices((context, services) =>
     {

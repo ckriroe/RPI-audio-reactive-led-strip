@@ -45,12 +45,13 @@ namespace Application.RuntimeSettings
             return obj is Preset preset &&
                    this.Id.Equals(preset.Id) &&
                    this.Name == preset.Name &&
+                   this.TemplateEffectSettings?.TemplateId == preset.TemplateEffectSettings?.TemplateId &&
                    EqualityComparer<DynamicEffectSettings>.Default.Equals(this.EffectSettings, preset.EffectSettings);
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(this.Id, this.Name, this.EffectSettings);
+            return HashCode.Combine(this.Id, this.Name, this.TemplateEffectSettings?.TemplateId, this.EffectSettings);
         }
     }
 }

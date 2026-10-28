@@ -41,6 +41,20 @@ namespace Application.Looper
                 return;
 
             this.isLooperRunning = true;
+
+            lock (this.lck)
+            {
+                this.currentStaticSettings = this.staticSettings.CurrentValue;
+                this.currentDynamicSettings = this.dynamicSettings.CurrentValue;
+
+                if (this.currentStaticSettings != null && this.currentDynamicSettings != null)
+                {
+                    SettingsCorrector.CorrectStaticSettings(this.currentStaticSettings);
+                    SettingsCorrector.CorrectDynamicPresetSettings(this.currentDynamicSettings, this.currentStaticSettings);
+                    this.shouldReloadSettings = true;
+                }
+            }
+
             this.staticSettingsSubscription?.Dispose();
             this.staticSettingsSubscription = this.staticSettings.OnChange((staticSettings) =>
             {
@@ -49,14 +63,11 @@ namespace Application.Looper
                     if (staticSettings != null)
                     {
                         SettingsCorrector.CorrectStaticSettings(staticSettings);
-                        if (this.currentStaticSettings != staticSettings)
-                        {
-                            this.currentStaticSettings = staticSettings;
-                            if (this.currentDynamicSettings != null)
-                                SettingsCorrector.CorrectDynamicPresetSettings(this.currentDynamicSettings, this.currentStaticSettings);
+                        this.currentStaticSettings = staticSettings;
+                        if (this.currentDynamicSettings != null)
+                            SettingsCorrector.CorrectDynamicPresetSettings(this.currentDynamicSettings, this.currentStaticSettings);
 
-                            this.shouldReloadSettings = true;
-                        }                        
+                        this.shouldReloadSettings = true;
                     }                        
                 }
             });
@@ -69,27 +80,11 @@ namespace Application.Looper
                     if (dynamicSettings != null && this.currentStaticSettings != null)
                     {
                         SettingsCorrector.CorrectDynamicPresetSettings(dynamicSettings, this.currentStaticSettings);
-                        if (!dynamicSettings.Equals(this.currentDynamicSettings))
-                        {
-                            this.currentDynamicSettings = dynamicSettings;
-                            this.shouldReloadSettings = true;
-                        }
+                        this.currentDynamicSettings = dynamicSettings;
+                        this.shouldReloadSettings = true;
                     }
                 }
             });
-
-            lock (this.lck)
-            {
-                this.currentStaticSettings = this.staticSettings.CurrentValue;
-                this.currentDynamicSettings = this.dynamicSettings.CurrentValue;
-
-                if (this.currentStaticSettings != null && this.currentDynamicSettings != null)
-                {
-                    SettingsCorrector.CorrectStaticSettings(this.currentStaticSettings);
-                    SettingsCorrector.CorrectDynamicPresetSettings(this.currentDynamicSettings, currentStaticSettings);
-                    this.shouldReloadSettings = true;
-                }
-            }
 
             this.sw.Restart();
             while (this.isLooperRunning)

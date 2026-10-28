@@ -31,6 +31,16 @@ def load_version():
     return None
 
 
+def atomic_write_json(file_path, data):
+    dir_name = os.path.dirname(os.path.abspath(file_path)) or "."
+    tmp_path = os.path.join(dir_name, f".{os.path.basename(file_path)}.{uuid.uuid4().hex}.tmp")
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp_path, file_path)
+
+
 def load_presets():
     if os.path.exists(PRESETS_FILE):
         print("Loading preset file...\n")
@@ -70,9 +80,7 @@ def create_default_presets_file():
             }
         ],
     }
-    with open(PRESETS_FILE, "w", encoding="utf-8") as f:
-        json.dump(initial_data, f, indent=2)
-
+    atomic_write_json(PRESETS_FILE, initial_data)
     return initial_data
 
 
@@ -89,11 +97,9 @@ def write_presets_to_disk():
         "presets": st.session_state.presets,
     }
     print("Writing presets to disk:\n", data, "\n")
-    with open(PRESETS_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    atomic_write_json(PRESETS_FILE, data)
 
 
 def write_static_config_to_disk(values):
     print("Writing static config to disk:\n", values, "\n")
-    with open(STATIC_CONFIG_FILE, "w", encoding="utf-8") as f:
-        json.dump(values, f, indent=2)
+    atomic_write_json(STATIC_CONFIG_FILE, values)

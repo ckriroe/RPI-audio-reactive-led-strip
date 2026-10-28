@@ -4,7 +4,7 @@ import json
 import zipfile
 from datetime import datetime
 from web_ui.constants import PRESETS_FILE, STATIC_CONFIG_FILE
-from web_ui.storage import load_version, write_static_config_to_disk
+from web_ui.storage import load_version, write_static_config_to_disk, atomic_write_json
 from web_ui.migrations import migrate_presets
 
 
@@ -56,8 +56,7 @@ def restore_backup_zip(uploaded_file) -> tuple[bool, str]:
                 presets_raw = zf.read(presets_member).decode("utf-8")
                 presets_json = json.loads(presets_raw)
                 presets_json = migrate_presets(presets_json)
-                with open(PRESETS_FILE, "w", encoding="utf-8") as f:
-                    json.dump(presets_json, f, indent=2)
+                atomic_write_json(PRESETS_FILE, presets_json)
 
             if static_member:
                 static_raw = zf.read(static_member).decode("utf-8")

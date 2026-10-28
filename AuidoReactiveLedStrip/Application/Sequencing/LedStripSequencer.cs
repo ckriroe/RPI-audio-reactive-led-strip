@@ -74,6 +74,11 @@ namespace Application.Sequencing
             this.staticSettings = staticSettings;
             this.dynamicPresetSettings = dynamicPresetSettings;
 
+            if (this.initialEffectGuid == null)
+            {
+                this.initialEffectGuid = dynamicPresetSettings.SelectedPresetId;
+            }
+
             Preset? currentPreset = this.currentPreset;
             if (currentPreset != null)
             {
@@ -196,6 +201,11 @@ namespace Application.Sequencing
         private void RestartSequence(DynamicPresetSettings dynamicPresetSettings, long timestamp)
         {
             this.SetPresets(dynamicPresetSettings, null);
+
+            if (this.initialEffectGuid == null)
+            {
+                this.initialEffectGuid = dynamicPresetSettings.SelectedPresetId;
+            }
 
             StaticSettings? staticSettings = this.staticSettings;
             Preset? currentPrest = this.currentPreset;

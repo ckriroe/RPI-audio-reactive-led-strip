@@ -125,6 +125,7 @@ Environment=WAYLAND_DISPLAY=wayland-0
 Environment=XDG_RUNTIME_DIR=/run/user/1000
 Environment=DOTNET_ROOT=/opt/dotnet
 Environment="PATH=/opt/dotnet:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment=DOTNET_USE_POLLING_FILE_WATCHER=1
 
 Restart=always
 RestartSec=2
