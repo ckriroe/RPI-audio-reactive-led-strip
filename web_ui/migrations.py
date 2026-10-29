@@ -20,7 +20,7 @@ def migrate_frequency_amplitudes(jsn: dict) -> None:
     for preset in jsn.get("presets", []):
         vals = preset.get("values", {})
         if "minFreqAmplitude" in vals and (
-            vals["minFreqAmplitude"] <= MIN_VOLUME_DB or vals["minFreqAmplitude"] > MAX_VOLUME_DB
+            vals["minFreqAmplitude"] < MIN_VOLUME_DB or vals["minFreqAmplitude"] > MAX_VOLUME_DB
         ):
             vals["minFreqAmplitude"] = MIN_VOLUME_DB
         if "maxFreqAmplitude" in vals and (
