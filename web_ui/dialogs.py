@@ -430,7 +430,7 @@ def dialog_check_update():
         latest_ver = info.get("latest_version", "")
         st.subheader("Update bestätigen")
         st.write(f"Möchtest du das Update auf Version **v{latest_ver}** wirklich installieren?")
-        st.write("Vor der Installation wird automatisch ein Backup deiner Voreinstellungen und Einstellungen heruntergeladen und lokal gespeichert.")
+        st.write("Vor der Installation wird automatisch ein Backup erstellt.")
 
         col1, col2 = st.columns([1, 1])
         with col1:
@@ -465,8 +465,6 @@ def dialog_check_update():
             components.html(auto_dl_script, height=0)
 
         backup_file = st.session_state.get("update_backup_filename", "Backup")
-        st.success(f"💾 Backup **{backup_file}** wurde erstellt, lokal gespeichert und heruntergeladen.")
-
         # 2. Download and verify update package if not already done
         if not st.session_state.get("update_download_ok") and not st.session_state.get("update_error"):
             with st.spinner("Lade Update-Paket herunter..."):
@@ -497,8 +495,7 @@ def dialog_check_update():
             st.info("Update-Paket verifiziert. Starte Update-Dienst...")
             svc_ok, svc_msg = trigger_system_update()
             if svc_ok:
-                st.success("Das Update wird ausgeführt. Die Anwendung startet neu...")
-                st.write("Die Seite lädt in **15 Sekunden** automatisch neu.")
+                st.success("Das Update wird ausgeführt.")
                 reload_script = """
                 <script>
                     setTimeout(function() {
