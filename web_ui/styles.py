@@ -4,43 +4,60 @@ import streamlit.components.v1 as components
 SLIDER_FIX_JS = """
 <script>
 (function() {
-    const parentWindow = window.parent;
-    const parentDoc = parentWindow.document;
+    try {
+        const parentWindow = window.parent;
+        if (!parentWindow || !parentWindow.document) return;
+        const parentDoc = parentWindow.document;
 
-    function isMobile() {
-        const hasTouch = 'ontouchstart' in parentWindow || parentWindow.navigator.maxTouchPoints > 0;
-        const isSmallScreen = parentWindow.innerWidth <= 768;
-        return hasTouch && isSmallScreen;
-    }
+        const eventsToIntercept = ['pointerdown', 'touchstart', 'mousedown', 'click'];
 
-    function interceptSliderEvents() {
-        const sliders = parentDoc.querySelectorAll('[data-baseweb="slider"]');
-        
-        sliders.forEach((slider, index) => {
-            if (slider.getAttribute('data-slider-scroll-fixed') === 'true') return;
-            const eventsToIntercept = ['pointerdown', 'touchstart', 'mousedown', 'pointerup', 'touchend', 'mouseup', 'click'];
-            
+        // If previous handlers exist, remove them first so reruns always update cleanly
+        if (parentWindow.__slider_fix_handlers) {
             eventsToIntercept.forEach(eventType => {
-                slider.addEventListener(eventType, function(e) {
-                    if (!isMobile()) return;
-                    const thumb = slider.querySelector('[role="slider"]');
-
-                    if (thumb && e.target !== thumb && !thumb.contains(e.target)) {
-                        e.stopPropagation(); 
-                    }
-                }, { capture: true, passive: true });
+                if (parentWindow.__slider_fix_handlers[eventType]) {
+                    parentDoc.removeEventListener(eventType, parentWindow.__slider_fix_handlers[eventType], { capture: true, passive: true });
+                }
             });
+        }
+        parentWindow.__slider_fix_handlers = {};
 
-            slider.setAttribute('data-slider-scroll-fixed', 'true');
+        function isMobile(e) {
+            if (e && (e.pointerType === 'touch' || (e.type && e.type.startsWith('touch')))) {
+                return true;
+            }
+            if (parentWindow.matchMedia && (parentWindow.matchMedia('(pointer: coarse)').matches || parentWindow.matchMedia('(hover: none)').matches)) {
+                return true;
+            }
+            const hasTouch = 'ontouchstart' in parentWindow || (parentWindow.navigator && parentWindow.navigator.maxTouchPoints > 0);
+            return hasTouch;
+        }
+
+        eventsToIntercept.forEach(eventType => {
+            const handler = function(e) {
+                if (!isMobile(e)) return;
+
+                // Check if target is inside a Streamlit slider
+                const slider = e.target && e.target.closest && e.target.closest('[data-testid="stSlider"], .stSlider, [class*="efbyxod0"], [class*="efbyxod1"], [class*="react-aria-Slider"], [data-baseweb="slider"]');
+                if (!slider) return;
+
+                // Check if target is on or inside the knob (efbyxod3 / 1v3hvtd)
+                const thumb = e.target.closest && e.target.closest('[class*="efbyxod3"], [class*="1v3hvtd"], [class*="SliderThumb"], [role="slider"], input[type="range"], [data-testid="stSliderThumbValue"]');
+                if (thumb) {
+                    // Touching the knob: allow dragging!
+                    return;
+                }
+
+                // Touching the track or outside the knob: block it from changing the slider
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+            };
+
+            parentWindow.__slider_fix_handlers[eventType] = handler;
+            parentDoc.addEventListener(eventType, handler, { capture: true, passive: true });
         });
+    } catch (err) {
+        console.error('SLIDER_FIX_JS error:', err);
     }
-
-    const observer = new MutationObserver((mutations) => {
-        interceptSliderEvents();
-    });
-
-    observer.observe(parentDoc.body, { childList: true, subtree: true });
-    interceptSliderEvents();
 })();
 </script>
 """
@@ -51,6 +68,24 @@ CUSTOM_CSS = """
 div[data-testid="stHorizontalBlock"],
 div[data-testid="stColumn"] {
     overflow: visible !important;
+}
+
+/* Mobile slider touch protection: prevent accidental track jumps while scrolling */
+@media (pointer: coarse), (hover: none) {
+    div[data-testid="stSlider"] [class*="efbyxod2"],
+    div[data-testid="stSlider"] [class*="react-aria-SliderTrack"],
+    div[data-testid="stSlider"] [class*="SliderTrack"] {
+        pointer-events: none !important;
+        touch-action: pan-y !important;
+    }
+    div[data-testid="stSlider"] [class*="efbyxod3"],
+    div[data-testid="stSlider"] [class*="1v3hvtd"],
+    div[data-testid="stSlider"] [class*="react-aria-SliderThumb"],
+    div[data-testid="stSlider"] [class*="SliderThumb"],
+    div[data-testid="stSlider"] input[type="range"] {
+        pointer-events: auto !important;
+        touch-action: none !important;
+    }
 }
 
 /* Preset list buttons: clickable button appearance, left-aligned, full width, 38px height */
