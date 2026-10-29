@@ -1,5 +1,7 @@
 import uuid
+import base64
 import streamlit as st
+import streamlit.components.v1 as components
 from web_ui.storage import write_presets_to_disk
 from web_ui.preset_service import (
     get_group_name,
@@ -16,6 +18,11 @@ from web_ui.state_sync import (
     update_session_state_from_preset,
     update_session_state_from_static_settings,
 )
+from web_ui.update_service import (
+    check_for_updates,
+    download_update_package,
+    trigger_system_update,
+)
 
 
 def on_dialog_dismiss():
@@ -25,6 +32,13 @@ def on_dialog_dismiss():
     st.session_state.pop("backup_data", None)
     st.session_state.pop("backup_filename", None)
     st.session_state.pop("import_backup_error", None)
+    st.session_state.pop("update_info", None)
+    st.session_state.pop("update_step", None)
+    st.session_state.pop("update_backup_data", None)
+    st.session_state.pop("update_backup_filename", None)
+    st.session_state.pop("update_backup_done", None)
+    st.session_state.pop("update_error", None)
+    st.session_state.pop("update_download_ok", None)
 
 
 @st.dialog("Neue Gruppe erstellen", on_dismiss=on_dialog_dismiss)
@@ -279,6 +293,139 @@ def dialog_import_backup():
         st.error(st.session_state.import_backup_error)
 
 
+@st.dialog("Nach Updates suchen", on_dismiss=on_dialog_dismiss)
+def dialog_check_update():
+    step = st.session_state.get("update_step", "check")
+
+    if step == "check":
+        if "update_info" not in st.session_state:
+            with st.spinner("Suche nach verfügbaren Updates..."):
+                st.session_state.update_info = check_for_updates()
+
+        info = st.session_state.update_info
+
+        if not info.get("success"):
+            st.error(f"Fehler bei der Update-Prüfung:\n{info.get('error')}")
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                if st.button("Schließen", key="dlg_upd_err_close", use_container_width=True):
+                    st.session_state.active_dialog = None
+                    st.rerun()
+            with col2:
+                if st.button("Erneut versuchen", key="dlg_upd_err_retry", type="primary", use_container_width=True):
+                    st.session_state.pop("update_info", None)
+                    st.rerun()
+            return
+
+        if not info.get("has_update"):
+            st.success(f"Du verwendest bereits die neueste Version (**v{info.get('current_version')}**).")
+            if st.button("Schließen", key="dlg_upd_noupd_close", use_container_width=True):
+                st.session_state.active_dialog = None
+                st.rerun()
+            return
+
+        # Update available
+        st.info(f"Eine neue Version ist verfügbar: **v{info.get('latest_version')}**\n\nAktuell installierte Version: **v{info.get('current_version')}**")
+
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button("Schließen", key="dlg_upd_avail_close", use_container_width=True):
+                st.session_state.active_dialog = None
+                st.rerun()
+        with col2:
+            if st.button("Installieren", key="dlg_upd_avail_install", type="primary", use_container_width=True):
+                st.session_state.update_step = "confirm"
+                st.rerun()
+
+    elif step == "confirm":
+        info = st.session_state.get("update_info", {})
+        latest_ver = info.get("latest_version", "")
+        st.subheader("Update bestätigen")
+        st.write(f"Möchtest du das Update auf Version **v{latest_ver}** wirklich installieren?")
+        st.write("Vor der Installation wird automatisch ein Backup deiner Voreinstellungen und Einstellungen heruntergeladen.")
+
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button("Abbrechen", key="dlg_upd_conf_cancel", use_container_width=True):
+                st.session_state.active_dialog = None
+                st.rerun()
+        with col2:
+            if st.button("Ja, jetzt aktualisieren", key="dlg_upd_conf_submit", type="primary", use_container_width=True):
+                st.session_state.update_step = "installing"
+                st.rerun()
+
+    elif step == "installing":
+        info = st.session_state.get("update_info", {})
+
+        # 1. Create and auto-download backup if not already done
+        if not st.session_state.get("update_backup_done"):
+            zip_bytes, filename = create_backup_zip()
+            st.session_state.update_backup_data = zip_bytes
+            st.session_state.update_backup_filename = filename
+            st.session_state.update_backup_done = True
+
+            b64_zip = base64.b64encode(zip_bytes).decode("utf-8")
+            auto_dl_script = f"""
+            <a id="auto_dl_link" href="data:application/zip;base64,{b64_zip}" download="{filename}" style="display:none;"></a>
+            <script>
+                var link = document.getElementById("auto_dl_link");
+                if (link) {{
+                    link.click();
+                }}
+            </script>
+            """
+            components.html(auto_dl_script, height=0)
+
+        backup_file = st.session_state.get("update_backup_filename", "Backup")
+        st.success(f"💾 Backup **{backup_file}** wurde erstellt und heruntergeladen.")
+
+        # 2. Download and verify update package if not already done
+        if not st.session_state.get("update_download_ok") and not st.session_state.get("update_error"):
+            with st.spinner("Lade Update-Paket herunter..."):
+                dl_url = info.get("download_url")
+                success, err_msg = download_update_package(dl_url)
+                if success:
+                    st.session_state.update_download_ok = True
+                    st.session_state.pop("update_error", None)
+                else:
+                    st.session_state.update_error = err_msg
+
+        # 3. If download failed, show error and retry button (backup is preserved!)
+        if st.session_state.get("update_error"):
+            st.error(f"Fehler beim Herunterladen des Updates:\n{st.session_state.update_error}")
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                if st.button("Abbrechen", key="dlg_upd_inst_cancel", use_container_width=True):
+                    st.session_state.active_dialog = None
+                    st.rerun()
+            with col2:
+                if st.button("Erneut versuchen", key="dlg_upd_inst_retry", type="primary", use_container_width=True):
+                    st.session_state.pop("update_error", None)
+                    st.rerun()
+            return
+
+        # 4. Trigger system update service
+        if st.session_state.get("update_download_ok"):
+            st.info("Update-Paket verifiziert. Starte Update-Dienst...")
+            svc_ok, svc_msg = trigger_system_update()
+            if svc_ok:
+                st.success("Das Update wird ausgeführt. Die Anwendung startet neu...")
+                st.write("Die Seite lädt in **15 Sekunden** automatisch neu.")
+                reload_script = """
+                <script>
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 15000);
+                </script>
+                """
+                components.html(reload_script, height=0)
+            else:
+                st.error(f"Fehler beim Starten des Updates:\n{svc_msg}")
+                if st.button("Schließen", key="dlg_upd_svc_err_close", use_container_width=True):
+                    st.session_state.active_dialog = None
+                    st.rerun()
+
+
 def trigger_dialog(dlg_type, item_id=None):
     st.session_state.popover_ver = st.session_state.get("popover_ver", 0) + 1
     st.session_state.active_dialog = {"type": dlg_type, "id": item_id}
@@ -310,3 +457,5 @@ def render_active_dialog():
             dialog_create_backup()
         elif dtype == "import_backup":
             dialog_import_backup()
+        elif dtype == "check_update":
+            dialog_check_update()

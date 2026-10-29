@@ -34,6 +34,9 @@
 	<None Include="../../audio_parameter_web_ui.py">
 	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	</None>
+	<None Include="../../update.sh">
+	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	</None>
 	<None Include="../../web_ui/**/*">
 	  <Link>web_ui/%(RecursiveDir)%(Filename)%(Extension)</Link>
 	  <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

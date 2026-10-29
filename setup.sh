@@ -84,12 +84,42 @@ BUILD_DIR=$(mktemp -d)
 rm -rf "$BUILD_DIR"
 
 # DOWNLOAD AND INSTALL AUDIO SYSTEM RELEASE
+# Stop services if already installed and running to avoid "Text file busy"
+systemctl is-active --quiet audio-led-strip.service && systemctl stop audio-led-strip.service || true
+systemctl is-active --quiet audio-web-ui.service && systemctl stop audio-web-ui.service || true
+
 mkdir -p /opt/audio-system
 APP_ZIP=$(mktemp)
 curl -fLk https://github.com/ckriroe/RPI-audio-reactive-led-strip/releases/latest/download/app.zip -o "$APP_ZIP"
-unzip -o "$APP_ZIP" -d /opt/audio-system/
+TMP_EXTRACT=$(mktemp -d)
+unzip -q -o "$APP_ZIP" -d "$TMP_EXTRACT"
 rm -f "$APP_ZIP"
+
+# Deploy default settings ONLY if they do not exist already
+if [ ! -f "/opt/audio-system/presets.json" ] && [ -f "$TMP_EXTRACT/presets.json" ]; then
+  echo "Deploying default presets.json..."
+  cp "$TMP_EXTRACT/presets.json" "/opt/audio-system/presets.json"
+fi
+rm -f "$TMP_EXTRACT/presets.json"
+
+if [ ! -f "/opt/audio-system/static_settings.json" ] && [ -f "$TMP_EXTRACT/static_settings.json" ]; then
+  echo "Deploying default static_settings.json..."
+  cp "$TMP_EXTRACT/static_settings.json" "/opt/audio-system/static_settings.json"
+fi
+rm -f "$TMP_EXTRACT/static_settings.json"
+
+# Delete entire existing web_ui to remove any deleted/stale python files
+rm -rf /opt/audio-system/web_ui
+
+# Copy updated files into /opt/audio-system
+cp -r "$TMP_EXTRACT"/* /opt/audio-system/
+rm -rf "$TMP_EXTRACT"
+
 chmod +x /opt/audio-system/Application
+if [ -f /opt/audio-system/update.sh ]; then
+  sed -i -e 's/\r$//' /opt/audio-system/update.sh 2>/dev/null || true
+  chmod +x /opt/audio-system/update.sh
+fi
 
 # CREATE SYSTEMD SERVICES
 
@@ -156,6 +186,22 @@ Environment=PYTHONUNBUFFERED=1
 
 [Install]
 WantedBy=multi-user.target
+EOF
+
+# 4. Audio Update Service (triggered on-demand via Web UI or systemctl)
+cat << 'EOF' > /etc/systemd/system/audio-update.service
+[Unit]
+Description=Update service for Audio LED Strip and Web UI
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/audio-system
+ExecStart=/bin/bash /opt/audio-system/update.sh
+User=root
+StandardOutput=journal
+StandardError=journal
 EOF
 
 # SYSTEMD RELOAD & ENABLE SERVICES

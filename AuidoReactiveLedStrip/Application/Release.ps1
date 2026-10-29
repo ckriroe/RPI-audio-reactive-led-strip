@@ -1,8 +1,14 @@
 param(
-    [string]$increment = "patch"  # patch | minor | major
+    [string]$increment = ""  # patch | minor | major | custom, or empty for interactive prompt
 )
 
 $ErrorActionPreference = "Stop"
+
+# Ensure script runs from its directory
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+if (![string]::IsNullOrEmpty($scriptDir)) {
+    Set-Location $scriptDir
+}
 
 # ===== CONFIG =====
 $publishDir = "bin\Release\net8.0\publish"
@@ -11,13 +17,11 @@ $versionFile = "version.txt"
 $csprojFile = "Application.csproj"
 
 # ===== VERSIONING =====
-Write-Host "Updating version..."
-
 if (!(Test-Path $versionFile)) {
     "0.0.0" | Set-Content $versionFile
 }
 
-$version = Get-Content $versionFile
+$version = (Get-Content $versionFile).Trim()
 $parts = $version.Split('.')
 
 [int]$major = $parts[0]
@@ -25,19 +29,57 @@ $parts = $version.Split('.')
 [int]$patch = $parts[2]
 
 $oldVersion = "$major.$minor.$patch"
-switch ($increment) {
-    "major" { $major++; $minor = 0; $patch = 0 }
-    "minor" { $minor++; $patch = 0 }
-    "patch" { $patch++ }
+$patchVer = "$major.$minor.$($patch + 1)"
+$minorVer = "$major.$($minor + 1).0"
+$majorVer = "$($major + 1).0.0"
+
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "       RPISC Release Publisher          " -ForegroundColor Cyan
+Write-Host "========================================" -ForegroundColor Cyan
+Write-Host "Current version: v$oldVersion`n" -ForegroundColor Yellow
+
+if ([string]::IsNullOrWhiteSpace($increment)) {
+    Write-Host "Select version increment:"
+    Write-Host "  [1] Patch: v$patchVer (bugfixes, tweaks) [DEFAULT]"
+    Write-Host "  [2] Minor: v$minorVer (new features)"
+    Write-Host "  [3] Major: v$majorVer (breaking changes)"
+    Write-Host "  [4] Custom version"
+    $choice = Read-Host "`nEnter choice [1-4, or press Enter for Patch]"
+    switch ($choice.Trim()) {
+        "2" { $newVersion = $minorVer }
+        "3" { $newVersion = $majorVer }
+        "4" {
+            $custom = Read-Host "Enter custom version number (e.g. 1.6.0)"
+            if ([string]::IsNullOrWhiteSpace($custom)) {
+                $newVersion = $patchVer
+            } else {
+                $newVersion = $custom.Trim().TrimStart('v')
+            }
+        }
+        Default { $newVersion = $patchVer }
+    }
+} else {
+    switch ($increment.ToLower()) {
+        "major" { $newVersion = $majorVer }
+        "minor" { $newVersion = $minorVer }
+        "patch" { $newVersion = $patchVer }
+        Default { $newVersion = $increment.Trim().TrimStart('v') }
+    }
 }
 
-$newVersion = "$major.$minor.$patch"
-Write-Host "Version updated: $oldVersion -> $newVersion"
+Write-Host "`nTarget version: v$newVersion" -ForegroundColor Green
+$releaseNotes = Read-Host "Release notes / summary (optional, press Enter to generate from commits)"
 
-Write-Host "Bump version to $newVersion..."
+$confirm = Read-Host "`nProceed with building and publishing v$newVersion? [Y/n]"
+if (![string]::IsNullOrWhiteSpace($confirm) -and $confirm -notmatch "^[yY]") {
+    Write-Host "Release cancelled by user." -ForegroundColor Yellow
+    exit 0
+}
+
+Write-Host "`nUpdating version files to $newVersion..."
 Set-Content $versionFile $newVersion
 (Get-Content $csprojFile) -replace '<Version>.*</Version>', "<Version>$newVersion</Version>" |
-        Set-Content $csprojFile
+    Set-Content $csprojFile
 
 # ===== CLEAN =====
 Write-Host "Cleaning publish folder..."
@@ -51,27 +93,22 @@ dotnet publish /p:PublishProfile=$publishProfile
 
 # ===== POST PROCESS =====
 Write-Host "Finalizing output..."
-$filesToRemove = @(
-    "static_settings.json",
-    "presets.json"
-)
 
-foreach ($file in $filesToRemove) {
-    $path = Join-Path $publishDir $file
-    if (Test-Path $path) {
-        Remove-Item $path -Force
-    }
-}
-
+# Copy extra files into publish directory (including default configurations and update script)
 $filesToCopy = @(
     $versionFile,
     "..\..\audio_parameter_web_ui.py",
-    "..\..\aux_in_alsa_state.state"
+    "..\..\aux_in_alsa_state.state",
+    "..\..\update.sh",
+    "presets.json",
+    "static_settings.json"
 )
 
 foreach ($file in $filesToCopy) {
-    $destination = Join-Path $publishDir (Split-Path $file -Leaf)
-    Copy-Item $file $destination -Force
+    if (Test-Path $file) {
+        $destination = Join-Path $publishDir (Split-Path $file -Leaf)
+        Copy-Item $file $destination -Force
+    }
 }
 
 $directoriesToCopy = @(
@@ -94,11 +131,15 @@ if (Test-Path $zipName) {
 
 Compress-Archive -Path "$publishDir\*" -DestinationPath $zipName
 
-Write-Host "Creating GitHub release..."
-gh release create "v$newVersion" $zipName --title "v$newVersion"
-Write-Host "Release v$newVersion created successfully!"
+Write-Host "Creating GitHub release v$newVersion..."
+if ([string]::IsNullOrWhiteSpace($releaseNotes)) {
+    gh release create "v$newVersion" $zipName --title "v$newVersion" --generate-notes
+} else {
+    gh release create "v$newVersion" $zipName --title "v$newVersion" --notes "$releaseNotes"
+}
+Write-Host "Release v$newVersion created successfully!" -ForegroundColor Green
 
-Write-Host "Cleanup..."
+Write-Host "Cleanup temporary files..."
 if (Test-Path $zipName) {
     Remove-Item $zipName -Force
 }
@@ -107,9 +148,10 @@ if (Test-Path $publishDir) {
     Remove-Item $publishDir -Recurse -Force
 }
 
+Write-Host "Committing and pushing version update..."
 git add $versionFile
 git add $csprojFile
 git commit -m "Release v$newVersion"
 git push
 
-Write-Host "DONE"
+Write-Host "`n=== RELEASE v$newVersion COMPLETED SUCCESSFULLY ===" -ForegroundColor Green

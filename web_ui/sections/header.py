@@ -36,6 +36,13 @@ def render_header(app_title):
                 args=("import_backup",),
                 use_container_width=True,
             )
+            st.button(
+                "🔄 Nach Updates suchen",
+                key="btn_check_update",
+                on_click=trigger_dialog,
+                args=("check_update",),
+                use_container_width=True,
+            )
 
     if st.session_state.get("is_shutting_down"):
         st.error("**Das System wird heruntergefahren...**")
