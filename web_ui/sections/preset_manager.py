@@ -169,79 +169,83 @@ def render_preset_manager():
                     is_active = (p["id"] == st.session_state.preset_guid)
                     icon_tag = get_preset_icon_tag(p)
 
-                    col_name, col_actions = st.columns([7, 3], vertical_alignment="center", gap="small", wrap=False)
-                    with col_name:
+                    col_preset, col_menu = st.columns([8, 1], vertical_alignment="center", gap="small", wrap=False)
+                    with col_preset:
                         if is_active:
-                            st.markdown(f"**🟢 {p['name']}{icon_tag}**")
+                            st.button(
+                                f"{p['name']}{icon_tag}",
+                                key=f"btn_pre_active_{p['id']}",
+                                type="primary",
+                                use_container_width=True,
+                                help="Aktive Voreinstellung",
+                            )
                         else:
-                            st.markdown(f"⚪ {p['name']}{icon_tag}")
-                    with col_actions:
-                        with st.container(horizontal=True, horizontal_alignment="right", vertical_alignment="center"):
-                            if not is_active:
+                            st.button(
+                                f"{p['name']}{icon_tag}",
+                                key=f"btn_pre_item_{p['id']}",
+                                on_click=select_preset_by_id,
+                                args=(p["id"],),
+                                use_container_width=True,
+                                help="Klicken, um diese Voreinstellung zu aktivieren",
+                            )
+                    with col_menu:
+                        with st.popover("", key=f"pop_pre_{p['id']}_{pop_ver}"):
+                            can_move_up = False
+                            if not is_standard:
+                                if st.session_state.active_group_id == GLOBAL_GROUP_ID:
+                                    can_move_up = (idx_in_grp > 1)
+                                else:
+                                    can_move_up = (idx_in_grp > 0)
+
+                            can_move_down = (not is_standard and idx_in_grp < len(presets_in_current_group) - 1)
+
+                            st.button(
+                                "▲ Nach oben",
+                                key=f"btn_up_{p['id']}",
+                                disabled=(not can_move_up),
+                                on_click=move_preset_in_group,
+                                args=(p["id"], -1),
+                                use_container_width=True,
+                            )
+                            st.button(
+                                "▼ Nach unten",
+                                key=f"btn_down_{p['id']}",
+                                disabled=(not can_move_down),
+                                on_click=move_preset_in_group,
+                                args=(p["id"], 1),
+                                use_container_width=True,
+                            )
+                            st.button(
+                                "✏️ Umbenennen",
+                                key=f"btn_ren_{p['id']}",
+                                disabled=is_standard,
+                                on_click=trigger_dialog,
+                                args=("rename_preset", p["id"]),
+                                use_container_width=True,
+                            )
+                            st.button(
+                                "📋 Kopieren",
+                                key=f"btn_cp_{p['id']}",
+                                on_click=trigger_dialog,
+                                args=("copy_preset", p["id"]),
+                                use_container_width=True,
+                            )
+                            if p.get("groupId") is not None and p.get("groupId") != GLOBAL_GROUP_ID:
                                 st.button(
-                                    "✅",
-                                    key=f"btn_pre_sel_{p['id']}",
-                                    on_click=select_preset_by_id,
+                                    "↩️ In 'Global' verschieben",
+                                    key=f"btn_ungrp_{p['id']}",
+                                    on_click=unassign_preset,
                                     args=(p["id"],),
-                                    help="Voreinstellung aktivieren",
-                                )
-                            with st.popover("", key=f"pop_pre_{p['id']}_{pop_ver}"):
-                                can_move_up = False
-                                if not is_standard:
-                                    if st.session_state.active_group_id == GLOBAL_GROUP_ID:
-                                        can_move_up = (idx_in_grp > 1)
-                                    else:
-                                        can_move_up = (idx_in_grp > 0)
-
-                                can_move_down = (not is_standard and idx_in_grp < len(presets_in_current_group) - 1)
-
-                                st.button(
-                                    "▲ Nach oben",
-                                    key=f"btn_up_{p['id']}",
-                                    disabled=(not can_move_up),
-                                    on_click=move_preset_in_group,
-                                    args=(p["id"], -1),
                                     use_container_width=True,
                                 )
-                                st.button(
-                                    "▼ Nach unten",
-                                    key=f"btn_down_{p['id']}",
-                                    disabled=(not can_move_down),
-                                    on_click=move_preset_in_group,
-                                    args=(p["id"], 1),
-                                    use_container_width=True,
-                                )
-                                st.button(
-                                    "✏️ Umbenennen",
-                                    key=f"btn_ren_{p['id']}",
-                                    disabled=is_standard,
-                                    on_click=trigger_dialog,
-                                    args=("rename_preset", p["id"]),
-                                    use_container_width=True,
-                                )
-                                st.button(
-                                    "📋 Kopieren",
-                                    key=f"btn_cp_{p['id']}",
-                                    on_click=trigger_dialog,
-                                    args=("copy_preset", p["id"]),
-                                    use_container_width=True,
-                                )
-                                if p.get("groupId") is not None and p.get("groupId") != GLOBAL_GROUP_ID:
-                                    st.button(
-                                        "↩️ In 'Global' verschieben",
-                                        key=f"btn_ungrp_{p['id']}",
-                                        on_click=unassign_preset,
-                                        args=(p["id"],),
-                                        use_container_width=True,
-                                    )
-                                st.button(
-                                    "🗑️ Löschen",
-                                    key=f"btn_del_{p['id']}",
-                                    disabled=is_standard,
-                                    on_click=trigger_dialog,
-                                    args=("delete_preset", p["id"]),
-                                    use_container_width=True,
-                                )
+                            st.button(
+                                "🗑️ Löschen",
+                                key=f"btn_del_{p['id']}",
+                                disabled=is_standard,
+                                on_click=trigger_dialog,
+                                args=("delete_preset", p["id"]),
+                                use_container_width=True,
+                            )
 
         current_guid = st.session_state.preset_guid
         is_master = is_preset_template_master(current_guid)

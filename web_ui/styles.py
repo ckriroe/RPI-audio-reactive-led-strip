@@ -53,24 +53,51 @@ div[data-testid="stColumn"] {
     overflow: visible !important;
 }
 
-/* Preset rows: Vertically center preset names with adjacent action buttons */
-div[data-testid="stHorizontalBlock"]:has([class*="btn_pre_sel_"]) div[data-testid="stMarkdownContainer"],
-div[data-testid="stHorizontalBlock"]:has([class*="pop_pre_"]) div[data-testid="stMarkdownContainer"] {
-    margin: 0 !important;
-    padding: 0 !important;
+/* Preset list buttons: clickable button appearance, left-aligned, full width, 38px height */
+div[class*="st-key-btn_pre_"] button {
+    justify-content: flex-start !important;
+    text-align: left !important;
     min-height: 38px !important;
-    display: flex !important;
-    align-items: center !important;
-}
-div[data-testid="stHorizontalBlock"]:has([class*="btn_pre_sel_"]) div[data-testid="stMarkdownContainer"] p,
-div[data-testid="stHorizontalBlock"]:has([class*="pop_pre_"]) div[data-testid="stMarkdownContainer"] p {
+    height: 38px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    font-size: 0.95rem !important;
+    border-radius: 8px !important;
     margin: 0 !important;
-    padding: 0 !important;
-    line-height: normal !important;
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    transition: all 0.15s ease-in-out !important;
+}
+div[class*="st-key-btn_pre_"] button:hover {
+    background-color: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.35) !important;
+    cursor: pointer !important;
+}
+div[class*="st-key-btn_pre_"] button:active {
+    transform: scale(0.99) !important;
+}
+div[class*="st-key-btn_pre_"] button p {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    margin: 0 !important;
+    font-size: inherit !important;
+}
+
+/* Active preset button highlight */
+div[class*="st-key-btn_pre_active_"] button {
+    background-color: rgba(46, 204, 113, 0.16) !important;
+    border: 1px solid rgba(46, 204, 113, 0.6) !important;
+    border-left: 5px solid #2ecc71 !important;
+    font-weight: 600 !important;
+    color: #ffffff !important;
+}
+div[class*="st-key-btn_pre_active_"] button:hover {
+    background-color: rgba(46, 204, 113, 0.24) !important;
+    border-color: #2ecc71 !important;
 }
 
 /* Action buttons: 38px square buttons */
-div[class*="st-key-btn_pre_sel_"] button,
 div[class*="st-key-mv_up_"] button,
 div[class*="st-key-mv_down_"] button,
 div[class*="st-key-rm_col_"] button,
@@ -93,6 +120,26 @@ button[data-testid="stPopoverButton"] svg {
 }
 button[data-testid="stPopoverButton"] [data-testid="stMarkdownContainer"] {
     display: none !important;
+}
+
+/* Preset row layout: preset button takes all free space, popover takes 38px */
+div[data-testid="stHorizontalBlock"]:has([class*="pop_pre_"]) {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    width: 100% !important;
+    margin-bottom: 0.25rem !important;
+}
+div[data-testid="stHorizontalBlock"]:has([class*="pop_pre_"]) > div[data-testid="stColumn"]:first-child {
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
+    width: auto !important;
+}
+div[data-testid="stHorizontalBlock"]:has([class*="pop_pre_"]) > div[data-testid="stColumn"]:last-child,
+div[data-testid="stColumn"]:has([class*="pop_pre_"]) {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: 38px !important;
 }
 
 /* Shutdown button styling */
