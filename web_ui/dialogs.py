@@ -12,7 +12,12 @@ from web_ui.preset_service import (
     copy_preset_by_id,
 )
 from web_ui.system_service import is_raspberry_pi, shutdown_system
-from web_ui.backup_service import create_backup_zip, restore_backup_zip
+from web_ui.backup_service import (
+    create_backup_zip,
+    restore_backup_zip,
+    get_local_backups,
+    delete_local_backup,
+)
 from web_ui.storage import load_presets, load_static_settings
 from web_ui.state_sync import (
     update_session_state_from_preset,
@@ -32,6 +37,8 @@ def on_dialog_dismiss():
     st.session_state.pop("backup_data", None)
     st.session_state.pop("backup_filename", None)
     st.session_state.pop("import_backup_error", None)
+    st.session_state.pop("confirm_restore_backup", None)
+    st.session_state.pop("confirm_delete_backup", None)
     st.session_state.pop("update_info", None)
     st.session_state.pop("update_step", None)
     st.session_state.pop("update_backup_data", None)
@@ -39,6 +46,25 @@ def on_dialog_dismiss():
     st.session_state.pop("update_backup_done", None)
     st.session_state.pop("update_error", None)
     st.session_state.pop("update_download_ok", None)
+
+
+def apply_restored_settings():
+    """Reloads presets and static configuration into session state after a backup restore."""
+    preset_data = load_presets()
+    st.session_state.presets = preset_data["presets"]
+    st.session_state.groups = preset_data.get("groups", [])
+    st.session_state.preset_guid = preset_data["selectedPresetId"]
+    preset_index = 0
+    for i in range(len(st.session_state.presets)):
+        if st.session_state.presets[i]["id"] == st.session_state.preset_guid:
+            preset_index = i
+            break
+    st.session_state.preset_index = preset_index
+    update_session_state_from_preset(st.session_state.presets[preset_index])
+
+    static_data = load_static_settings()
+    st.session_state.static_settings = static_data
+    update_session_state_from_static_settings(static_data)
 
 
 @st.dialog("Neue Gruppe erstellen", on_dismiss=on_dialog_dismiss)
@@ -214,7 +240,7 @@ def dialog_create_backup():
         zip_bytes = st.session_state.backup_data
         filename = st.session_state.backup_filename
 
-    st.info(f"Dateiname: **{filename}**")
+    st.info(f"Dateiname: **{filename}**  \n*(Automatisch im Ordner 'backups/' gespeichert)*")
 
     col1, col2 = st.columns([1, 1])
     with col1:
@@ -243,54 +269,118 @@ def dialog_create_backup():
 
 @st.dialog("Backup importieren", on_dismiss=on_dialog_dismiss)
 def dialog_import_backup():
-    st.write("Wähle eine Backup-ZIP-Datei aus, um die Einstellungen wiederherzustellen.")
-    st.warning("⚠️ Die aktuellen Einstellungen werden vollständig überschrieben!")
+    # 1. Confirmation View: Restore
+    if st.session_state.get("confirm_restore_backup"):
+        target = st.session_state.confirm_restore_backup
+        st.warning("⚠️ **Wiederherstellung bestätigen**")
+        st.write(f"Möchtest du das Backup **{target['name']}** wirklich wiederherstellen?")
+        st.error("Alle aktuellen Einstellungen und Voreinstellungen werden dabei überschrieben!")
 
-    uploaded_file = st.file_uploader(
-        "ZIP-Datei auswählen",
-        type=["zip"],
-        accept_multiple_files=False,
-        key="dlg_import_backup_uploader",
-    )
-
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        if st.button("Abbrechen", key="dlg_import_backup_cancel", use_container_width=True):
-            st.session_state.pop("import_backup_error", None)
-            st.session_state.active_dialog = None
-            st.rerun()
-    with col2:
-        is_disabled = (uploaded_file is None)
-        if st.button("Wiederherstellen", key="dlg_import_backup_submit", type="primary", disabled=is_disabled, use_container_width=True):
-            success, err_msg = restore_backup_zip(uploaded_file)
-            if success:
-                st.session_state.pop("import_backup_error", None)
-                st.session_state.active_dialog = None
-                st.session_state.toast_message = ("Backup erfolgreich wiederhergestellt!", "✅")
-
-                preset_data = load_presets()
-                st.session_state.presets = preset_data["presets"]
-                st.session_state.groups = preset_data.get("groups", [])
-                st.session_state.preset_guid = preset_data["selectedPresetId"]
-                preset_index = 0
-                for i in range(len(st.session_state.presets)):
-                    if st.session_state.presets[i]["id"] == st.session_state.preset_guid:
-                        preset_index = i
-                        break
-                st.session_state.preset_index = preset_index
-                update_session_state_from_preset(st.session_state.presets[preset_index])
-
-                static_data = load_static_settings()
-                st.session_state.static_settings = static_data
-                update_session_state_from_static_settings(static_data)
-
-                st.session_state.popover_ver = st.session_state.get("popover_ver", 0) + 1
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button("Abbrechen", key="btn_conf_rst_cancel", use_container_width=True):
+                st.session_state.pop("confirm_restore_backup", None)
                 st.rerun()
-            else:
-                st.session_state.import_backup_error = f"Fehler beim Wiederherstellen: {err_msg}"
+        with col2:
+            if st.button("Ja, wiederherstellen", key="btn_conf_rst_submit", type="primary", use_container_width=True):
+                success, err_msg = restore_backup_zip(target["source"])
+                if success:
+                    st.session_state.pop("confirm_restore_backup", None)
+                    st.session_state.pop("import_backup_error", None)
+                    st.session_state.active_dialog = None
+                    st.session_state.toast_message = ("Backup erfolgreich wiederhergestellt!", "✅")
+                    apply_restored_settings()
+                    st.session_state.popover_ver = st.session_state.get("popover_ver", 0) + 1
+                    st.rerun()
+                else:
+                    st.session_state.import_backup_error = f"Fehler beim Wiederherstellen: {err_msg}"
+                    st.session_state.pop("confirm_restore_backup", None)
+                    st.rerun()
+        return
+
+    # 2. Confirmation View: Delete
+    if st.session_state.get("confirm_delete_backup"):
+        del_name = st.session_state.confirm_delete_backup
+        st.warning(f"Möchtest du das lokale Backup **{del_name}** wirklich dauerhaft löschen?")
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button("Abbrechen", key="btn_conf_del_cancel", use_container_width=True):
+                st.session_state.pop("confirm_delete_backup", None)
+                st.rerun()
+        with col2:
+            if st.button("Ja, löschen", key="btn_conf_del_submit", type="primary", use_container_width=True):
+                ok, err = delete_local_backup(del_name)
+                st.session_state.pop("confirm_delete_backup", None)
+                if ok:
+                    st.session_state.toast_message = ("Backup gelöscht.", "🗑️")
+                else:
+                    st.session_state.import_backup_error = f"Fehler beim Löschen: {err}"
+                st.rerun()
+        return
+
+    # 3. Main View with Tabs
+    st.write("Wähle ein Backup aus, um deine Einstellungen wiederherzustellen.")
+
+    tab_local, tab_upload = st.tabs(["📁 Lokale Backups", "📤 Datei hochladen"])
+
+    with tab_local:
+        local_backups = get_local_backups()
+        if not local_backups:
+            st.info("Noch keine lokalen Backups im Ordner 'backups/' vorhanden.")
+        else:
+            st.caption(f"{len(local_backups)} Backup(s) gefunden (neueste zuerst):")
+            with st.container(height=260):
+                for b in local_backups:
+                    fname = b["filename"]
+                    col_info, col_rst, col_dl, col_del = st.columns([6, 2, 2, 2], vertical_alignment="center", gap="small")
+                    with col_info:
+                        st.markdown(f"**{b['date_str']}**  \n<small title='{fname}'>{b['size_str']}</small>", unsafe_allow_html=True)
+                    with col_rst:
+                        if st.button("🔄", key=f"btn_rst_{fname}", help="Dieses Backup wiederherstellen"):
+                            st.session_state.confirm_restore_backup = {
+                                "name": fname,
+                                "source": b["path"],
+                            }
+                            st.rerun()
+                    with col_dl:
+                        with open(b["path"], "rb") as f:
+                            dl_bytes = f.read()
+                        st.download_button(
+                            "💾",
+                            data=dl_bytes,
+                            file_name=fname,
+                            mime="application/zip",
+                            key=f"btn_dl_{fname}",
+                            help="Herunterladen",
+                        )
+                    with col_del:
+                        if st.button("🗑️", key=f"btn_del_{fname}", help="Löschen"):
+                            st.session_state.confirm_delete_backup = fname
+                            st.rerun()
+
+    with tab_upload:
+        st.write("ZIP-Datei von deinem Gerät auswählen:")
+        uploaded_file = st.file_uploader(
+            "ZIP-Datei auswählen",
+            type=["zip"],
+            accept_multiple_files=False,
+            key="dlg_import_backup_uploader",
+        )
+        is_disabled = (uploaded_file is None)
+        if st.button("Wiederherstellen", key="dlg_import_upload_submit", type="primary", disabled=is_disabled, use_container_width=True):
+            st.session_state.confirm_restore_backup = {
+                "name": uploaded_file.name,
+                "source": uploaded_file,
+            }
+            st.rerun()
 
     if st.session_state.get("import_backup_error"):
         st.error(st.session_state.import_backup_error)
+
+    if st.button("Schließen", key="dlg_import_backup_close", use_container_width=True):
+        st.session_state.pop("import_backup_error", None)
+        st.session_state.active_dialog = None
+        st.rerun()
 
 
 @st.dialog("Nach Updates suchen", on_dismiss=on_dialog_dismiss)
@@ -342,7 +432,7 @@ def dialog_check_update():
         latest_ver = info.get("latest_version", "")
         st.subheader("Update bestätigen")
         st.write(f"Möchtest du das Update auf Version **v{latest_ver}** wirklich installieren?")
-        st.write("Vor der Installation wird automatisch ein Backup deiner Voreinstellungen und Einstellungen heruntergeladen.")
+        st.write("Vor der Installation wird automatisch ein Backup deiner Voreinstellungen und Einstellungen heruntergeladen und lokal gespeichert.")
 
         col1, col2 = st.columns([1, 1])
         with col1:
@@ -377,7 +467,7 @@ def dialog_check_update():
             components.html(auto_dl_script, height=0)
 
         backup_file = st.session_state.get("update_backup_filename", "Backup")
-        st.success(f"💾 Backup **{backup_file}** wurde erstellt und heruntergeladen.")
+        st.success(f"💾 Backup **{backup_file}** wurde erstellt, lokal gespeichert und heruntergeladen.")
 
         # 2. Download and verify update package if not already done
         if not st.session_state.get("update_download_ok") and not st.session_state.get("update_error"):

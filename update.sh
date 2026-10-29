@@ -68,7 +68,7 @@ rm -rf "$INSTALL_DIR/web_ui"
 
 # 7. Copy all updated files into target directory
 echo "Copying updated files to $INSTALL_DIR..."
-mkdir -p "$INSTALL_DIR"
+mkdir -p "$INSTALL_DIR" "$INSTALL_DIR/backups"
 cp -r "$EXTRACT_DIR"/* "$INSTALL_DIR"/
 
 # 8. Ensure proper execution permissions

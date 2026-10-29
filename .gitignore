@@ -425,3 +425,6 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Local Backups
+backups/

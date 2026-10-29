@@ -99,7 +99,7 @@ fi
 systemctl is-active --quiet audio-led-strip.service && systemctl stop audio-led-strip.service || true
 systemctl is-active --quiet audio-web-ui.service && systemctl stop audio-web-ui.service || true
 
-mkdir -p /opt/audio-system
+mkdir -p /opt/audio-system /opt/audio-system/backups
 TMP_DIR="/tmp/audio-system-setup"
 rm -rf "$TMP_DIR"
 mkdir -p "$TMP_DIR/extracted"

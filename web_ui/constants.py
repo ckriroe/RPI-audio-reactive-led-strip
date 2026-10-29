@@ -1,6 +1,7 @@
 STATIC_CONFIG_FILE = "static_settings.json"
 PRESETS_FILE = "presets.json"
 VERSION_FILE = "version.txt"
+BACKUPS_DIR = "backups"
 
 MIN_VOLUME_DB = -120.0
 MAX_VOLUME_DB = 0.0
