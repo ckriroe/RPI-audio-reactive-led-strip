@@ -122,6 +122,17 @@ button[data-testid="stPopoverButton"] [data-testid="stMarkdownContainer"] {
     display: none !important;
 }
 
+/* Disable margin-right for st-emotion-cache-hqqroh and all its dynamic counterparts */
+.st-emotion-cache-hqqroh,
+[class*="st-emotion-cache-hqqroh"],
+[class*="hqqroh"],
+button[data-testid="stPopoverButton"] > div,
+button[data-testid="stPopoverButton"] div[class*="st-emotion-cache-"],
+button[data-testid="stPopoverButton"] [class*="e1i31rv60"],
+button[data-testid="stPopoverButton"] [class*="ecfxx9g1"] {
+    margin-right: 0 !important;
+}
+
 /* Preset row layout: preset button takes all free space, popover takes 38px */
 div[data-testid="stHorizontalBlock"]:has([class*="pop_pre_"]) {
     display: flex !important;
