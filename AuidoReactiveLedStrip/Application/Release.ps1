@@ -125,6 +125,13 @@ foreach ($dir in $directoriesToCopy) {
 Get-ChildItem -Path $publishDir -Recurse -Include "__pycache__", "*.pyc", "*.pyo" |
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
+# Ensure update.sh has Unix LF line endings in release package
+$shFile = Join-Path $publishDir "update.sh"
+if (Test-Path $shFile) {
+    $shContent = [System.IO.File]::ReadAllText($shFile) -replace "`r`n", "`n"
+    [System.IO.File]::WriteAllText($shFile, $shContent, (New-Object System.Text.UTF8Encoding $false))
+}
+
 # ===== PACKAGE =====
 Write-Host "Creating archive with cross-platform forward-slash paths..."
 $zipName = "app.zip"

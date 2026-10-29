@@ -6,6 +6,17 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
+# Prevent script from modifying its own file descriptor when updating /opt/audio-system.
+# If running directly from the install dir, copy to /tmp and re-exec from there.
+RUNNER_SCRIPT="/tmp/audio-system-update-runner.sh"
+if [ "$0" != "$RUNNER_SCRIPT" ]; then
+  mkdir -p "/tmp"
+  cp "$0" "$RUNNER_SCRIPT"
+  sed -i -e 's/\r$//' "$RUNNER_SCRIPT" 2>/dev/null || true
+  chmod +x "$RUNNER_SCRIPT"
+  exec "$RUNNER_SCRIPT" "$@"
+fi
+
 INSTALL_DIR="/opt/audio-system"
 TMP_DIR="/tmp/audio-system-update"
 APP_ZIP="$TMP_DIR/app.zip"
@@ -83,8 +94,9 @@ if [ -f "$INSTALL_DIR/aux_in_alsa_state.state" ]; then
   /usr/sbin/alsactl restore -f "$INSTALL_DIR/aux_in_alsa_state.state" 2>/dev/null || true
 fi
 
-# 10. Clean up staging
+# 10. Clean up staging and temporary runner
 rm -rf "$TMP_DIR"
+rm -f "$RUNNER_SCRIPT"
 
 # 11. Restart services
 echo "Restarting audio system services..."
