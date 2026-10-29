@@ -267,7 +267,7 @@ def dialog_create_backup():
             st.rerun()
 
 
-@st.dialog("Backup importieren", on_dismiss=on_dialog_dismiss)
+@st.dialog("Backup wiederherstellen", on_dismiss=on_dialog_dismiss)
 def dialog_import_backup():
     # 1. Confirmation View: Restore
     if st.session_state.get("confirm_restore_backup"):
@@ -326,7 +326,7 @@ def dialog_import_backup():
     with tab_local:
         local_backups = get_local_backups()
         if not local_backups:
-            st.info("Noch keine lokalen Backups im Ordner 'backups/' vorhanden.")
+            st.info("Noch keine lokalen Backups vorhanden.")
         else:
             st.caption(f"{len(local_backups)} Backup(s) gefunden (neueste zuerst):")
             with st.container(height=260):
@@ -336,7 +336,7 @@ def dialog_import_backup():
                     with col_info:
                         st.markdown(f"**{b['date_str']}**  \n<small title='{fname}'>{b['size_str']}</small>", unsafe_allow_html=True)
                     with col_rst:
-                        if st.button("🔄", key=f"btn_rst_{fname}", help="Dieses Backup wiederherstellen"):
+                        if st.button("🔄", key=f"btn_rst_{fname}"):
                             st.session_state.confirm_restore_backup = {
                                 "name": fname,
                                 "source": b["path"],
@@ -351,15 +351,13 @@ def dialog_import_backup():
                             file_name=fname,
                             mime="application/zip",
                             key=f"btn_dl_{fname}",
-                            help="Herunterladen",
                         )
                     with col_del:
-                        if st.button("🗑️", key=f"btn_del_{fname}", help="Löschen"):
+                        if st.button("🗑️", key=f"btn_del_{fname}"):
                             st.session_state.confirm_delete_backup = fname
                             st.rerun()
 
     with tab_upload:
-        st.write("ZIP-Datei von deinem Gerät auswählen:")
         uploaded_file = st.file_uploader(
             "ZIP-Datei auswählen",
             type=["zip"],

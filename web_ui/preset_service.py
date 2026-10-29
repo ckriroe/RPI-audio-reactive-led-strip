@@ -25,7 +25,7 @@ def is_preset_template_master(preset_id):
 
 def get_preset_icon_tag(preset):
     if is_preset_template_master(preset["id"]):
-        return " ⭐"
+        return " 👑"
     if preset["values"].get("templateId") is not None:
         return " 🔗"
     return ""

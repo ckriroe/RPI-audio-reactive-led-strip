@@ -177,7 +177,6 @@ def render_preset_manager():
                                 key=f"btn_pre_active_{p['id']}",
                                 type="primary",
                                 use_container_width=True,
-                                help="Aktive Voreinstellung",
                             )
                         else:
                             st.button(
@@ -186,7 +185,6 @@ def render_preset_manager():
                                 on_click=select_preset_by_id,
                                 args=(p["id"],),
                                 use_container_width=True,
-                                help="Klicken, um diese Voreinstellung zu aktivieren",
                             )
                     with col_menu:
                         with st.popover("", key=f"pop_pre_{p['id']}_{pop_ver}"):

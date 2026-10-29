@@ -39,22 +39,28 @@ def render_color_section():
             if f"threshold_{i}" not in st.session_state:
                 st.session_state[f"threshold_{i}"] = c["threshold"]
 
-            col_color, col_actions = st.columns([1, 1], vertical_alignment="bottom", wrap=False)
-            with col_color:
+            if i == 0:
                 st.color_picker(
                     label,
                     key=f"color_{i}",
                     on_change=save_presets,
                 )
-            with col_actions:
-                has_actions = i > 0 and len(st.session_state.colors) > 2
-                if has_actions:
-                    with st.container(horizontal=True, horizontal_alignment="right", vertical_alignment="center"):
-                        if i > 1:
-                            st.button("▲", key=f"mv_up_{i}", on_click=move_color, args=(i, -1))
-                        if i > 0 and i < len(st.session_state.colors) - 1:
-                            st.button("▼", key=f"mv_down_{i}", on_click=move_color, args=(i, 1))
-                        if i > 0 and len(st.session_state.colors) > 2:
+            else:
+                col_color, col_actions = st.columns([1, 3], vertical_alignment="bottom", wrap=False)
+                with col_color:
+                    st.color_picker(
+                        label,
+                        key=f"color_{i}",
+                        on_change=save_presets,
+                    )
+                with col_actions:
+                    has_actions = len(st.session_state.colors) > 2
+                    if has_actions:
+                        with st.container(horizontal=True, horizontal_alignment="right", vertical_alignment="center"):
+                            if i > 1:
+                                st.button("▲", key=f"mv_up_{i}", on_click=move_color, args=(i, -1))
+                            if i < len(st.session_state.colors) - 1:
+                                st.button("▼", key=f"mv_down_{i}", on_click=move_color, args=(i, 1))
                             st.button("❌", key=f"rm_col_{i}", on_click=remove_color, args=(i,))
 
             if i >= len(st.session_state.colors) - 1:

@@ -133,6 +133,19 @@ button[data-testid="stPopoverButton"] [class*="ecfxx9g1"] {
     margin-right: 0 !important;
 }
 
+/* Remove min-width (8rem) from color picker container and columns */
+.st-emotion-cache-lhethk,
+[class*="st-emotion-cache-lhethk"],
+[class*="lhethk"],
+.stColorPicker,
+div[data-testid="stColorPicker"],
+div[data-testid="stColorPicker"] > div,
+div[data-testid="stHorizontalBlock"]:has([data-testid="stColorPicker"]) > div[data-testid="stColumn"],
+div[data-testid="stColumn"]:has([data-testid="stColorPicker"]),
+div[data-testid="stColumn"]:has(.stColorPicker) {
+    min-width: 0 !important;
+}
+
 /* Preset row layout: preset button takes all free space, popover takes 38px */
 div[data-testid="stHorizontalBlock"]:has([class*="pop_pre_"]) {
     display: flex !important;
