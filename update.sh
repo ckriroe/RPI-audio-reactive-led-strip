@@ -103,4 +103,4 @@ echo "Restarting audio system services..."
 systemctl start audio-web-ui.service
 systemctl start audio-led-strip.service
 
-echo "=== RPISC Update completed successfully! ==="
+echo "RPISC Update completed successfully!"
