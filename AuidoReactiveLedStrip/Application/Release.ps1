@@ -126,14 +126,25 @@ Get-ChildItem -Path $publishDir -Recurse -Include "__pycache__", "*.pyc", "*.pyo
     Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
 
 # ===== PACKAGE =====
-Write-Host "Creating archive..."
+Write-Host "Creating archive with cross-platform forward-slash paths..."
 $zipName = "app.zip"
+$zipPath = Join-Path $scriptDir $zipName
 
-if (Test-Path $zipName) {
-    Remove-Item $zipName -Force
+if (Test-Path $zipPath) {
+    Remove-Item $zipPath -Force
 }
 
-Compress-Archive -Path "$publishDir\*" -DestinationPath $zipName
+Add-Type -AssemblyName System.IO.Compression
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+$basePublishPath = (Resolve-Path $publishDir).Path
+$zip = [System.IO.Compression.ZipFile]::Open($zipPath, [System.IO.Compression.ZipArchiveMode]::Create)
+
+Get-ChildItem -Path $basePublishPath -Recurse -File | ForEach-Object {
+    $rel = $_.FullName.Substring($basePublishPath.Length).TrimStart('\', '/').Replace('\', '/')
+    [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($zip, $_.FullName, $rel) | Out-Null
+}
+$zip.Dispose()
 
 Write-Host "Creating GitHub release v$newVersion..."
 if ([string]::IsNullOrWhiteSpace($releaseNotes)) {

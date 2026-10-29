@@ -63,8 +63,14 @@ chown "$TARGET_USER:" "$USER_HOME/.asoundrc"
 # INSTALL PYTHON DEPS
 python3 -m pip install streamlit==1.64.0 --break-system-packages --no-input --ignore-installed
 
-# INSTALL .NET 8
-curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 8.0 --version latest --install-dir /opt/dotnet --verbose
+# INSTALL .NET 8 (if not already installed)
+if [ ! -f "/opt/dotnet/dotnet" ]; then
+  echo "Installing .NET 8..."
+  curl -sSL https://dot.net/v1/dotnet-install.sh | bash /dev/stdin --channel 8.0 --version latest --install-dir /opt/dotnet --verbose
+else
+  echo ".NET 8 is already installed in /opt/dotnet, skipping installation."
+fi
+
 BASHRC="$USER_HOME/.bashrc"
 LINE1='export DOTNET_ROOT=/opt/dotnet'
 LINE2='export PATH=$PATH:/opt/dotnet'
@@ -72,16 +78,21 @@ grep -qF -- "$LINE1" "$BASHRC" || echo "$LINE1" >> "$BASHRC"
 grep -qF -- "$LINE2" "$BASHRC" || echo "$LINE2" >> "$BASHRC"
 chown "$TARGET_USER:" "$BASHRC"
 
-# BUILD AND INSTALL RPI_WS281X
-BUILD_DIR=$(mktemp -d)
-(
-  cd "$BUILD_DIR"
-  git clone https://github.com/jgarff/rpi_ws281x.git .
-  scons
-  gcc -shared -o ws2811.so *.o
-  cp -f ws2811.so /usr/lib/
-)
-rm -rf "$BUILD_DIR"
+# BUILD AND INSTALL RPI_WS281X (if not already installed)
+if [ ! -f "/usr/lib/ws2811.so" ]; then
+  echo "Building and installing rpi_ws281x..."
+  BUILD_DIR=$(mktemp -d)
+  (
+    cd "$BUILD_DIR"
+    git clone https://github.com/jgarff/rpi_ws281x.git .
+    scons
+    gcc -shared -o ws2811.so *.o
+    cp -f ws2811.so /usr/lib/
+  )
+  rm -rf "$BUILD_DIR"
+else
+  echo "rpi_ws281x (/usr/lib/ws2811.so) is already installed, skipping build."
+fi
 
 # DOWNLOAD AND INSTALL AUDIO SYSTEM RELEASE
 # Stop services if already installed and running to avoid "Text file busy"
@@ -89,11 +100,15 @@ systemctl is-active --quiet audio-led-strip.service && systemctl stop audio-led-
 systemctl is-active --quiet audio-web-ui.service && systemctl stop audio-web-ui.service || true
 
 mkdir -p /opt/audio-system
-APP_ZIP=$(mktemp)
+TMP_DIR="/tmp/audio-system-setup"
+rm -rf "$TMP_DIR"
+mkdir -p "$TMP_DIR/extracted"
+APP_ZIP="$TMP_DIR/app.zip"
+TMP_EXTRACT="$TMP_DIR/extracted"
+
+echo "Downloading latest audio system release..."
 curl -fLk https://github.com/ckriroe/RPI-audio-reactive-led-strip/releases/latest/download/app.zip -o "$APP_ZIP"
-TMP_EXTRACT=$(mktemp -d)
 unzip -q -o "$APP_ZIP" -d "$TMP_EXTRACT"
-rm -f "$APP_ZIP"
 
 # Deploy default settings ONLY if they do not exist already
 if [ ! -f "/opt/audio-system/presets.json" ] && [ -f "$TMP_EXTRACT/presets.json" ]; then
@@ -113,7 +128,7 @@ rm -rf /opt/audio-system/web_ui
 
 # Copy updated files into /opt/audio-system
 cp -r "$TMP_EXTRACT"/* /opt/audio-system/
-rm -rf "$TMP_EXTRACT"
+rm -rf "$TMP_DIR"
 
 chmod +x /opt/audio-system/Application
 if [ -f /opt/audio-system/update.sh ]; then
