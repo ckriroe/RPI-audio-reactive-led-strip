@@ -66,7 +66,7 @@ def render_preset_manager():
         st.session_state[grp_sel_key] = st.session_state.active_group_id
         grp_idx = group_options.index(st.session_state.active_group_id)
 
-    with st.expander("📁 Voreinstellungen & Gruppen", expanded=True):
+    with st.expander("📁 Voreinstellungen", expanded=True):
         col_grp, col_grp_menu = st.columns([8, 1], vertical_alignment="bottom", gap="small", wrap=False)
         with col_grp:
             st.selectbox(
