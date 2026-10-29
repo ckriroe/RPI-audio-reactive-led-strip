@@ -121,6 +121,10 @@ foreach ($dir in $directoriesToCopy) {
     }
 }
 
+# Clean Python bytecode cache files before packaging
+Get-ChildItem -Path $publishDir -Recurse -Include "__pycache__", "*.pyc", "*.pyo" |
+    Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+
 # ===== PACKAGE =====
 Write-Host "Creating archive..."
 $zipName = "app.zip"
