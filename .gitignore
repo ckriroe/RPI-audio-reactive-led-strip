@@ -428,3 +428,7 @@ FodyWeavers.xsd
 
 # Local Backups
 backups/
+
+# Release packages
+app.zip
+*.zip

@@ -163,15 +163,18 @@ $currentCommit = (git rev-parse HEAD).Trim()
 
 Write-Host "Creating GitHub release v$newVersion..."
 if ([string]::IsNullOrWhiteSpace($releaseNotes)) {
-    gh release create "v$newVersion" $zipName --title "v$newVersion" --target $currentCommit --generate-notes
+    gh release create "v$newVersion" $zipPath --title "v$newVersion" --target $currentCommit --generate-notes
 } else {
-    gh release create "v$newVersion" $zipName --title "v$newVersion" --target $currentCommit --notes "$releaseNotes"
+    gh release create "v$newVersion" $zipPath --title "v$newVersion" --target $currentCommit --notes "$releaseNotes"
 }
 Write-Host "Release v$newVersion created successfully!" -ForegroundColor Green
 
 git fetch --tags 2>$null
 
 Write-Host "Cleanup temporary files..."
+if (Test-Path $zipPath) {
+    Remove-Item $zipPath -Force
+}
 if (Test-Path $zipName) {
     Remove-Item $zipName -Force
 }
