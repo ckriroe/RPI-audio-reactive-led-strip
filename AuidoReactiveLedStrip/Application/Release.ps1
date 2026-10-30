@@ -153,13 +153,23 @@ Get-ChildItem -Path $basePublishPath -Recurse -File | ForEach-Object {
 }
 $zip.Dispose()
 
+Write-Host "Committing and pushing version update..."
+git add $versionFile
+git add $csprojFile
+git commit -m "Release v$newVersion"
+git push
+
+$currentCommit = (git rev-parse HEAD).Trim()
+
 Write-Host "Creating GitHub release v$newVersion..."
 if ([string]::IsNullOrWhiteSpace($releaseNotes)) {
-    gh release create "v$newVersion" $zipName --title "v$newVersion" --generate-notes
+    gh release create "v$newVersion" $zipName --title "v$newVersion" --target $currentCommit --generate-notes
 } else {
-    gh release create "v$newVersion" $zipName --title "v$newVersion" --notes "$releaseNotes"
+    gh release create "v$newVersion" $zipName --title "v$newVersion" --target $currentCommit --notes "$releaseNotes"
 }
 Write-Host "Release v$newVersion created successfully!" -ForegroundColor Green
+
+git fetch --tags 2>$null
 
 Write-Host "Cleanup temporary files..."
 if (Test-Path $zipName) {
@@ -169,11 +179,5 @@ if (Test-Path $zipName) {
 if (Test-Path $publishDir) {
     Remove-Item $publishDir -Recurse -Force
 }
-
-Write-Host "Committing and pushing version update..."
-git add $versionFile
-git add $csprojFile
-git commit -m "Release v$newVersion"
-git push
 
 Write-Host "`n=== RELEASE v$newVersion COMPLETED SUCCESSFULLY ===" -ForegroundColor Green
