@@ -240,7 +240,7 @@ def dialog_create_backup():
         zip_bytes = st.session_state.backup_data
         filename = st.session_state.backup_filename
 
-    st.info(f"Dateiname: **{filename}**  \n*(Automatisch im Ordner 'backups/' gespeichert)*")
+    st.info(f"Dateiname: **{filename}**")
 
     col1, col2 = st.columns([1, 1])
     with col1:
