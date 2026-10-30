@@ -56,8 +56,11 @@ namespace Application.Audio.ValueProvider
             float transientFlux = Math.Max(0f, this.fastFlux - this.slowFlux);
             float transientEnergy = Math.Max(0f, this.fastEnergy - this.slowEnergy);
 
-            float normalizedFlux = transientFlux / Math.Max(this.fastFlux, 0.0001f);
-            float normalizedEnergy = transientEnergy / Math.Max(this.fastEnergy, 0.0001f);
+            float minMag = Math.Max(AudioUtil.DbToMagnitude(dynamicEffectSettings.MinFreqAmplitude), 1e-6f);
+            float minPower = minMag * minMag;
+
+            float normalizedFlux = transientFlux / Math.Max(this.fastFlux, minPower);
+            float normalizedEnergy = transientEnergy / Math.Max(this.fastEnergy, minPower);
 
             float energyKickPart = Math.Max(1.0f - dynamicEffectSettings.EnergyInfluence, 0.0f) + normalizedEnergy * dynamicEffectSettings.EnergyInfluence;
             float fluxKickPart = Math.Max(1.0f - dynamicEffectSettings.FluxInfluence, 0.0f) + normalizedFlux * dynamicEffectSettings.FluxInfluence;
@@ -71,15 +74,19 @@ namespace Application.Audio.ValueProvider
             base.SetAudioValue(result, canIncrease);
             if (staticSettings.PrintFrequencyInfos)
             {
+                float fastFluxDb = AudioUtil.PowerToDb(this.fastFlux);
+                float slowFluxDb = AudioUtil.PowerToDb(this.slowFlux);
+                float deltaFluxDb = fastFluxDb - slowFluxDb;
+
+                float fastEnergyDb = AudioUtil.PowerToDb(this.fastEnergy);
+                float slowEnergyDb = AudioUtil.PowerToDb(this.slowEnergy);
+                float deltaEnergyDb = fastEnergyDb - slowEnergyDb;
+
                 Console.WriteLine(
                     $"Max freq: {maxFreqDb,7:F1} dB\t" +
-                    $"Kick: {result:F3}\t" +
-                    $"TransFlux: {transientFlux:F3}\t" +
-                    $"TransEnergy: {transientEnergy:F3}\t" +
-                    $"FastFlux: {this.fastFlux:F5}\t" +
-                    $"SlowFlux: {this.slowFlux:F5}\t" +
-                    $"SlowEnergy: {this.slowEnergy:F3}\t" +
-                    $"FastEnergy: {this.fastEnergy:F3}\t");
+                    $"Kick: {result,5:F3}\t" +
+                    $"Flux: {fastFluxDb,7:F1} dB (slow: {slowFluxDb,7:F1} dB, /\\ {deltaFluxDb,5:+0.0;-0.0; 0.0} dB)\t" +
+                    $"Energy: {fastEnergyDb,7:F1} dB (slow: {slowEnergyDb,7:F1} dB, /\\ {deltaEnergyDb,5:+0.0;-0.0; 0.0} dB)");
             }
         }
     }

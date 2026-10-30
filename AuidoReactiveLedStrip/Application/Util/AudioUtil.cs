@@ -25,5 +25,14 @@ namespace Application.Util
             float clampedDb = Math.Clamp(db, MinDb, MaxDb);
             return MathF.Pow(10.0f, clampedDb / 20.0f);
         }
+
+        public static float PowerToDb(float power)
+        {
+            if (power <= MinMagnitude * MinMagnitude)
+                return MinDb;
+
+            float db = 10.0f * MathF.Log10(power);
+            return Math.Clamp(db, MinDb, MaxDb);
+        }
     }
 }
