@@ -107,6 +107,7 @@ def get_current_preset_values_from_state(get_for_template):
 
     set_value_from_state(stateObj, get_for_template, template_values, "colors")
     set_value_from_state(stateObj, get_for_template, template_values, "useRainbow")
+    set_value_from_state(stateObj, get_for_template, template_values, "maxHue")
     set_value_from_state(stateObj, get_for_template, template_values, "effectOrigin")
     set_value_from_state(stateObj, get_for_template, template_values, "speed")
     set_value_from_state(stateObj, get_for_template, template_values, "minFreq")
@@ -250,6 +251,7 @@ def update_session_state_from_preset(preset_data):
         ci += 1
 
     update_session_value_from_preset(preset_values, template_values, "useRainbow")
+    update_session_value_from_preset(preset_values, template_values, "maxHue")
     update_session_value_from_preset(preset_values, template_values, "effectOrigin")
     update_session_value_from_preset(preset_values, template_values, "speed")
     update_session_value_from_preset(preset_values, template_values, "minFreq")

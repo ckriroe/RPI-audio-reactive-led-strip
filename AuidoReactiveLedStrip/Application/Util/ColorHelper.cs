@@ -305,7 +305,7 @@ namespace Application.Util
         {
             var colorTransition = dynamicSettings.ColorTransition;
             var backgroundEntry = colors[0];
-            var backgroundThreshold = bgThresholdOverride ?? backgroundEntry.Threshold;
+            float backgroundThreshold = wrapPalette ? 0.0f : (bgThresholdOverride ?? backgroundEntry.Threshold);
             float transitionAreaSize = 0f;
 
             if (backgroundThreshold > 0.5f)
@@ -316,8 +316,11 @@ namespace Application.Util
             if (value < backgroundThreshold - transitionAreaSize || backgroundThreshold == 1f)
                 return backgroundEntry.ColorInstance;
 
-            float t = (value - backgroundThreshold) / (1f - backgroundThreshold);
-            float hue = wrapPalette ? (t % 1.0f) : (t * 0.75f);
+            float t = (backgroundThreshold >= 1.0f) ? 0.0f : (value - backgroundThreshold) / (1f - backgroundThreshold);
+            t = Math.Clamp(t, 0.0f, 1.0f);
+
+            float maxHue = Math.Clamp(dynamicSettings.MaxHue, 0.0f, 360.0f) / 360.0f;
+            float hue = (t * maxHue) % 1.0f;
             if (hue < 0f) hue = 0f;
 
             var color = HsvToRgb(hue, 1f, 1f);

@@ -9,6 +9,8 @@ namespace Application.RuntimeSettings
 
         public bool UseRainbow { get; set; }
 
+        public float MaxHue { get; set; } = 270.0f;
+
         public int EffectOrigin { get; set; }
 
         public int Speed { get; set; }
@@ -122,6 +124,7 @@ namespace Application.RuntimeSettings
             return obj is DynamicEffectSettings settings &&
                    this.Colors.SequenceEqual(settings.Colors) &&
                    this.UseRainbow == settings.UseRainbow &&
+                   this.MaxHue == settings.MaxHue &&
                    this.EffectOrigin == settings.EffectOrigin &&
                    this.Speed == settings.Speed &&
                    this.MinFreq == settings.MinFreq &&
@@ -187,6 +190,7 @@ namespace Application.RuntimeSettings
             }
 
             hash.Add(this.UseRainbow);
+            hash.Add(this.MaxHue);
             hash.Add(this.EffectOrigin);
             hash.Add(this.Speed);
             hash.Add(this.MinFreq);

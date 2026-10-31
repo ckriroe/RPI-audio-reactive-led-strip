@@ -47,6 +47,7 @@ namespace Application.RuntimeSettings
             {
                 Colors                              = tes.Colors ?? temp?.Colors ?? [],
                 UseRainbow                          = GetTemplateVal(tes, temp, t => t.UseRainbow),
+                MaxHue                              = GetTemplateVal(tes, temp, t => t.MaxHue, 270.0f),
                 EffectOrigin                        = GetTemplateVal(tes, temp, t => t.EffectOrigin),
                 Speed                               = GetTemplateVal(tes, temp, t => t.Speed),
                 MinFreq                             = GetTemplateVal(tes, temp, t => t.MinFreq),
@@ -124,6 +125,7 @@ namespace Application.RuntimeSettings
         private static void CorrectDynamicEffectSettings(DynamicEffectSettings dynamicSettings, StaticSettings staticSettings)
         {
             dynamicSettings.ColorCycleSpeed = Math.Clamp(dynamicSettings.ColorCycleSpeed, 0.0f, 5.0f);
+            dynamicSettings.MaxHue = Math.Clamp(dynamicSettings.MaxHue, 0.0f, 360.0f);
             dynamicSettings.CalculatedLedCount = Math.Max(2, staticSettings.LedCount / dynamicSettings.EffectRepeats);
 
             dynamicSettings.EffectOrigin = Math.Min(dynamicSettings.CalculatedLedCount - 1, dynamicSettings.EffectOrigin / dynamicSettings.EffectRepeats);
@@ -188,7 +190,7 @@ namespace Application.RuntimeSettings
                 lastThreshold = colorSetting.Threshold;
             }
 
-            if (dynamicSettings.ColorOverflowMode == ColorOverflowMode.PendulumEqualSizes && correctedColorSettings.Count >= 2)
+            if (!dynamicSettings.UseRainbow && dynamicSettings.ColorOverflowMode == ColorOverflowMode.PendulumEqualSizes && correctedColorSettings.Count >= 2)
             {
                 int count = correctedColorSettings.Count;
                 float step = 1.0f / (count - 1);

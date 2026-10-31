@@ -29,6 +29,8 @@ def render_color_section():
         ow_widget(lambda: st.slider("Zufallsfarben Glättung", 0.00, 1.00, step=0.01, key="noiseSmoothing", on_change=save_presets), "noiseSmoothing")
         ow_widget(lambda: st.selectbox("Farbüberfluss", list(COLOR_OVERFLOW_MODES.values()), key="colorOverflowMode", on_change=save_presets), "colorOverflowMode")
         ow_widget(lambda: st.toggle("Regenbogen Farben", key="useRainbow", on_change=save_presets), "useRainbow", False)
+        if st.session_state.get("useRainbow", False):
+            ow_widget(lambda: st.slider("Maximaler Farbton", 0, 360, step=1, format="%d°", key="maxHue", on_change=save_presets), "maxHue")
         ow_widget(lambda: st.button("➕ Farbe hinzufügen", on_click=cb_add_color), "colors", False)
 
         for i, c in enumerate(st.session_state.colors):

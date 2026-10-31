@@ -55,6 +55,7 @@ DYNAMIC_DEFAULTS = {
         {"color": "#FFFFFF", "threshold": 1.0},
     ],
     "useRainbow": False,
+    "maxHue": 270.0,
     "effectOrigin": 150,
     "speed": 100,
     "minFreq": 0,

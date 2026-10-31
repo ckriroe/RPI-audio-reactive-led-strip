@@ -9,6 +9,8 @@ namespace Application.RuntimeSettings
 
         public bool? UseRainbow { get; set; }
 
+        public float? MaxHue { get; set; }
+
         public int? EffectOrigin { get; set; }
 
         public int? Speed { get; set; }
