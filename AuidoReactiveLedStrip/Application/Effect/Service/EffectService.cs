@@ -182,7 +182,7 @@ namespace Application.Effect.Service
                 case EffectMode.AudioStrobe:
                     this.currentEffect = this.audioStrobeEffect;
                     break;
-                case EffectMode.AmbientBreathing:
+                case EffectMode.Ambient:
                     this.currentEffect = this.ambientBreathingEffect;
                     break;
                 case EffectMode.FireSimulation:

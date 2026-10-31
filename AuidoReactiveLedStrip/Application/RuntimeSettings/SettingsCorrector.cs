@@ -1,3 +1,4 @@
+using Application.Domain;
 using Application.Util;
 using System.Drawing;
 
@@ -76,7 +77,7 @@ namespace Application.RuntimeSettings
                 NoiseAmount                         = GetTemplateVal(tes, temp, t => t.NoiseAmount),
                 NoiseSmoothing                      = GetTemplateVal(tes, temp, t => t.NoiseSmoothing),
                 GetAlphaFromValue                   = GetTemplateVal(tes, temp, t => t.GetAlphaFromValue),
-                ColorOverflow                       = GetTemplateVal(tes, temp, t => t.ColorOverflow),
+                ColorOverflowMode                   = GetTemplateVal(tes, temp, t => t.ColorOverflowMode, ColorOverflowMode.NoOverflow),
                 Brightness                          = GetTemplateVal(tes, temp, t => t.Brightness),
                 Gamma                               = GetTemplateVal(tes, temp, t => t.Gamma),
                 EffectRepeats                       = GetTemplateVal(tes, temp, t => t.EffectRepeats, 1),
@@ -165,14 +166,18 @@ namespace Application.RuntimeSettings
             float lastThreshold = 0.0f;
             for (int i = 0; i < dynamicSettings.Colors.Count; i++)
             {
-                ColorSetting colorSetting = dynamicSettings.Colors[i];
+                ColorSetting original = dynamicSettings.Colors[i];
+                ColorSetting colorSetting = new ColorSetting
+                {
+                    Color = original.Color,
+                    Threshold = MathHelper.Clamp(original.Threshold, 0.0f, 1.0f)
+                };
 
                 if (string.IsNullOrEmpty(colorSetting.Color))
                     colorSetting.ColorInstance = Color.Black;
                 else
                     colorSetting.ColorInstance = ColorTranslator.FromHtml(colorSetting.Color);
 
-                colorSetting.Threshold = MathHelper.Clamp(colorSetting.Threshold, 0.0f, 1.0f);
                 if (i == dynamicSettings.Colors.Count - 1)
                     colorSetting.Threshold = 1.0f;
 
@@ -181,6 +186,17 @@ namespace Application.RuntimeSettings
                 
                 correctedColorSettings.Add(colorSetting);
                 lastThreshold = colorSetting.Threshold;
+            }
+
+            if (dynamicSettings.ColorOverflowMode == ColorOverflowMode.PendulumEqualSizes && correctedColorSettings.Count >= 2)
+            {
+                int count = correctedColorSettings.Count;
+                float step = 1.0f / (count - 1);
+                for (int i = 0; i < count - 1; i++)
+                {
+                    correctedColorSettings[i].Threshold = (i + 0.5f) * step;
+                }
+                correctedColorSettings[count - 1].Threshold = 1.0f;
             }
 
             dynamicSettings.Colors = correctedColorSettings;

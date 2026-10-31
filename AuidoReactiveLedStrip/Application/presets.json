@@ -49,7 +49,7 @@
         "noiseAmount": 0.0,
         "noiseSmoothing": 1.0,
         "getAlphaFromValue": false,
-        "colorOverflow": false,
+        "colorOverflowMode": 0,
         "brightness": 1.0,
         "gamma": 1.0,
         "effectRepeats": 1,

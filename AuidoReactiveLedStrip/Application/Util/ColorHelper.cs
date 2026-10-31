@@ -132,24 +132,41 @@ namespace Application.Util
         {
             value *= dynamicSettings.ColorIncreaseFactor;
 
-            if (value > 1.0f && dynamicSettings.ColorOverflow)
+            switch (dynamicSettings.ColorOverflowMode)
             {
-                if (((int)value % 2) == 0)
+                case ColorOverflowMode.NoOverflow:
+                    if (value > 1.0f)
+                        value = 1.0f;
+                    break;
+
+                case ColorOverflowMode.Pendulum:
+                case ColorOverflowMode.PendulumEqualSizes:
+                    if (value > 1.0f)
+                    {
+                        if (((int)value % 2) == 0)
+                            value = value % 1.0f;
+                        else
+                            value = 1.0f - (value % 1.0f);
+                    }
+
+                    if (value > 1.0f)
+                        value = 1.0f;
+                    break;
+
+                case ColorOverflowMode.WrapAround:
                     value = value % 1.0f;
-                else
-                    value = 1.0f - (value % 1.0f);
+                    if (value < 0.0f)
+                        value += 1.0f;
+                    break;
             }
-
-            if (value > 1.0f)
-                value = 1.0f;
-
-
 
             if (colors.Count == 0)
                 return Color.Black;
 
+            bool wrapPalette = dynamicSettings.ColorOverflowMode == ColorOverflowMode.WrapAround;
+
             if (dynamicSettings.UseRainbow)
-                return ValueToRainbowColor(value, colors, dynamicSettings, bgThresholdOverride);
+                return ValueToRainbowColor(value, colors, dynamicSettings, bgThresholdOverride, wrapPalette);
 
             var backgroundColor = colors[0];
             if (colors.Count < 2)
@@ -194,34 +211,56 @@ namespace Application.Util
             if (isAboveHalf)
             {
                 if (paletteIdx == colors.Count - 1)
-                    return currColor;
+                {
+                    if (!wrapPalette || colors.Count < 2)
+                        return currColor;
 
-                float nextEnd = colors[paletteIdx + 1].Threshold;
-                float nextSize = nextEnd - sectionEnd;
+                    float nextSize = bgThresholdOverride ?? colors[0].Threshold;
+                    transitionAreaSize = nextSize > sectionSize
+                        ? sectionSize * colorTransition
+                        : nextSize * colorTransition;
+                }
+                else
+                {
+                    float nextEnd = colors[paletteIdx + 1].Threshold;
+                    float nextSize = nextEnd - sectionEnd;
 
-                transitionAreaSize = nextSize > sectionSize
-                    ? sectionSize * colorTransition
-                    : nextSize * colorTransition;
+                    transitionAreaSize = nextSize > sectionSize
+                        ? sectionSize * colorTransition
+                        : nextSize * colorTransition;
+                }
             }
             else
             {
                 if (paletteIdx == 0)
-                    return currColor;
-
-                float prevStart = 0f;
-                if (paletteIdx > 1)
                 {
-                    if (paletteIdx - 2 == 0 && bgThresholdOverride != null)
-                        prevStart = bgThresholdOverride.Value;
-                    else
-                        prevStart = colors[paletteIdx - 2].Threshold;
+                    if (!wrapPalette || colors.Count < 2)
+                        return currColor;
+
+                    float prevStartThreshold = colors.Count > 1 ? colors[colors.Count - 2].Threshold : 0f;
+                    float prevSize = 1.0f - prevStartThreshold;
+
+                    transitionAreaSize = prevSize > sectionSize
+                        ? sectionSize * colorTransition
+                        : prevSize * colorTransition;
                 }
+                else
+                {
+                    float prevStart = 0f;
+                    if (paletteIdx > 1)
+                    {
+                        if (paletteIdx - 2 == 0 && bgThresholdOverride != null)
+                            prevStart = bgThresholdOverride.Value;
+                        else
+                            prevStart = colors[paletteIdx - 2].Threshold;
+                    }
 
-                float prevSize = sectionStart - prevStart;
+                    float prevSize = sectionStart - prevStart;
 
-                transitionAreaSize = prevSize > sectionSize
-                    ? sectionSize * colorTransition
-                    : prevSize * colorTransition;
+                    transitionAreaSize = prevSize > sectionSize
+                        ? sectionSize * colorTransition
+                        : prevSize * colorTransition;
+                }
             }
 
             if (isAboveHalf)
@@ -232,8 +271,12 @@ namespace Application.Util
                 float t = (sectionEnd - value) / transitionAreaSize;
                 t = MathHelper.Clamp(t, 0f, 1f);
 
+                Color targetNextColor = (paletteIdx == colors.Count - 1 && wrapPalette)
+                    ? colors[0].ColorInstance
+                    : colors[paletteIdx + 1].ColorInstance;
+
                 return LerpColor(
-                    LerpColor(colors[paletteIdx + 1].ColorInstance, currColor, 0.5f),
+                    LerpColor(targetNextColor, currColor, 0.5f),
                     currColor,
                     t
                 );
@@ -246,15 +289,19 @@ namespace Application.Util
                 float t = (value - sectionStart) / transitionAreaSize;
                 t = MathHelper.Clamp(t, 0f, 1f);
 
+                Color targetPrevColor = (paletteIdx == 0 && wrapPalette)
+                    ? colors[colors.Count - 1].ColorInstance
+                    : colors[paletteIdx - 1].ColorInstance;
+
                 return LerpColor(
-                    LerpColor(colors[paletteIdx - 1].ColorInstance, currColor, 0.5f),
+                    LerpColor(targetPrevColor, currColor, 0.5f),
                     currColor,
                     t
                 );
             }
         }
 
-        private static Color ValueToRainbowColor(float value, IList<ColorSetting> colors, DynamicEffectSettings dynamicSettings, float? bgThresholdOverride)
+        private static Color ValueToRainbowColor(float value, IList<ColorSetting> colors, DynamicEffectSettings dynamicSettings, float? bgThresholdOverride, bool wrapPalette = false)
         {
             var colorTransition = dynamicSettings.ColorTransition;
             var backgroundEntry = colors[0];
@@ -270,7 +317,7 @@ namespace Application.Util
                 return backgroundEntry.ColorInstance;
 
             float t = (value - backgroundThreshold) / (1f - backgroundThreshold);
-            float hue = t * 0.75f;
+            float hue = wrapPalette ? (t % 1.0f) : (t * 0.75f);
             if (hue < 0f) hue = 0f;
 
             var color = HsvToRgb(hue, 1f, 1f);

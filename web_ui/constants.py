@@ -24,7 +24,7 @@ EFFECT_MODES = {
     8: "Linienverlauf",
     9: "Wasser Simulation",
     10: "Stroboskop",
-    11: "Atmung (Ambient)",
+    11: "Ambient",
     12: "Feuer Simulation",
     13: "Meteor",
     14: "VU-Meter",
@@ -40,6 +40,13 @@ COLOR_MODES = {
     6: "Farbzyklus (Leerer Streifen)",
     7: "Farbzyklus (Zeit)",
     8: "Farbzyklus (Audio)",
+}
+
+COLOR_OVERFLOW_MODES = {
+    0: "Kein Überfluss",
+    1: "Pendel",
+    3: "Pendel (Gleiche Größen)",
+    2: "Umlaufend",
 }
 
 DYNAMIC_DEFAULTS = {
@@ -72,7 +79,7 @@ DYNAMIC_DEFAULTS = {
     "colorCycleSpeed": 1.0,
     "valueColorBias": 0.0,
     "getAlphaFromValue": False,
-    "colorOverflow": False,
+    "colorOverflowMode": 0,
     "colorWaveOrigin": 150,
     "colorWaveSpeed": 50,
     "colorWaveSize": 100,

@@ -69,7 +69,7 @@ namespace Application.RuntimeSettings
 
         public bool? GetAlphaFromValue { get; set; }
 
-        public bool? ColorOverflow { get; set; }
+        public ColorOverflowMode? ColorOverflowMode { get; set; }
 
         public float? Brightness { get; set; }
 

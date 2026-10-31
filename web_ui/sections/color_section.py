@@ -1,5 +1,5 @@
 import streamlit as st
-from web_ui.constants import COLOR_MODES
+from web_ui.constants import COLOR_MODES, COLOR_OVERFLOW_MODES
 from web_ui.preset_service import cb_add_color, move_color, remove_color
 from web_ui.state_sync import ow_widget, save_presets, get_color_mode_id
 
@@ -27,7 +27,7 @@ def render_color_section():
 
         ow_widget(lambda: st.slider("Zufallsfarben Faktor", 0.00, 1.00, step=0.01, key="noiseAmount", on_change=save_presets), "noiseAmount")
         ow_widget(lambda: st.slider("Zufallsfarben Glättung", 0.00, 1.00, step=0.01, key="noiseSmoothing", on_change=save_presets), "noiseSmoothing")
-        ow_widget(lambda: st.toggle("Farbüberfluss", key="colorOverflow", on_change=save_presets), "colorOverflow", False)
+        ow_widget(lambda: st.selectbox("Farbüberfluss", list(COLOR_OVERFLOW_MODES.values()), key="colorOverflowMode", on_change=save_presets), "colorOverflowMode")
         ow_widget(lambda: st.toggle("Regenbogen Farben", key="useRainbow", on_change=save_presets), "useRainbow", False)
         ow_widget(lambda: st.button("➕ Farbe hinzufügen", on_click=cb_add_color), "colors", False)
 

@@ -7,8 +7,7 @@ namespace Application.Effect
 {
     public class AmbientBreathingEffect : IEffect, IStatefulEffect
     {
-        private const float TwoPi = MathF.PI * 2.0f;
-        private const float SpeedFrequencyDivisor = 100.0f;
+        private const float SpeedFrequencyDivisor = 1000.0f;
 
         private float phase = 0f;
         private DynamicEffectSettings? dynamicSettings = null;
@@ -39,16 +38,19 @@ namespace Application.Effect
             float speed = Math.Max(1, dynamicSettings.Speed);
             float cycleFrequency = speed / SpeedFrequencyDivisor;
 
-            this.phase += (cycleFrequency * TwoPi) / framesPerSecond;
-            if (this.phase >= TwoPi)
-                this.phase -= TwoPi;
+            bool isPendulum = dynamicSettings.ColorOverflowMode == ColorOverflowMode.Pendulum ||
+                              dynamicSettings.ColorOverflowMode == ColorOverflowMode.PendulumEqualSizes;
+            float maxPhase = isPendulum ? 2.0f : 1.0f;
 
-            float normalizedSine = (MathF.Sin(this.phase) + 1.0f) * 0.5f;
-            float breathingBrightness = normalizedSine * normalizedSine;
+            this.phase += cycleFrequency / framesPerSecond;
+            if (this.phase >= maxPhase)
+                this.phase -= maxPhase;
+            if (this.phase < 0.0f)
+                this.phase = 0.0f;
 
             for (int i = 0; i < length; i++)
             {
-                prevStrip.LedPixels[i].Value = breathingBrightness;
+                prevStrip.LedPixels[i].Value = this.phase;
             }
 
             return prevStrip;

@@ -4,6 +4,7 @@ from web_ui.constants import (
     AUDIO_MODES,
     EFFECT_MODES,
     COLOR_MODES,
+    COLOR_OVERFLOW_MODES,
     DYNAMIC_DEFAULTS,
     STATIC_DEFAULTS,
 )
@@ -24,6 +25,10 @@ def get_effect_mode_id():
 
 def get_color_mode_id():
     return next(k for k, v in COLOR_MODES.items() if v == st.session_state.colorMode)
+
+
+def get_color_overflow_mode_id():
+    return next(k for k, v in COLOR_OVERFLOW_MODES.items() if v == st.session_state.colorOverflowMode)
 
 
 def sync_widgets_to_colors_list():
@@ -83,6 +88,7 @@ def get_current_preset_values_from_state(get_for_template):
     st.session_state.audioModeValue = next(k for k, v in AUDIO_MODES.items() if v == st.session_state.audioMode)
     st.session_state.effectModeValue = next(k for k, v in EFFECT_MODES.items() if v == st.session_state.effectMode)
     st.session_state.colorModeValue = next(k for k, v in COLOR_MODES.items() if v == st.session_state.colorMode)
+    st.session_state.colorOverflowModeValue = next(k for k, v in COLOR_OVERFLOW_MODES.items() if v == st.session_state.colorOverflowMode)
 
     std_id = st.session_state.presets[0]["id"] if ("presets" in st.session_state and st.session_state.presets) else None
     is_standard = bool(std_id and st.session_state.get("preset_guid") == std_id)
@@ -131,7 +137,7 @@ def get_current_preset_values_from_state(get_for_template):
     set_value_from_state(stateObj, get_for_template, template_values, "noiseAmount")
     set_value_from_state(stateObj, get_for_template, template_values, "noiseSmoothing")
     set_value_from_state(stateObj, get_for_template, template_values, "getAlphaFromValue")
-    set_value_from_state(stateObj, get_for_template, template_values, "colorOverflow")
+    set_value_from_state2(stateObj, get_for_template, template_values, "colorOverflowMode", "colorOverflowModeValue")
     set_value_from_state(stateObj, get_for_template, template_values, "brightness")
     set_value_from_state(stateObj, get_for_template, template_values, "gamma")
     set_value_from_state(stateObj, get_for_template, template_values, "effectRepeats")
@@ -265,7 +271,7 @@ def update_session_state_from_preset(preset_data):
     update_session_value_from_preset(preset_values, template_values, "colorCycleSpeed")
     update_session_value_from_preset(preset_values, template_values, "valueColorBias")
     update_session_value_from_preset(preset_values, template_values, "getAlphaFromValue")
-    update_session_value_from_preset(preset_values, template_values, "colorOverflow")
+    update_session_value_from_preset2(preset_values, template_values, "colorOverflowMode", "colorOverflowModeValue")
     update_session_value_from_preset(preset_values, template_values, "colorWaveOrigin")
     update_session_value_from_preset(preset_values, template_values, "colorWaveSpeed")
     update_session_value_from_preset(preset_values, template_values, "colorWaveSize")
@@ -301,6 +307,7 @@ def update_session_state_from_preset(preset_data):
     st.session_state.audioMode = AUDIO_MODES.get(st.session_state.audioModeValue, AUDIO_MODES[0])
     st.session_state.effectMode = EFFECT_MODES.get(st.session_state.effectModeValue, EFFECT_MODES[0])
     st.session_state.colorMode = COLOR_MODES.get(st.session_state.colorModeValue, COLOR_MODES[0])
+    st.session_state.colorOverflowMode = COLOR_OVERFLOW_MODES.get(st.session_state.colorOverflowModeValue, COLOR_OVERFLOW_MODES[0])
 
 
 def update_session_state_from_static_settings(static_settings_data):
@@ -350,6 +357,9 @@ def save_presets():
                 elif k == "colorMode":
                     st.session_state.colorModeValue = tmpl_val
                     st.session_state.colorMode = COLOR_MODES.get(tmpl_val, COLOR_MODES[0])
+                elif k == "colorOverflowMode":
+                    st.session_state.colorOverflowModeValue = tmpl_val
+                    st.session_state.colorOverflowMode = COLOR_OVERFLOW_MODES.get(tmpl_val, COLOR_OVERFLOW_MODES[0])
                 else:
                     st.session_state[k] = tmpl_val
 

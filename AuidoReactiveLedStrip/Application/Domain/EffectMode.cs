@@ -13,7 +13,7 @@ namespace Application.Domain
         AudioLineDescending = 8,
         AudioWaterSimulation = 9,
         AudioStrobe = 10,
-        AmbientBreathing = 11,
+        Ambient = 11,
         FireSimulation = 12,
         Meteor = 13,
         AudioVuMeter = 14

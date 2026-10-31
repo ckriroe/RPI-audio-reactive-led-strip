@@ -4,7 +4,7 @@ import re
 import uuid
 import streamlit as st
 from web_ui.constants import DYNAMIC_DEFAULTS, GLOBAL_GROUP_ID
-from web_ui.migrations import migrate_frequency_amplitudes
+from web_ui.migrations import migrate_frequency_amplitudes, migrate_color_overflow
 from web_ui.storage import write_presets_to_disk
 from web_ui.state_sync import save_presets
 from web_ui.preset_service import (
@@ -179,6 +179,7 @@ def import_preset_to_group(
 
     # Run through amplitude migrations to validate settings
     migrate_frequency_amplitudes({"presets": [new_preset]})
+    migrate_color_overflow({"presets": [new_preset]})
 
     st.session_state.presets.append(new_preset)
     if gid:
@@ -274,6 +275,7 @@ def import_group(
     # Run through amplitude migrations
     if new_presets:
         migrate_frequency_amplitudes({"presets": new_presets})
+        migrate_color_overflow({"presets": new_presets})
 
     st.session_state.groups.append({"id": new_gid, "name": final_grp_name})
     st.session_state.presets.extend(new_presets)

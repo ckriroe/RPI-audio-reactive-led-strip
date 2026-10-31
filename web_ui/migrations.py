@@ -68,6 +68,16 @@ def migrate_next_effect_ids(jsn: dict) -> None:
         presets[0]["values"]["nextEffectId"] = None
 
 
+def migrate_color_overflow(jsn: dict) -> None:
+    for preset in jsn.get("presets", []):
+        vals = preset.get("values", {})
+        if "colorOverflow" in vals and "colorOverflowMode" not in vals:
+            old_val = vals.pop("colorOverflow")
+            vals["colorOverflowMode"] = 1 if old_val else 0
+        elif "colorOverflow" in vals:
+            vals.pop("colorOverflow")
+
+
 def migrate_presets(jsn: dict) -> dict:
     """Migrates preset configuration data to the current schema format."""
     if not isinstance(jsn, dict):
@@ -78,5 +88,6 @@ def migrate_presets(jsn: dict) -> dict:
     migrate_frequency_amplitudes(jsn)
     migrate_template_ids(jsn)
     migrate_next_effect_ids(jsn)
+    migrate_color_overflow(jsn)
 
     return jsn

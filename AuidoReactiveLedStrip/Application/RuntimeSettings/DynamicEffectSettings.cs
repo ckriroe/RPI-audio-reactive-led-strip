@@ -69,7 +69,7 @@ namespace Application.RuntimeSettings
 
         public bool GetAlphaFromValue { get; set; }
 
-        public bool ColorOverflow { get; set; }
+        public ColorOverflowMode ColorOverflowMode { get; set; }
 
         public float Brightness { get; set; }
 
@@ -152,7 +152,7 @@ namespace Application.RuntimeSettings
                    this.NoiseAmount == settings.NoiseAmount &&
                    this.NoiseSmoothing == settings.NoiseSmoothing &&
                    this.GetAlphaFromValue == settings.GetAlphaFromValue &&
-                   this.ColorOverflow == settings.ColorOverflow &&
+                   this.ColorOverflowMode == settings.ColorOverflowMode &&
                    this.Brightness == settings.Brightness &&
                    this.Gamma == settings.Gamma &&
                    this.EffectRepeats == settings.EffectRepeats &&
@@ -217,7 +217,7 @@ namespace Application.RuntimeSettings
             hash.Add(this.NoiseAmount);
             hash.Add(this.NoiseSmoothing);
             hash.Add(this.GetAlphaFromValue);
-            hash.Add(this.ColorOverflow);
+            hash.Add(this.ColorOverflowMode);
             hash.Add(this.Brightness);
             hash.Add(this.Gamma);
             hash.Add(this.EffectRepeats);

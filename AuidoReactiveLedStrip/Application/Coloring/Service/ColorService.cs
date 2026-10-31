@@ -77,18 +77,21 @@ namespace Application.Coloring.Service
             int length = pixels.Length;
             var bgColor = dynamicSettings.Colors[0].ColorInstance;
 
+            bool isWrapAround = dynamicSettings.ColorOverflowMode == ColorOverflowMode.WrapAround;
+
             for (int i = 0; i < length; i++)
             {
                 LedPixel currPixel = pixels[i];
                 float sanitizedValue = this.valueSanitizer.SanitizeValue(currPixel.Value, staticSettings);
 
-                if (sanitizedValue == 0.0f)
+                if (sanitizedValue == 0.0f && !isWrapAround)
                 {
                     currPixel.Color = bgColor;
                 }
                 else
                 {
-                    currPixel.Color = this.currentColorMode.GetColorForValue(dynamicSettings, sanitizedValue, i, length);
+                    float valueToUse = isWrapAround ? currPixel.Value : sanitizedValue;
+                    currPixel.Color = this.currentColorMode.GetColorForValue(dynamicSettings, valueToUse, i, length);
                     this.ColorCorrect(currPixel, dynamicSettings);
                 }
             }
