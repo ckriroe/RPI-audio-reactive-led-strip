@@ -52,13 +52,17 @@ def set_value_from_state2(stateObj, get_for_template, template_values, preset_ke
     if st.session_state.get("templateId") is not None:
         if st.session_state.get(preset_key + "_ow") is True:
             if get_for_template is True:
-                stateObj[preset_key] = template_values.get(preset_key, DYNAMIC_DEFAULTS.get(preset_key))
+                val = template_values.get(preset_key, DYNAMIC_DEFAULTS.get(preset_key))
+                stateObj[preset_key] = copy.deepcopy(val) if preset_key == "colors" else val
             else:
-                stateObj[preset_key] = st.session_state[session_key]
+                val = st.session_state[session_key]
+                stateObj[preset_key] = copy.deepcopy(val) if preset_key == "colors" else val
         elif get_for_template is True:
-            stateObj[preset_key] = st.session_state[session_key]
+            val = st.session_state[session_key]
+            stateObj[preset_key] = copy.deepcopy(val) if preset_key == "colors" else val
     else:
-        stateObj[preset_key] = st.session_state[session_key]
+        val = st.session_state[session_key]
+        stateObj[preset_key] = copy.deepcopy(val) if preset_key == "colors" else val
 
 
 def set_value_from_state(stateObj, get_for_template, template_values, key):
@@ -86,7 +90,7 @@ def get_current_preset_values_from_state(get_for_template):
     template_values = None
     templateId = st.session_state.get("templateId")
     if templateId is not None and not is_standard:
-        template_values = next((pre for pre in st.session_state.presets if pre["id"] == templateId), None)
+        template_values = next((pre["values"] for pre in st.session_state.presets if pre["id"] == templateId), None)
 
     stateObj = {
         "templateId": None if is_standard else st.session_state.templateId
@@ -233,6 +237,11 @@ def update_session_state_from_preset(preset_data):
     for i, c in enumerate(st.session_state.colors):
         st.session_state[f"color_{i}"] = c["color"]
         st.session_state[f"threshold_{i}"] = c["threshold"]
+    ci = len(st.session_state.colors)
+    while f"color_{ci}" in st.session_state or f"threshold_{ci}" in st.session_state:
+        st.session_state.pop(f"color_{ci}", None)
+        st.session_state.pop(f"threshold_{ci}", None)
+        ci += 1
 
     update_session_value_from_preset(preset_values, template_values, "useRainbow")
     update_session_value_from_preset(preset_values, template_values, "effectOrigin")
@@ -327,6 +336,11 @@ def save_presets():
                     for ci, c in enumerate(st.session_state.colors):
                         st.session_state[f"color_{ci}"] = c["color"]
                         st.session_state[f"threshold_{ci}"] = c["threshold"]
+                    ci = len(st.session_state.colors)
+                    while f"color_{ci}" in st.session_state or f"threshold_{ci}" in st.session_state:
+                        st.session_state.pop(f"color_{ci}", None)
+                        st.session_state.pop(f"threshold_{ci}", None)
+                        ci += 1
                 elif k == "audioMode":
                     st.session_state.audioModeValue = tmpl_val
                     st.session_state.audioMode = AUDIO_MODES.get(tmpl_val, AUDIO_MODES[0])

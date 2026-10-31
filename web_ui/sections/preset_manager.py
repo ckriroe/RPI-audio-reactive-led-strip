@@ -20,6 +20,7 @@ from web_ui.preset_service import (
     move_group,
     unassign_preset,
 )
+from web_ui.import_export_service import export_preset, export_group
 
 
 def render_preset_manager():
@@ -83,42 +84,77 @@ def render_preset_manager():
             with st.popover("", key=f"pop_grp_menu_{pop_ver}"):
                 st.button("➕ Neue Gruppe", key="btn_grp_new", on_click=trigger_dialog, args=("create_group",), use_container_width=True)
 
-                cur_grp_idx = 0
                 if is_custom_group:
                     cur_grp_idx = next((i for i, g in enumerate(st.session_state.groups) if g["id"] == st.session_state.active_group_id), 0)
 
-                st.button(
-                    "▲ Nach oben",
-                    key="btn_grp_up",
-                    disabled=(not is_custom_group or cur_grp_idx == 0),
-                    on_click=move_group,
-                    args=(st.session_state.active_group_id, -1),
-                    use_container_width=True,
-                )
-                st.button(
-                    "▼ Nach unten",
-                    key="btn_grp_down",
-                    disabled=(not is_custom_group or cur_grp_idx == len(st.session_state.groups) - 1),
-                    on_click=move_group,
-                    args=(st.session_state.active_group_id, 1),
-                    use_container_width=True,
-                )
-                st.button(
-                    "✏️ Gruppe umbenennen",
-                    key="btn_grp_rename",
-                    disabled=not is_custom_group,
-                    on_click=trigger_dialog,
-                    args=("rename_group", st.session_state.active_group_id),
-                    use_container_width=True,
-                )
-                st.button(
-                    "🗑️ Gruppe löschen",
-                    key="btn_grp_delete",
-                    disabled=not is_custom_group,
-                    on_click=trigger_dialog,
-                    args=("delete_group", st.session_state.active_group_id),
-                    use_container_width=True,
-                )
+                    st.button(
+                        "▲ Nach oben",
+                        key="btn_grp_up",
+                        disabled=(cur_grp_idx == 0),
+                        on_click=move_group,
+                        args=(st.session_state.active_group_id, -1),
+                        use_container_width=True,
+                    )
+                    st.button(
+                        "▼ Nach unten",
+                        key="btn_grp_down",
+                        disabled=(cur_grp_idx == len(st.session_state.groups) - 1),
+                        on_click=move_group,
+                        args=(st.session_state.active_group_id, 1),
+                        use_container_width=True,
+                    )
+                    st.button(
+                        "✏️ Gruppe umbenennen",
+                        key="btn_grp_rename",
+                        on_click=trigger_dialog,
+                        args=("rename_group", st.session_state.active_group_id),
+                        use_container_width=True,
+                    )
+                    grp_json, grp_filename = export_group(st.session_state.active_group_id)
+                    st.download_button(
+                        "📤 Gruppe exportieren",
+                        data=grp_json,
+                        file_name=grp_filename,
+                        mime="application/json",
+                        key=f"btn_grp_exp_{st.session_state.active_group_id}",
+                        use_container_width=True,
+                    )
+                    st.button(
+                        "📥 Gruppe importieren",
+                        key="btn_grp_import",
+                        on_click=trigger_dialog,
+                        args=("import_group",),
+                        use_container_width=True,
+                    )
+                    st.button(
+                        "📥 Voreinstellung importieren",
+                        key=f"btn_pre_import_{st.session_state.active_group_id}",
+                        on_click=trigger_dialog,
+                        args=("import_preset", st.session_state.active_group_id),
+                        use_container_width=True,
+                    )
+                    st.button(
+                        "🗑️ Gruppe löschen",
+                        key="btn_grp_delete",
+                        on_click=trigger_dialog,
+                        args=("delete_group", st.session_state.active_group_id),
+                        use_container_width=True,
+                    )
+                else:
+                    st.button(
+                        "📥 Gruppe importieren",
+                        key="btn_grp_import_global",
+                        on_click=trigger_dialog,
+                        args=("import_group",),
+                        use_container_width=True,
+                    )
+                    st.button(
+                        "📥 Voreinstellung importieren",
+                        key="btn_pre_import_global",
+                        on_click=trigger_dialog,
+                        args=("import_preset", GLOBAL_GROUP_ID),
+                        use_container_width=True,
+                    )
 
         if is_custom_group:
             ungrouped_presets = [p for p in get_presets_in_group(GLOBAL_GROUP_ID) if p["id"] != st.session_state.presets[0]["id"]]
@@ -228,6 +264,16 @@ def render_preset_manager():
                                 args=("copy_preset", p["id"]),
                                 use_container_width=True,
                             )
+                            if not is_standard:
+                                pre_json, pre_fname = export_preset(p["id"])
+                                st.download_button(
+                                    "📤 Voreinstellung exportieren",
+                                    data=pre_json,
+                                    file_name=pre_fname,
+                                    mime="application/json",
+                                    key=f"btn_exp_pre_{p['id']}",
+                                    use_container_width=True,
+                                )
                             if p.get("groupId") is not None and p.get("groupId") != GLOBAL_GROUP_ID:
                                 st.button(
                                     "↩️ In 'Global' verschieben",

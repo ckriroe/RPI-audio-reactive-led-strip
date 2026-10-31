@@ -1,3 +1,5 @@
+import os
+import json
 import uuid
 import base64
 import streamlit as st
@@ -28,6 +30,7 @@ from web_ui.update_service import (
     download_update_package,
     trigger_system_update,
 )
+from web_ui.import_export_service import import_preset_to_group, import_group
 
 
 def on_dialog_dismiss():
@@ -46,6 +49,13 @@ def on_dialog_dismiss():
     st.session_state.pop("update_backup_done", None)
     st.session_state.pop("update_error", None)
     st.session_state.pop("update_download_ok", None)
+    st.session_state.pop("dlg_import_pre_file", None)
+    st.session_state.pop("dlg_import_pre_name", None)
+    st.session_state.pop("dlg_import_grp_file", None)
+    st.session_state.pop("dlg_import_grp_name", None)
+    st.session_state.pop("dlg_last_pre_fname", None)
+    st.session_state.pop("dlg_last_grp_fname", None)
+    st.session_state.pop("dlg_import_error", None)
 
 
 def apply_restored_settings():
@@ -511,6 +521,161 @@ def dialog_check_update():
                     st.rerun()
 
 
+@st.dialog("Voreinstellung importieren", on_dismiss=on_dialog_dismiss)
+def dialog_import_preset(target_group_id):
+    target_name = get_group_name(target_group_id)
+    st.caption(f"Zielgruppe: **{target_name}**")
+
+    if st.session_state.get("dlg_import_error"):
+        st.error(st.session_state.dlg_import_error)
+
+    uploaded_file = st.file_uploader(
+        "Voreinstellungs-Datei (.json) auswählen",
+        type=["json"],
+        accept_multiple_files=False,
+        key="dlg_import_pre_file",
+    )
+
+    if uploaded_file is None:
+        if st.button("Abbrechen", key="btn_dlg_imp_pre_cancel", use_container_width=True):
+            st.session_state.active_dialog = None
+            st.rerun()
+        return
+
+    try:
+        content = uploaded_file.getvalue().decode("utf-8")
+        parsed = json.loads(content)
+    except Exception as e:
+        st.error(f"Fehler beim Lesen der JSON-Datei: {e}")
+        if st.button("Abbrechen", key="btn_dlg_imp_pre_cancel_err", use_container_width=True):
+            st.session_state.active_dialog = None
+            st.rerun()
+        return
+
+    if isinstance(parsed, dict) and parsed.get("type") == "rpisc_group":
+        st.error("Diese Datei enthält eine ganze Gruppe, keine einzelne Voreinstellung! Bitte nutze 'Gruppe importieren'.")
+        if st.button("Abbrechen", key="btn_dlg_imp_pre_cancel_wrong", use_container_width=True):
+            st.session_state.active_dialog = None
+            st.rerun()
+        return
+
+    preset_name = ""
+    if isinstance(parsed, dict):
+        if parsed.get("type") == "rpisc_preset":
+            preset_name = parsed.get("preset", {}).get("name", "")
+        elif "name" in parsed:
+            preset_name = parsed.get("name", "")
+    if not preset_name:
+        preset_name = os.path.splitext(uploaded_file.name)[0].replace("preset_", "")
+
+    if st.session_state.get("dlg_last_pre_fname") != uploaded_file.name:
+        st.session_state["dlg_last_pre_fname"] = uploaded_file.name
+        st.session_state["dlg_import_pre_name"] = preset_name
+
+    new_name = st.text_input(
+        "Name der Voreinstellung",
+        value=preset_name,
+        key="dlg_import_pre_name",
+    )
+
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("Abbrechen", key="btn_dlg_imp_pre_cancel2", use_container_width=True):
+            st.session_state.active_dialog = None
+            st.rerun()
+    with col2:
+        is_disabled = (len(new_name.strip()) == 0)
+        if st.button("Importieren", key="btn_dlg_imp_pre_submit", type="primary", disabled=is_disabled, use_container_width=True):
+            ok, msg, _ = import_preset_to_group(parsed, target_group_id, custom_name=new_name)
+            if ok:
+                st.session_state.active_dialog = None
+                st.session_state.popover_ver = st.session_state.get("popover_ver", 0) + 1
+                st.session_state.toast_message = (msg, "✅")
+                st.rerun()
+            else:
+                st.session_state.dlg_import_error = msg
+                st.rerun()
+
+
+@st.dialog("Gruppe importieren", on_dismiss=on_dialog_dismiss)
+def dialog_import_group():
+    if st.session_state.get("dlg_import_error"):
+        st.error(st.session_state.dlg_import_error)
+
+    uploaded_file = st.file_uploader(
+        "Gruppen-Datei (.json) auswählen",
+        type=["json"],
+        accept_multiple_files=False,
+        key="dlg_import_grp_file",
+    )
+
+    if uploaded_file is None:
+        if st.button("Abbrechen", key="btn_dlg_imp_grp_cancel", use_container_width=True):
+            st.session_state.active_dialog = None
+            st.rerun()
+        return
+
+    try:
+        content = uploaded_file.getvalue().decode("utf-8")
+        parsed = json.loads(content)
+    except Exception as e:
+        st.error(f"Fehler beim Lesen der JSON-Datei: {e}")
+        if st.button("Abbrechen", key="btn_dlg_imp_grp_cancel_err", use_container_width=True):
+            st.session_state.active_dialog = None
+            st.rerun()
+        return
+
+    if isinstance(parsed, dict) and parsed.get("type") == "rpisc_preset":
+        st.error("Diese Datei enthält eine einzelne Voreinstellung, keine Gruppe! Bitte nutze 'Voreinstellung importieren'.")
+        if st.button("Abbrechen", key="btn_dlg_imp_grp_cancel_wrong", use_container_width=True):
+            st.session_state.active_dialog = None
+            st.rerun()
+        return
+
+    grp_name = ""
+    preset_count = 0
+    if isinstance(parsed, dict):
+        if parsed.get("type") == "rpisc_group":
+            grp_info = parsed.get("group", {})
+            grp_name = grp_info.get("name", "")
+            preset_count = len(grp_info.get("presets", []))
+        elif "presets" in parsed:
+            grp_name = parsed.get("name", "")
+            preset_count = len(parsed.get("presets", []))
+    if not grp_name:
+        grp_name = os.path.splitext(uploaded_file.name)[0].replace("group_", "")
+
+    st.info(f"Gefundene Gruppe enthält **{preset_count}** Voreinstellung(en).")
+
+    if st.session_state.get("dlg_last_grp_fname") != uploaded_file.name:
+        st.session_state["dlg_last_grp_fname"] = uploaded_file.name
+        st.session_state["dlg_import_grp_name"] = grp_name
+
+    new_name = st.text_input(
+        "Gruppenname",
+        value=grp_name,
+        key="dlg_import_grp_name",
+    )
+
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        if st.button("Abbrechen", key="btn_dlg_imp_grp_cancel2", use_container_width=True):
+            st.session_state.active_dialog = None
+            st.rerun()
+    with col2:
+        is_disabled = (len(new_name.strip()) == 0)
+        if st.button("Importieren", key="btn_dlg_imp_grp_submit", type="primary", disabled=is_disabled, use_container_width=True):
+            ok, msg, _ = import_group(parsed, custom_name=new_name)
+            if ok:
+                st.session_state.active_dialog = None
+                st.session_state.popover_ver = st.session_state.get("popover_ver", 0) + 1
+                st.session_state.toast_message = (msg, "✅")
+                st.rerun()
+            else:
+                st.session_state.dlg_import_error = msg
+                st.rerun()
+
+
 def trigger_dialog(dlg_type, item_id=None):
     st.session_state.popover_ver = st.session_state.get("popover_ver", 0) + 1
     st.session_state.active_dialog = {"type": dlg_type, "id": item_id}
@@ -544,3 +709,7 @@ def render_active_dialog():
             dialog_import_backup()
         elif dtype == "check_update":
             dialog_check_update()
+        elif dtype == "import_preset":
+            dialog_import_preset(did)
+        elif dtype == "import_group":
+            dialog_import_group()
