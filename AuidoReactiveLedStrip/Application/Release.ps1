@@ -169,7 +169,10 @@ if ([string]::IsNullOrWhiteSpace($releaseNotes)) {
 }
 Write-Host "Release v$newVersion created successfully!" -ForegroundColor Green
 
-git fetch --tags 2>$null
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = "SilentlyContinue"
+git fetch --tags --quiet 2>$null
+$ErrorActionPreference = $prevEap
 
 Write-Host "Cleanup temporary files..."
 if (Test-Path $zipPath) {
