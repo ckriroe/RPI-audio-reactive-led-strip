@@ -249,8 +249,8 @@ def render_preset_manager():
         is_master = is_preset_template_master(current_guid)
         cur_p = st.session_state.presets[st.session_state.preset_index]
         cur_p_gid = cur_p.get("groupId") or GLOBAL_GROUP_ID
-        if st.session_state.preset_index != 0 and not is_master and len(presets_in_current_group) > 0 and cur_p_gid == st.session_state.active_group_id:
-            std_id = st.session_state.presets[0]["id"]
+        std_id = st.session_state.presets[0]["id"]
+        if cur_p["id"] != std_id and not is_master and len(presets_in_current_group) > 0 and cur_p_gid == st.session_state.active_group_id:
             filtered_values = [
                 v for v in st.session_state.presets
                 if v["id"] != st.session_state.preset_guid

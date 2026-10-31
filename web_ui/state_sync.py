@@ -80,16 +80,19 @@ def get_current_preset_values_from_state(get_for_template):
     st.session_state.effectModeValue = next(k for k, v in EFFECT_MODES.items() if v == st.session_state.effectMode)
     st.session_state.colorModeValue = next(k for k, v in COLOR_MODES.items() if v == st.session_state.colorMode)
 
+    std_id = st.session_state.presets[0]["id"] if ("presets" in st.session_state and st.session_state.presets) else None
+    is_standard = bool(std_id and st.session_state.get("preset_guid") == std_id)
+
     template_values = None
     templateId = st.session_state.get("templateId")
-    if templateId is not None:
-        template_values = next((pre["values"] for pre in st.session_state.presets if pre["id"] == templateId), None)
+    if templateId is not None and not is_standard:
+        template_values = next((pre for pre in st.session_state.presets if pre["id"] == templateId), None)
 
     stateObj = {
-        "templateId": st.session_state.templateId
+        "templateId": None if is_standard else st.session_state.templateId
     }
 
-    if get_for_template is True:
+    if get_for_template is True or is_standard:
         stateObj["templateId"] = None
 
     set_value_from_state(stateObj, get_for_template, template_values, "colors")
@@ -148,6 +151,10 @@ def get_current_preset_values_from_state(get_for_template):
     set_value_from_state(stateObj, get_for_template, template_values, "fluxInfluence")
     set_value_from_state(stateObj, get_for_template, template_values, "energyInfluence")
 
+    if is_standard:
+        stateObj["templateId"] = None
+        stateObj["nextEffectId"] = None
+
     return stateObj
 
 
@@ -174,7 +181,8 @@ def update_session_none_templateable_value_from_preset(preset_values, key):
     preset_value = preset_values.get(key)
     if key == "nextEffectId" and preset_value is not None:
         all_ids = {p["id"] for p in st.session_state.presets} if "presets" in st.session_state else set()
-        if preset_value == st.session_state.get("preset_guid") or preset_value not in all_ids:
+        std_id = st.session_state.presets[0]["id"] if ("presets" in st.session_state and st.session_state.presets) else None
+        if preset_value == st.session_state.get("preset_guid") or preset_value not in all_ids or preset_value == std_id:
             preset_value = None
             preset_values["nextEffectId"] = None
     if preset_value is None:
@@ -187,15 +195,30 @@ def update_session_state_from_preset(preset_data):
     st.session_state.preset_guid = preset_data["id"]
     preset_values = preset_data["values"]
 
+    std_id = st.session_state.presets[0]["id"] if ("presets" in st.session_state and st.session_state.presets) else None
+    if std_id and preset_data["id"] == std_id:
+        preset_values["templateId"] = None
+        preset_values["nextEffectId"] = None
+        st.session_state.templateId = None
+        st.session_state.nextEffectId = None
+
     template_values = None
     templateId = preset_values.get("templateId")
-    if templateId is not None:
+    if templateId is not None and not (std_id and preset_data["id"] == std_id):
         template_preset = next((pre for pre in st.session_state.presets if pre["id"] == templateId), None)
-        if template_preset is not None and templateId != preset_data["id"] and template_preset["values"].get("templateId") is None:
+        if (
+            template_preset is not None
+            and templateId != preset_data["id"]
+            and templateId != std_id
+            and template_preset["values"].get("templateId") is None
+        ):
             template_values = template_preset["values"]
         else:
             preset_values["templateId"] = None
             templateId = None
+    else:
+        preset_values["templateId"] = None
+        templateId = None
 
     st.session_state.templateId = templateId
 
@@ -279,9 +302,14 @@ def update_session_state_from_static_settings(static_settings_data):
 def save_presets():
     idx = st.session_state.preset_index
     cur_p = st.session_state.presets[idx]
+    std_id = st.session_state.presets[0]["id"] if st.session_state.presets else None
+    if std_id and cur_p["id"] == std_id:
+        st.session_state.templateId = None
+        st.session_state.nextEffectId = None
+
     templateId = st.session_state.get("templateId")
     template_preset = None
-    if templateId is not None:
+    if templateId is not None and not (std_id and cur_p["id"] == std_id):
         template_preset = next((pre for pre in st.session_state.presets if pre["id"] == templateId), None)
 
     if template_preset is not None:

@@ -31,6 +31,9 @@ def migrate_frequency_amplitudes(jsn: dict) -> None:
 
 def migrate_template_ids(jsn: dict) -> None:
     presets = jsn.get("presets", [])
+    if not presets:
+        return
+    std_id = presets[0].get("id")
     preset_ids = {p["id"] for p in presets if "id" in p}
     template_map = {p["id"]: p.get("values", {}).get("templateId") for p in presets if "id" in p}
 
@@ -38,10 +41,31 @@ def migrate_template_ids(jsn: dict) -> None:
         vals = preset.get("values", {})
         tid = vals.get("templateId")
         if tid is not None:
-            if tid == preset.get("id") or tid not in preset_ids:
+            if tid == preset.get("id") or tid not in preset_ids or tid == std_id:
                 vals["templateId"] = None
             elif template_map.get(tid) is not None:
                 vals["templateId"] = None
+
+    if presets and "values" in presets[0]:
+        presets[0]["values"]["templateId"] = None
+
+
+def migrate_next_effect_ids(jsn: dict) -> None:
+    presets = jsn.get("presets", [])
+    if not presets:
+        return
+    std_id = presets[0].get("id")
+    preset_ids = {p["id"] for p in presets if "id" in p}
+
+    for preset in presets:
+        vals = preset.get("values", {})
+        nid = vals.get("nextEffectId")
+        if nid is not None:
+            if nid == preset.get("id") or nid not in preset_ids or nid == std_id:
+                vals["nextEffectId"] = None
+
+    if presets and "values" in presets[0]:
+        presets[0]["values"]["nextEffectId"] = None
 
 
 def migrate_presets(jsn: dict) -> dict:
@@ -53,5 +77,6 @@ def migrate_presets(jsn: dict) -> dict:
     migrate_preset_group_ids(jsn)
     migrate_frequency_amplitudes(jsn)
     migrate_template_ids(jsn)
+    migrate_next_effect_ids(jsn)
 
     return jsn

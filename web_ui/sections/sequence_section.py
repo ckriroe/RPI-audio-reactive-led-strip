@@ -5,8 +5,18 @@ from web_ui.state_sync import ow_widget, save_presets
 
 
 def render_sequence_section():
+    if not st.session_state.presets:
+        return
+
+    std_id = st.session_state.presets[0]["id"]
+    if st.session_state.preset_guid == std_id:
+        return
+
     with st.expander("Sequenzierung", expanded=False):
-        filtered_values = [v for v in st.session_state.presets if v["id"] != st.session_state.preset_guid]
+        filtered_values = [
+            v for v in st.session_state.presets
+            if v["id"] != st.session_state.preset_guid and v["id"] != std_id
+        ]
         options = [NONE_OPTION] + [v["id"] for v in filtered_values]
         if "nextEffectId" not in st.session_state:
             st.session_state.nextEffectId = None
